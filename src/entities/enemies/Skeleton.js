@@ -47,7 +47,7 @@ function createAnimations(anims) {
 }
 
 class Skeleton extends Enemy {
-    // Cria a classe do skeleton
+    // Creates the skeleton class
 
     constructor(scene, x, y, point, { gameState, audio, group } = {}){
         super(scene, { gameState, audio, animKeys: ANIM_KEYS, health: 50 });
@@ -56,7 +56,7 @@ class Skeleton extends Enemy {
         this.skltDIE = 0;
         this.skltHURT = 0;
 
-        // VARIAVEIS PROS SONS NÃO FICAREM REPETINDO
+        // guards so the sounds don't keep repeating
         createAnimations(scene.anims);
 
           this.sprite = scene.physics.add.sprite( x, y, "skeleton-idle");
@@ -69,12 +69,12 @@ class Skeleton extends Enemy {
           group.add(this.sprite);
           this.sprite.setData("owner", this);
 
-          //FIM DO CONSTRUCTOR
+          // END OF CONSTRUCTOR
     }
 
     update(){
 
-        // VARIAVEIS
+        // VARIABLES
 
         this.skeletonX = this.sprite.body.position.x;
         this.skeletonY = this.sprite.body.position.y;
@@ -155,7 +155,7 @@ class Skeleton extends Enemy {
             this.sprite.anims.play(this.animKeys.idle, true);
             this.sprite.setSize(27,27, true).setOffset(0, 6);
 
-        //      CONDICIONAIS PARA COMPORTAMENTO/ANIMACAO P/ PLAYER 1
+        //      BEHAVIOR/ANIMATION CONDITIONS FOR PLAYER 1
 
         } else if (this.skeleton_P1 < 15 && this.skeleton_P1 > 0){
             this.sprite.setVelocityX(0);
@@ -181,7 +181,7 @@ class Skeleton extends Enemy {
             this.skeletonposition = 'right';
         }
 
-        //      CONDICIONAIS PARA COMPORTAMENTO/ANIMACAO P/ PLAYER 2
+        //      BEHAVIOR/ANIMATION CONDITIONS FOR PLAYER 2
 
       else if (this.skeleton_P2 < 15 && this.skeleton_P2 > 0){
         this.sprite.setVelocityX(0);
@@ -218,11 +218,11 @@ class Skeleton extends Enemy {
             this.sprite.anims.play(this.animKeys.walk, true);
         }
 
-    //FIM DO UPDATE
+    // END OF UPDATE
 
     }
 
-    // FUNCOES DE COMBATE
+    // COMBAT FUNCTIONS
     handlePlayerHit(playerSprite) {
       const isPlayer1 = playerSprite === player;
       const facing = isPlayer1 ? playerPosition : player2Position;
@@ -236,7 +236,7 @@ class Skeleton extends Enemy {
         return;
       }
 
-      // se o jogador ataca o skeleton, o skeleton eh jogado um pouco pra tras.
+      // if the player attacks the skeleton, the skeleton gets knocked back a bit.
       if (isAttacking) {
         this.sprite.setVelocityX(facing === "right" ? 150 : -150);
         this.sprite.setVelocityY(-75);
@@ -244,7 +244,7 @@ class Skeleton extends Enemy {
         this.sprite.anims.play(this.animKeys.hurt, true);
         this.health -= 1;
       }
-      // se o skeleton ataca o jogador, o jogador eh empurrado pra tras
+      // if the skeleton attacks the player, the player gets pushed back
       else if (this.isPlayingAnim("attack") && this.skeletonposition === "left" && this.animProgress("attack") === 0.5294117647058824) {
         this.audio.get("skeletonAttack").play();
         playerSprite.setVelocityX(-125);

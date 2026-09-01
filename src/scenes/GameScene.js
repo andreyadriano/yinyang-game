@@ -2,7 +2,7 @@ import { SCENE_KEYS } from "./sceneKeys.js";
 import { GameState } from "../core/GameState.js";
 import { AudioManager } from "../core/AudioManager.js";
 import { Player } from "../entities/player/Player.js";
-import Lancachamas from "../entities/hazards/Lancachamas.js";
+import Flamethrower from "../entities/hazards/Flamethrower.js";
 import { Slime } from "../entities/enemies/Slime.js";
 import {Skeleton} from "../entities/enemies/Skeleton.js";
 import {Jumper} from "../entities/interactive/Jumper.js";
@@ -14,31 +14,31 @@ export { spike, player, player2, playerPosition, player2Position };
 export { topLayer, topLayer2, topLayer3 }
 
 /*
-  Coordenadas para teleporte:
+  Teleport coordinates:
 
-  Da sala escondida para o easter egg: 1744, 2573
-  Do easter egg, dos portais, das chaves e de um dos bosses para a posição default: 1312, 1440
-  Dos portais para boss 1: 96, 3616
-  Dos portais para boss 2: 4000, 3616
-  PRIMEIRO PORTAL NEUTRO: 3770, 1666
-  SEGUNDO PORTAL NEUTRO: 2330, 1924
-  Do portal neutro para posição default: 1307, 1443
-  
+  From the hidden room to the easter egg: 1744, 2573
+  From the easter egg, the portals, the keys, and one of the bosses to the default position: 1312, 1440
+  From the portals to boss 1: 96, 3616
+  From the portals to boss 2: 4000, 3616
+  FIRST NEUTRAL PORTAL: 3770, 1666
+  SECOND NEUTRAL PORTAL: 2330, 1924
+  From the neutral portal to the default position: 1307, 1443
+
 
 */
 
-//VARIAVEIS DO PLAYER 1
+// PLAYER 1 VARIABLES
 var player;
-var playerPosition = "right"; // se o player ta virado pra esquerda ou direita
+var playerPosition = "right"; // whether the player is facing left or right
 
-// VARIAVEIS DO PLAYER 2
+// PLAYER 2 VARIABLES
 var player2;
 var player2Position = "right";
 
-// VARIAVEL DA VIDA
+// HEALTH VARIABLE
 var Soul;
 
-var cursors; //variavel das setas do teclado
+var cursors; // keyboard arrow keys
 var keyW;
 var keyA;
 var keyS;
@@ -47,17 +47,17 @@ var keyP;
 var keyENTER;
 
 
-// Variavel dos objetos do mapa
+// Map object variables
 
-var spike; //variavel dos espinhos
-var barreira1;
-var barreira2;
+var spike; // spikes
+var barrier1;
+var barrier2;
 var JailDoor;
 
-var ChaveAmarela;
-var ChaveAzul;
+var yellowKey;
+var blueKey;
 
-var graphics; //nem me pergunte
+var graphics; // don't even ask
 var button;
 
 
@@ -78,94 +78,94 @@ export class GameScene extends Phaser.Scene {
     super(SCENE_KEYS.GAME);
   }
 
-// A FUNCAO PRELOAD FAZ O PRECARREGAMENTO DE IMAGENS E SONS DO JOGO
+// PRELOAD LOADS THE GAME'S IMAGES AND SOUNDS
 preload() {
 
-  //Assets do ambiente e dos objetos
-  
-  this.load.image("caverna","assets/ambiente/tilesets/cavernaSemfundo.png");
-  this.load.image("cavernaFundo","assets/ambiente/tilesets/cavernaFundo.png");
-  this.load.image("superficie","assets/ambiente/tilesets/superficie.png");
-  this.load.image("background","assets/ambiente/tilesets/background.png");
-  this.load.image("background2","assets/ambiente/tilesets/background2.png");
-  this.load.image("environment","assets/ambiente/tilesets/environment.png");
-  this.load.image("ground","assets/ambiente/tilesets/ground.png");
-  this.load.image("madeiras","assets/ambiente/tilesets/madeiras.png");
-  this.load.image("Easter Egg", "assets/ambiente/tilesets/Easter Egg.png");
-  this.load.tilemapTiledJSON("fase1", "assets/ambiente/Fase1.2.json");
-  
-  
+  // Environment and object assets
 
-  // ASSETS DO LANÇA-CHAMAS
-  this.load.spritesheet("chamas", "assets/ambiente/Lança-chamas.png", {frameWidth: 17, frameHeight: 80});
-  
-  // ESPINHOS  
-  this.load.image("spike", "assets/ambiente/spikes_1.png");
-
-  //ASSETS DO JUMPER
-  this.load.spritesheet("jumper", "assets/ambiente/jumper.png", {frameWidth: 48, frameHeight: 32});  
-
-  // ASSETS DOS PORTAIS
-  this.load.spritesheet("portal1", "assets/ambiente/Portal 1.png", {frameWidth: 33, frameHeight: 33});
-  this.load.spritesheet("portal2", "assets/ambiente/Portal 2.png", {frameWidth: 33, frameHeight: 33});
-  this.load.spritesheet("portalNeutro", "assets/ambiente/Portal Neutro.png", {frameWidth: 33, frameHeight: 33});
-
-  // ASSETS DA BARREIRA 1
-  this.load.spritesheet("barreira1open", "assets/ambiente/OpeningBarrier1.png", {frameWidth: 32, frameHeight: 32});
-  this.load.spritesheet("barreira1idle", "assets/ambiente/IdleBarrier1.png", {frameWidth: 32, frameHeight: 32});
-  // ASSETS DA CHAVE AMARELA
-  this.load.spritesheet("chaveamarela", "assets/ambiente/chaveamarela.png", {frameWidth: 32, frameHeight: 32});
-
-  // ASSETS DA BARREIRA 2
-  this.load.spritesheet("barreira2open", "assets/ambiente/OpeningBarrier2.png", {frameWidth: 32, frameHeight: 32});
-  this.load.spritesheet("barreira2idle", "assets/ambiente/IdleBarrier2.png", {frameWidth: 32, frameHeight: 32});
-  // ASSETS DA CHAVE AZUL
-  this.load.spritesheet("chaveazul", "assets/ambiente/chaveazul.png", {frameWidth: 32, frameHeight: 32});
-  
-  //ASSET DA JAILDOOR
-  this.load.spritesheet("jaildoor", "assets/ambiente/jaildoor.png", {frameWidth: 200, frameHeight: 200});
+  this.load.image("cave","assets/environment/tilesets/cave.png");
+  this.load.image("caveBackground","assets/environment/tilesets/caveBackground.png");
+  this.load.image("surface","assets/environment/tilesets/surface.png");
+  this.load.image("background","assets/environment/tilesets/background.png");
+  this.load.image("background2","assets/environment/tilesets/background2.png");
+  this.load.image("environment","assets/environment/tilesets/environment.png");
+  this.load.image("ground","assets/environment/tilesets/ground.png");
+  this.load.image("wood","assets/environment/tilesets/wood.png");
+  this.load.image("Easter Egg", "assets/environment/tilesets/Easter Egg.png");
+  this.load.tilemapTiledJSON("level1", "assets/environment/level1.json");
 
 
-  //Assets do Jogador Yin
 
-  //Carregando o spritesheet de corrida 
+  // FLAMETHROWER ASSETS
+  this.load.spritesheet("flamethrower", "assets/environment/flamethrower.png", {frameWidth: 17, frameHeight: 80});
+
+  // SPIKES
+  this.load.image("spike", "assets/environment/spikes_1.png");
+
+  // JUMPER ASSETS
+  this.load.spritesheet("jumper", "assets/environment/jumper.png", {frameWidth: 48, frameHeight: 32});
+
+  // PORTAL ASSETS
+  this.load.spritesheet("portal1", "assets/environment/Portal 1.png", {frameWidth: 33, frameHeight: 33});
+  this.load.spritesheet("portal2", "assets/environment/Portal 2.png", {frameWidth: 33, frameHeight: 33});
+  this.load.spritesheet("neutralPortal", "assets/environment/NeutralPortal.png", {frameWidth: 33, frameHeight: 33});
+
+  // BARRIER 1 ASSETS
+  this.load.spritesheet("barrier1Open", "assets/environment/OpeningBarrier1.png", {frameWidth: 32, frameHeight: 32});
+  this.load.spritesheet("barrier1Idle", "assets/environment/IdleBarrier1.png", {frameWidth: 32, frameHeight: 32});
+  // YELLOW KEY ASSETS
+  this.load.spritesheet("yellowKey", "assets/environment/yellowKey.png", {frameWidth: 32, frameHeight: 32});
+
+  // BARRIER 2 ASSETS
+  this.load.spritesheet("barrier2Open", "assets/environment/OpeningBarrier2.png", {frameWidth: 32, frameHeight: 32});
+  this.load.spritesheet("barrier2Idle", "assets/environment/IdleBarrier2.png", {frameWidth: 32, frameHeight: 32});
+  // BLUE KEY ASSETS
+  this.load.spritesheet("blueKey", "assets/environment/blueKey.png", {frameWidth: 32, frameHeight: 32});
+
+  // JAILDOOR ASSET
+  this.load.spritesheet("jaildoor", "assets/environment/jaildoor.png", {frameWidth: 200, frameHeight: 200});
+
+
+  // Yin player assets
+
+  // Loading the run spritesheet
   this.load.spritesheet("yinrun", "assets/player/YinRun.png", {
     frameWidth: 50,
     frameHeight: 37
   });
-  //Carregando as demais animações em um único spritesheet
+  // Loading the remaining animations in a single spritesheet
   this.load.spritesheet("yin", "assets/player/YinSpriteSheet.png", {
     frameWidth: 50,
     frameHeight: 37
   });
 
-  //Assets do jogador Yang
+  // Yang player assets
   this.load.spritesheet("yangrun", "assets/player/YangRun.png", {
     frameWidth: 50,
     frameHeight: 37
   });
-  //Carregando as demais animações em um único spritesheet
+  // Loading the remaining animations in a single spritesheet
   this.load.spritesheet("yang", "assets/player/YangSpriteSheet.png", {
     frameWidth: 50,
     frameHeight: 37
   });
 
-  // ASSETS DA VIDA DO PERSONAGEM
-  this.load.spritesheet("soul", "assets/interface/VIDA(190hits).png", { frameWidth:  31, frameHeight: 31});
+  // CHARACTER HEALTH ASSETS
+  this.load.spritesheet("soul", "assets/interface/health(190hits).png", { frameWidth:  31, frameHeight: 31});
 
 
-  //SPRITESHEET DO SLIME
+  // SLIME SPRITESHEET
   this.load.spritesheet('slimesheet', 'assets/slime/slime-Sheet.png', { frameWidth: 32, frameHeight: 25 });
   this.load.image('slime0', 'assets/slime/slime0.png');
 
-  //ASSETS DO SKELETON
+  // SKELETON ASSETS
   this.load.spritesheet('skeleton-attack', 'assets/skeleton/skeleton-attack.png', {frameWidth: 43, frameHeight: 37});
   this.load.spritesheet('skeleton-die', 'assets/skeleton/skeleton-die.png', {frameWidth: 33, frameHeight: 32});
   this.load.spritesheet('skeleton-hurt', 'assets/skeleton/skeleton-hurt.png', {frameWidth: 30, frameHeight: 32});
   this.load.spritesheet('skeleton-idle', 'assets/skeleton/skeleton-idle.png', {frameWidth: 24, frameHeight: 32});
   this.load.spritesheet('skeleton-walk', 'assets/skeleton/skeleton-walk.png', {frameWidth: 22, frameHeight: 33});
 
-  // ASSETS DO BOSS
+  // BOSS ASSETS
   this.load.spritesheet("demon-attack1", "assets/demon/demon-attack_1.png", {frameWidth: 240, frameHeight: 192});
   this.load.spritesheet("demon-attack2", "assets/demon/demon-attack_2.png", {frameWidth: 240, frameHeight: 192});
   this.load.spritesheet("demon-idle1", "assets/demon/demon-idle_1.png", {frameWidth: 160, frameHeight: 144});
@@ -173,15 +173,15 @@ preload() {
 
 
 
-  //PRELOAD DE AUDIOS
+  // AUDIO PRELOAD
   this.load.audio("song", "assets/sounds/bgm/ebunny_-_Art_of_War.mp3");
   this.load.audio("swordwoosh", "assets/sounds/sfx/battle/swordwoosh.mp3");
   this.load.audio("slimeatk", "assets/sounds/sfx/battle/slime-attack.mp3");
   this.load.audio("jumping", "assets/sounds/sfx/movement/jump1.mp3");
   this.load.audio("landing", "assets/sounds/sfx/movement/landing1.mp3");
   this.load.audio("portalsound", "assets/sounds/sfx/SFX_Portal.mp3");
-  this.load.audio("JaildoorOpeningSound", "assets/sounds/sfx/SFX_PortaDeCela.mp3");
-  this.load.audio("JumperSound", "assets/sounds/sfx/SFX_Trampolim.mp3");
+  this.load.audio("JaildoorOpeningSound", "assets/sounds/sfx/jailDoorOpening.mp3");
+  this.load.audio("JumperSound", "assets/sounds/sfx/jumperBounce.mp3");
 
   this.load.audio("BossAtk", "assets/sounds/sfx/BossAtk.mp3");
   this.load.audio("BossDying", "assets/sounds/sfx/BossDying.mp3");
@@ -189,25 +189,25 @@ preload() {
   this.load.audio("SkeletonDie", "assets/sounds/sfx/SkeletonDying.mp3");
   this.load.audio("SkeletonHurt", "assets/sounds/sfx/SkeletonHurt.mp3");
   this.load.audio("SlimeDying", "assets/sounds/sfx/SlimeDying.mp3");
-  this.load.audio("chave", "assets/sounds/sfx/Chaves.mp3"); //Efeito sonoro pra quando o player pegar as chaves.
+  this.load.audio("keyPickupSound", "assets/sounds/sfx/keyPickup.mp3"); // sound for when the player picks up a key
 
 
-  //ICONE DE FULLSCREEN
+  // FULLSCREEN ICON
   this.load.spritesheet("fullscreen", "assets/fullscreen.png", {
     frameWidth: 64,
     frameHeight: 64
   });
 
-// FIM DO PRELOAD
+// END OF PRELOAD
 }
 
-// A FUNCAO CREATE CRIA AS COISAS DENTRO DO JOGO
+// CREATE BUILDS EVERYTHING INSIDE THE GAME
 create() {
 
   this.state = new GameState();
   this.audio = new AudioManager(this);
 
-  // CRIACAO DOS SONS
+  // SOUND CREATION
   this.audio.add("music", "song");
   this.audio.add("swordWoosh", "swordwoosh");
   this.audio.add("jump", "jumping");
@@ -222,38 +222,38 @@ create() {
   this.audio.add("skeletonHurt", "SkeletonHurt");
   this.audio.add("slimeDie", "SlimeDying");
   this.audio.add("slimeAttack", "slimeatk");
-  this.audio.add("keyPickup", "chave");
+  this.audio.add("keyPickup", "keyPickupSound");
 
 
-  //toca musica em loop
+  // play music on loop
   this.audio.get("music").play({
     loop: true,
     volume: 0.1
   });
 
 
-  // CRIACAO DO CENARIO E DO BACKGROUND
+  // SCENERY AND BACKGROUND CREATION
   
-  var map = this.add.tilemap("fase1");
+  var map = this.add.tilemap("level1");
 
   
-  var terrain = map.addTilesetImage("cavernaSemfundo", "caverna");
-  var terrain2 = map.addTilesetImage("superficie", "superficie");
+  var terrain = map.addTilesetImage("cave", "cave");
+  var terrain2 = map.addTilesetImage("surface", "surface");
   var terrain3 = map.addTilesetImage("background", "background");
   var terrain4 = map.addTilesetImage("background2", "background2");
-  var terrain5 = map.addTilesetImage("madeiras", "madeiras");
+  var terrain5 = map.addTilesetImage("wood", "wood");
   var terrain6 = map.addTilesetImage("ground", "ground");
   var terrain7 = map.addTilesetImage("environment", "environment");
-  var terrain8 = map.addTilesetImage("cavernaFundo", "cavernaFundo");
+  var terrain8 = map.addTilesetImage("caveBackground", "caveBackground");
   var terrain9 = map.addTilesetImage("Easter Egg", "Easter Egg");
 
 
-  //criando os niveis do mapa
+  // creating the map layers
 
     topLayer3 = map.createStaticLayer("topLayer3", [terrain3], 0, 0);
     topLayer4 = map.createStaticLayer("topLayer4", [terrain4], 0, 0);
 
-    // CRIACAO DOS ESPINHOS
+    // SPIKE CREATION
     spike = this.physics.add.staticGroup();
     spike.create(590, 490, "spike");
     spike.create(992, 410, "spike").setScale(1.3).setSize(150,20);
@@ -273,7 +273,7 @@ create() {
     spike.create(3456, 1880, "spike");
     
 
-    //FIM DA CRIAÇAO DE ESPINHOS
+    // END OF SPIKE CREATION
 
     topLayer = map.createStaticLayer("topLayer", [terrain], 0, 0);
     topLayer2 = map.createStaticLayer("topLayer2", [terrain2], 0, 0);
@@ -281,42 +281,42 @@ create() {
     topLayer7 = map.createStaticLayer("topLayerCastle3", [terrain7]);
     topLayer9 = map.createStaticLayer("EasterEgg", [terrain9]);
 
-    // CRIACAO DA BARREIRA 1
-    barreira1 = this.physics.add.sprite(2735, 1895, "barreira1idle").setScale(1.5, 2);
-    barreira1.setSize(20, 32).setOffset(6, 0);
-    barreira1.setBounce(0);
-    barreira1.setCollideWorldBounds(true);
-    barreira1.setImmovable(true);
+    // BARRIER 1 CREATION
+    barrier1 = this.physics.add.sprite(2735, 1895, "barrier1Idle").setScale(1.5, 2);
+    barrier1.setSize(20, 32).setOffset(6, 0);
+    barrier1.setBounce(0);
+    barrier1.setCollideWorldBounds(true);
+    barrier1.setImmovable(true);
 
-    // CRIACAO DA CHAVE AMARELA
-    ChaveAmarela = this.physics.add.sprite(3700, 1520, "chaveamarela");
-    ChaveAmarela.setBounce(0);
-    ChaveAmarela.setCollideWorldBounds(true);
-    ChaveAmarela.setImmovable(true);
-    ChaveAmarela.setSize(20,20);
+    // YELLOW KEY CREATION
+    yellowKey = this.physics.add.sprite(3700, 1520, "yellowKey");
+    yellowKey.setBounce(0);
+    yellowKey.setCollideWorldBounds(true);
+    yellowKey.setImmovable(true);
+    yellowKey.setSize(20,20);
 
-    // CRIACAO DA BARREIRA 2
-    barreira2 = this.physics.add.sprite(2735, 2100, "barreira2idle").setScale(1.5, 2);
-    barreira2.setSize(20, 32).setOffset(6, 0);
-    barreira2.setBounce(0);
-    barreira2.setCollideWorldBounds(true);
-    barreira2.setImmovable(true);
+    // BARRIER 2 CREATION
+    barrier2 = this.physics.add.sprite(2735, 2100, "barrier2Idle").setScale(1.5, 2);
+    barrier2.setSize(20, 32).setOffset(6, 0);
+    barrier2.setBounce(0);
+    barrier2.setCollideWorldBounds(true);
+    barrier2.setImmovable(true);
 
-    // CRIACAO DA CHAVE AZUL
-    ChaveAzul = this.physics.add.sprite(3830, 1500, "chaveazul");
-    ChaveAzul.setBounce(0);
-    ChaveAzul.setCollideWorldBounds(true);
-    ChaveAzul.setImmovable(true);
-    ChaveAzul.setSize(20,20);
+    // BLUE KEY CREATION
+    blueKey = this.physics.add.sprite(3830, 1500, "blueKey");
+    blueKey.setBounce(0);
+    blueKey.setCollideWorldBounds(true);
+    blueKey.setImmovable(true);
+    blueKey.setSize(20,20);
 
-    // CRIACAO DA JAILDOOR
+    // JAILDOOR CREATION
     JailDoor = this.physics.add.sprite(2703, 1011, "jaildoor");
     JailDoor.setScale(0.5).setSize(40, 160).setOffset(40, 40);
     JailDoor.setBounce(0);
     JailDoor.setCollideWorldBounds(true);
     JailDoor.setImmovable(true);
 
-  // ADICAO DO TECLADO
+  // KEYBOARD SETUP
 
   cursors = this.input.keyboard.createCursorKeys();
   keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
@@ -326,7 +326,7 @@ create() {
   keyP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
   keyENTER = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
 
-  // CRIACAO DO JOGADOR 1
+  // PLAYER 1 CREATION
   this.player1 = new Player(this, {
     x: 100,
     y: 350,
@@ -337,7 +337,7 @@ create() {
   });
   player = this.player1.sprite;
 
-  // CRIACAO DO JOGADOR 2
+  // PLAYER 2 CREATION
   this.player2 = new Player(this, {
     x: 75,
     y: 350,
@@ -353,9 +353,9 @@ create() {
   .setOrigin(0.5)
   .setScrollFactor(0).setScale(1.5);
 
-  // GRUPOS DE FISICA POR TIPO DE INIMIGO/OBJETO
-  // Um collider/overlap por grupo em vez de um por instância; cada entidade
-  // se adiciona ao grupo e marca sprite.setData("owner", this) no construtor.
+  // PHYSICS GROUPS PER ENEMY/OBJECT TYPE
+  // One collider/overlap per group instead of one per instance; each entity
+  // adds itself to the group and tags sprite.setData("owner", this) in its constructor.
   const resolveOwner = (playerSprite, entitySprite) => entitySprite.getData("owner").handlePlayerHit(playerSprite);
 
   this.slimeGroup = this.physics.add.group();
@@ -370,9 +370,9 @@ create() {
   this.physics.add.collider(this.demonGroup, [topLayer, topLayer2, topLayer3]);
   this.physics.add.overlap([player, player2], this.demonGroup, resolveOwner, null, this);
 
-  this.lancachamasGroup = this.physics.add.group();
-  this.physics.add.collider(this.lancachamasGroup, topLayer);
-  this.physics.add.collider([player, player2], this.lancachamasGroup, resolveOwner, null, this);
+  this.flamethrowerGroup = this.physics.add.group();
+  this.physics.add.collider(this.flamethrowerGroup, topLayer);
+  this.physics.add.collider([player, player2], this.flamethrowerGroup, resolveOwner, null, this);
 
   this.portalGroup = this.physics.add.group();
   this.physics.add.collider(this.portalGroup, [topLayer, topLayer2]);
@@ -382,14 +382,14 @@ create() {
   this.physics.add.collider(this.jumperGroup, topLayer);
   this.physics.add.collider([player, player2], this.jumperGroup);
 
-  // CRIACAO DOS INIMIGOS E OBJETOS DO NIVEL (a partir de src/data/levelSpawns.js)
+  // ENEMY AND LEVEL OBJECT CREATION (from src/data/levelSpawns.js)
 
   this.portals = LEVEL_SPAWNS.portals.map(({ x, y, destX, destY, portalType }) =>
     new Portal(this, x, y, destX, destY, portalType, { audio: this.audio, group: this.portalGroup })
   );
 
   this.flamethrowers = LEVEL_SPAWNS.flamethrowers.map(({ x, y, delay }) =>
-    new Lancachamas(this, x, y, delay, { gameState: this.state, group: this.lancachamasGroup })
+    new Flamethrower(this, x, y, delay, { gameState: this.state, group: this.flamethrowerGroup })
   );
 
   this.jumpers = LEVEL_SPAWNS.jumpers.map(({ x, y, height }) =>
@@ -414,53 +414,53 @@ create() {
 
   //pointer = this.input.addPointer(1);
 
-  // ADICIONANDO COLISAO AO JOGO
+  // ADDING COLLISION TO THE GAME
 
   // LAYERS
   topLayer.setCollisionByProperty({ collides: true });
   topLayer2.setCollisionByProperty({ collides: true });
-  // BARREIRAS
-  this.physics.add.collider(barreira1, topLayer);
-  this.physics.add.collider(barreira1, topLayer2);
-  this.physics.add.collider(barreira2, topLayer);
-  this.physics.add.collider(barreira2, topLayer2);
-  this.physics.add.collider(player, barreira1, Barreira1OPEN, null, this);
-  this.physics.add.collider(player, barreira2, Barreira2OPEN, null, this);
-  this.physics.add.collider(player2, barreira1, Barreira1OPEN2, null, this);
-  this.physics.add.collider(player2, barreira2, Barreira2OPEN2, null, this);
+  // BARRIERS
+  this.physics.add.collider(barrier1, topLayer);
+  this.physics.add.collider(barrier1, topLayer2);
+  this.physics.add.collider(barrier2, topLayer);
+  this.physics.add.collider(barrier2, topLayer2);
+  this.physics.add.collider(player, barrier1, openBarrier1FromPlayer1, null, this);
+  this.physics.add.collider(player, barrier2, openBarrier2FromPlayer1, null, this);
+  this.physics.add.collider(player2, barrier1, openBarrier1FromPlayer2, null, this);
+  this.physics.add.collider(player2, barrier2, openBarrier2FromPlayer2, null, this);
   // JAILDOOR
   this.physics.add.collider(JailDoor, topLayer);
   this.physics.add.collider(JailDoor, topLayer2);
-  this.physics.add.collider(player, JailDoor, OpenJailDoor1, null, this);
-  this.physics.add.collider(player2, JailDoor, OpenJailDoor2, null, this);
+  this.physics.add.collider(player, JailDoor, openJailDoorPlayer1, null, this);
+  this.physics.add.collider(player2, JailDoor, openJailDoorPlayer2, null, this);
 
 
-  // CHAVES
-  this.physics.add.collider(ChaveAmarela, topLayer);
-  this.physics.add.collider(ChaveAmarela, topLayer2);
-  this.physics.add.collider(ChaveAzul, topLayer);
-  this.physics.add.collider(ChaveAzul, topLayer2);
-  this.physics.add.overlap(player, ChaveAmarela, ColetarChaveAM1, null, this);
-  this.physics.add.overlap(player2, ChaveAmarela, ColetarChaveAM2, null, this);
-  this.physics.add.overlap(player, ChaveAzul, ColetarChaveAZ1, null, this);
-  this.physics.add.overlap(player2, ChaveAzul, ColetarChaveAZ2, null, this);
+  // KEYS
+  this.physics.add.collider(yellowKey, topLayer);
+  this.physics.add.collider(yellowKey, topLayer2);
+  this.physics.add.collider(blueKey, topLayer);
+  this.physics.add.collider(blueKey, topLayer2);
+  this.physics.add.overlap(player, yellowKey, collectYellowKeyPlayer1, null, this);
+  this.physics.add.overlap(player2, yellowKey, collectYellowKeyPlayer2, null, this);
+  this.physics.add.overlap(player, blueKey, collectBlueKeyPlayer1, null, this);
+  this.physics.add.overlap(player2, blueKey, collectBlueKeyPlayer2, null, this);
 
-  // ESPINHOS
+  // SPIKES
   this.physics.add.overlap(player, spike, hitSpike, null, this);
   this.physics.add.overlap(player2, spike, hitSpike2, null, this);
 
-  // VIDA
+  // HEALTH
 
+
+  // CAMERA SYSTEM
   
-  // SISTEMA DE CAMERAS
-  
-this.cameras.main.setBounds(0, 0, 4096, 4096).setSize(800, 300); //limites da camera
-this.physics.world.setBounds(0, 0, 4096, 4096); //limites do mundo
+this.cameras.main.setBounds(0, 0, 4096, 4096).setSize(800, 300); // camera bounds
+this.physics.world.setBounds(0, 0, 4096, 4096); // world bounds
 
 this.cameras.main.startFollow(player2, true, 0.5, 0.5);
 this.cameras.add(0, 300, 800, 300).startFollow(player, true, 0.5, 0.5).setBounds(0, 150, 4096, 4096);
   
-  // CODIGO PARA IMPLEMENTAR FULLSCREEN
+  // FULLSCREEN IMPLEMENTATION CODE
 
   var FKey = this.input.keyboard.addKey("F");
 
@@ -476,7 +476,7 @@ this.cameras.add(0, 300, 800, 300).startFollow(player, true, 0.5, 0.5).setBounds
     this
   );
 
-  // ANIMACOES DO PLAYER
+  // PLAYER ANIMATIONS
   this.anims.create({
     key: "yin-idle",
     frames: this.anims.generateFrameNumbers("yin", { start: 38, end: 41 }),
@@ -548,7 +548,7 @@ this.cameras.add(0, 300, 800, 300).startFollow(player, true, 0.5, 0.5).setBounds
     repeat: -1
   });
 
-  // ANIMACOES DO PLAYER 2
+  // PLAYER 2 ANIMATIONS
   this.anims.create({
     key: "yang-idle",
     frames: this.anims.generateFrameNumbers("yang", { start: 38, end: 41 }),
@@ -620,51 +620,51 @@ this.cameras.add(0, 300, 800, 300).startFollow(player, true, 0.5, 0.5).setBounds
     repeat: -1
   });
 
-  //ANIMACOES DA BARREIRA 1
+  // BARRIER 1 ANIMATIONS
   this.anims.create({
-    key: "barreira1idle",
-    frames: this.anims.generateFrameNumbers("barreira1idle", { start: 0, end: 11 }),
+    key: "barrier1Idle",
+    frames: this.anims.generateFrameNumbers("barrier1Idle", { start: 0, end: 11 }),
     frameRate: 9,
     repeat: -1
   });
   
   this.anims.create({
-    key: "barreira1open",
-    frames: this.anims.generateFrameNumbers("barreira1open", { start: 0, end: 6 }),
+    key: "barrier1Open",
+    frames: this.anims.generateFrameNumbers("barrier1Open", { start: 0, end: 6 }),
     frameRate: 7,
     repeat: 0
   });
 
-    // ANIMACOES DA BARREIRA 2
+    // BARRIER 2 ANIMATIONS
   this.anims.create({
-    key: "barreira2idle",
-    frames: this.anims.generateFrameNumbers("barreira2idle", { start: 0, end: 11 }),
+    key: "barrier2Idle",
+    frames: this.anims.generateFrameNumbers("barrier2Idle", { start: 0, end: 11 }),
     frameRate: 9,
     repeat: -1
   });
   this.anims.create({
-    key: "barreira2open",
-    frames: this.anims.generateFrameNumbers("barreira2open", { start: 0, end: 6 }),
+    key: "barrier2Open",
+    frames: this.anims.generateFrameNumbers("barrier2Open", { start: 0, end: 6 }),
     frameRate: 7,
     repeat: 0
   });
 
-  // ANIMACOES DAS CHAVES
+  // KEY ANIMATIONS
 
   this.anims.create({
-    key: "ChaveAmarela",
-    frames: this.anims.generateFrameNumbers("chaveamarela", { start: 0, end: 6}),
+    key: "yellowKeySpin",
+    frames: this.anims.generateFrameNumbers("yellowKey", { start: 0, end: 6}),
     frameRate: 7,
     repeat: -1
   });
   this.anims.create({
-    key: "ChaveAzul",
-    frames: this.anims.generateFrameNumbers("chaveazul", { start: 0, end: 9}),
+    key: "blueKeySpin",
+    frames: this.anims.generateFrameNumbers("blueKey", { start: 0, end: 9}),
     frameRate: 9,
     repeat: -1
   });
 
-  // ANIMACAO DA JAILDOOR
+  // JAILDOOR ANIMATION
   this.anims.create({
     key: "JailDoor_Opening",
     frames: this.anims.generateFrameNumbers("jaildoor", {start:0, end: 8}),
@@ -672,10 +672,10 @@ this.cameras.add(0, 300, 800, 300).startFollow(player, true, 0.5, 0.5).setBounds
     repeat: 0
   });
 
-// FIM DO CREATE
+// END OF CREATE
 }
 
-// A FUNCAO UPDATE EH A QUE FAZ O JOGO ACONTECER, ELA SE REPETE INFINITAMENTE VÃRIAS VEZES POR SEGUNDO
+// UPDATE IS WHAT MAKES THE GAME RUN, IT RUNS CONTINUOUSLY, MANY TIMES PER SECOND
 update(time, delta) {
 
 this.jumpers.forEach((jumper) => jumper.update());
@@ -686,7 +686,7 @@ this.flamethrowers.forEach((flamethrower) => flamethrower.update());
 this.portals.forEach((portal) => portal.update());
 
 
-    // GAMEOVER
+    // GAME OVER
     if (this.state.isGameOver === true) {
       this.audio.get("music").stop();
       this.player1.forceDeath();
@@ -698,7 +698,7 @@ this.portals.forEach((portal) => portal.update());
       this.scene.start(SCENE_KEYS.CREDITS);
     }
 
-    // VIDA
+    // HEALTH
     if (this.state.soulCount > 0 && this.state.soulCount <= 190){
       Soul.setFrame(this.state.soulCount)
     }
@@ -706,7 +706,7 @@ this.portals.forEach((portal) => portal.update());
       this.state.isGameOver = true;
     }
 
-    // ANIMACAO DA JAILDOOR
+    // JAILDOOR ANIMATION
     if (JailDoor.anims.getCurrentKey() === "JailDoor_Opening" && JailDoor.anims.getProgress("JailDoor_Opening") < 1){
       //JailDoor.disableBody();
     }
@@ -715,33 +715,33 @@ this.portals.forEach((portal) => portal.update());
       JailDoor.disableBody();
     }
 
-    // ANIMACAO DA CHAVE AMARELA
-    if(ChaveAmarela.anims.getCurrentKey() != "ChaveAmarela" && this.state.hasYellowKey === false){
-      ChaveAmarela.anims.play("ChaveAmarela", true);
+    // YELLOW KEY ANIMATION
+    if(yellowKey.anims.getCurrentKey() != "yellowKeySpin" && this.state.hasYellowKey === false){
+      yellowKey.anims.play("yellowKeySpin", true);
     }
-    // ANIMACAO DA CHAVE AZUL
-    if(ChaveAzul.anims.getCurrentKey() != "ChaveAzul" && this.state.hasBlueKey === false){
-      ChaveAzul.anims.play("ChaveAzul", true);
-    }
-
-    // ANIMACAO DA BARREIRA 1
-    if(barreira1.anims.getCurrentKey() === "barreira1open" && barreira1.anims.getProgress("barreira1open") === 1){
-      barreira1.disableBody(true, true);
-    }
-    else if(barreira1.anims.getCurrentKey() === "barreira1open" && barreira1.anims.getProgress("barreira1open") < 1){
-    }
-    else if(barreira1.anims.getCurrentKey() != "barreira1idle" && barreira1.anims.getCurrentKey() != "barreira1open" && this.state.isBarrier1Open === false){
-      barreira1.anims.play("barreira1idle", true);
+    // BLUE KEY ANIMATION
+    if(blueKey.anims.getCurrentKey() != "blueKeySpin" && this.state.hasBlueKey === false){
+      blueKey.anims.play("blueKeySpin", true);
     }
 
-    // ANIMACAO DA BARREIRA 2
-    if(barreira2.anims.getCurrentKey() === "barreira2open" && barreira2.anims.getProgress("barreira2open") === 1){
-      barreira2.disableBody(true, true);
+    // BARRIER 1 ANIMATION
+    if(barrier1.anims.getCurrentKey() === "barrier1Open" && barrier1.anims.getProgress("barrier1Open") === 1){
+      barrier1.disableBody(true, true);
     }
-    else if(barreira2.anims.getCurrentKey() === "barreira2open" && barreira2.anims.getProgress("barreira2open") < 1){
+    else if(barrier1.anims.getCurrentKey() === "barrier1Open" && barrier1.anims.getProgress("barrier1Open") < 1){
     }
-    else if(barreira2.anims.getCurrentKey() != "barreira2idle" && barreira2.anims.getCurrentKey() != "barreira2open" && this.state.isBarrier2Open === false){
-      barreira2.anims.play("barreira2idle", true);
+    else if(barrier1.anims.getCurrentKey() != "barrier1Idle" && barrier1.anims.getCurrentKey() != "barrier1Open" && this.state.isBarrier1Open === false){
+      barrier1.anims.play("barrier1Idle", true);
+    }
+
+    // BARRIER 2 ANIMATION
+    if(barrier2.anims.getCurrentKey() === "barrier2Open" && barrier2.anims.getProgress("barrier2Open") === 1){
+      barrier2.disableBody(true, true);
+    }
+    else if(barrier2.anims.getCurrentKey() === "barrier2Open" && barrier2.anims.getProgress("barrier2Open") < 1){
+    }
+    else if(barrier2.anims.getCurrentKey() != "barrier2Idle" && barrier2.anims.getCurrentKey() != "barrier2Open" && this.state.isBarrier2Open === false){
+      barrier2.anims.play("barrier2Idle", true);
     }
 
 
@@ -756,13 +756,13 @@ this.portals.forEach((portal) => portal.update());
     playerPosition = this.player1.position;
     player2Position = this.player2.position;
 
-// FIM DO UPDATE
+// END OF UPDATE
   }
 }
 
 
 
-// FUNCOES DE DANO DOS ESPINHOS
+// SPIKE DAMAGE FUNCTIONS
 
 function hitSpike(player, spike) {
 
@@ -784,55 +784,55 @@ function hitSpike2(player2, spike) {
   }
 };
 
-function Barreira1OPEN(player, barreira1){
+function openBarrier1FromPlayer1(player, barrier1){
   if(this.state.isBarrier1Open === false && this.state.hasYellowKey === true){
-    barreira1.anims.play("barreira1open");
+    barrier1.anims.play("barrier1Open");
     this.state.hasYellowKey = false;
   }
 }
 
-function Barreira2OPEN(player, barreira2){
+function openBarrier2FromPlayer1(player, barrier2){
   if(this.state.isBarrier2Open === false && this.state.hasBlueKey === true){
-    barreira2.anims.play("barreira2open");
+    barrier2.anims.play("barrier2Open");
     this.state.hasBlueKey = false;
   }
 }
-function Barreira1OPEN2(player2, barreira1){
+function openBarrier1FromPlayer2(player2, barrier1){
   if(this.state.isBarrier1Open === false && this.state.hasYellowKey === true){
-    barreira1.anims.play("barreira1open");
+    barrier1.anims.play("barrier1Open");
     this.state.hasYellowKey = false;
   }
 }
-function Barreira2OPEN2(player2, barreira2){
+function openBarrier2FromPlayer2(player2, barrier2){
   if(this.state.isBarrier2Open === false && this.state.hasBlueKey === true){
-    barreira2.anims.play("barreira2open");
+    barrier2.anims.play("barrier2Open");
     this.state.hasBlueKey = false;
   }
 }
 
-function ColetarChaveAM1(player, ChaveAmarela){
+function collectYellowKeyPlayer1(player, yellowKey){
   this.state.hasYellowKey = true;
   this.audio.get("keyPickup").play();
-  ChaveAmarela.disableBody(true, true);
+  yellowKey.disableBody(true, true);
 }
-function ColetarChaveAM2(player2, ChaveAmarela){
+function collectYellowKeyPlayer2(player2, yellowKey){
   this.state.hasYellowKey = true;
   this.audio.get("keyPickup").play();
-  ChaveAmarela.disableBody(true, true);
+  yellowKey.disableBody(true, true);
 }
-function ColetarChaveAZ1(player, ChaveAzul){
+function collectBlueKeyPlayer1(player, blueKey){
   this.state.hasBlueKey = true;
   this.audio.get("keyPickup").play();
-  ChaveAzul.disableBody(true, true);
+  blueKey.disableBody(true, true);
 }
-function ColetarChaveAZ2(player2, ChaveAzul){
+function collectBlueKeyPlayer2(player2, blueKey){
   this.state.hasBlueKey = true;
   this.audio.get("keyPickup").play();
-  ChaveAzul.disableBody(true, true);
+  blueKey.disableBody(true, true);
 }
 
-// FUNCOES DE ABERTURA DA JAILDOOR
-function OpenJailDoor1(player, JailDoor){
+// JAILDOOR OPENING FUNCTIONS
+function openJailDoorPlayer1(player, JailDoor){
 	if(this.state.bossesDefeated === 2){
   if(JailDoor.anims.getCurrentKey() != "JailDoor_Opening"){
     JailDoor.anims.play("JailDoor_Opening", true);
@@ -842,7 +842,7 @@ function OpenJailDoor1(player, JailDoor){
   }
   }
 }
-function OpenJailDoor2(player2, JailDoor){
+function openJailDoorPlayer2(player2, JailDoor){
 	if(this.state.bossesDefeated === 2){
   if(JailDoor.anims.getCurrentKey() != "JailDoor_Opening"){
     JailDoor.anims.play("JailDoor_Opening", true);

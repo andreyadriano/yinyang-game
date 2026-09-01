@@ -45,7 +45,7 @@ function createAnimations(anims) {
 }
 
 class Slime extends Enemy {
-    // Cria a classe do slime
+    // Creates the slime class
 
     constructor(scene, x, y, point, { gameState, audio, group } = {}){
         super(scene, { gameState, audio, animKeys: ANIM_KEYS, health: 20 });
@@ -53,7 +53,7 @@ class Slime extends Enemy {
         this.slimeposition = "left";
         this.slimedying = 0;
 
-        //          ANIMACOES DO SLIME
+        //          SLIME ANIMATIONS
         createAnimations(scene.anims);
 
   this.sprite = scene.physics.add.sprite( x, y, "slime0");
@@ -67,13 +67,13 @@ class Slime extends Enemy {
   group.add(this.sprite);
   this.sprite.setData("owner", this);
 
-// FIM DO CONSTRUCTOR
+// END OF CONSTRUCTOR
     }
 
 
   update() {
 
-    // VARIAVEIS
+    // VARIABLES
 
         this.slimeX = this.sprite.body.position.x;
         this.slimeY = this.sprite.body.position.y;
@@ -139,7 +139,7 @@ class Slime extends Enemy {
             this.sprite.anims.play(this.animKeys.idle, true);
             this.sprite.setSize(20,20).setOffset(0,4);
 
-        //      CONDICIONAIS PARA COMPORTAMENTO/ANIMACAO P/ PLAYER 1
+        //      BEHAVIOR/ANIMATION CONDITIONS FOR PLAYER 1
 
         } else if (this.slime_P1 < 15 && this.slime_P1 > 0){
             this.sprite.setVelocityX(0);
@@ -165,7 +165,7 @@ class Slime extends Enemy {
             this.slimeposition = 'right';
         }
 
-        //      CONDICIONAIS PARA COMPORTAMENTO/ANIMACAO P/ PLAYER 2
+        //      BEHAVIOR/ANIMATION CONDITIONS FOR PLAYER 2
 
       else if (this.slime_P2 < 15 && this.slime_P2 > 0){
         this.sprite.setVelocityX(0);
@@ -202,10 +202,10 @@ class Slime extends Enemy {
             this.sprite.anims.play(this.animKeys.move, true);
         }
 
-    //FIM DO UPDATE
+    // END OF UPDATE
     }
 
-    // A FUNCAO QUE DEFINE O QUE ACONTECE QUANDO HÃ COLISAO ENTRE PLAYER E SLIME
+    // DEFINES WHAT HAPPENS WHEN THE PLAYER AND THE SLIME COLLIDE
 
     handlePlayerHit(playerSprite) {
       const isPlayer1 = playerSprite === player;
@@ -220,7 +220,7 @@ class Slime extends Enemy {
         return;
       }
 
-      // se o jogador ataca o slime, o slime eh jogado um pouco pra tras.
+      // if the player attacks the slime, the slime gets knocked back a bit.
       if (isAttacking) {
         this.sprite.setVelocityX(facing === "right" ? 150 : -150);
         this.sprite.setVelocityY(-100);
@@ -228,7 +228,7 @@ class Slime extends Enemy {
         this.sprite.anims.play(this.animKeys.hurt, true);
         this.health -= 1;
       }
-      // se o slime ataca o jogador, o jogador eh empurrado pra tras
+      // if the slime attacks the player, the player gets pushed back
       else if (this.isPlayingAnim("attack") && this.slimeposition === "left" && this.animProgress("attack") === 1) {
         playerSprite.setVelocityX(-125);
         playerSprite.setVelocityY(-100);
@@ -244,5 +244,5 @@ class Slime extends Enemy {
       }
     }
 
-// FIM DO CODIGO DA CLASSE
+// END OF THE CLASS
 }

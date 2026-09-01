@@ -96,7 +96,7 @@ export class Player {
       sprite.anims.play(this.anim("idle"), true);
     }
 
-    // CONDICOES PARA EXECUTAR ACOES
+    // CONDITIONS TO PERFORM ACTIONS
 
     else if (controls.up.isDown && sprite.body.blocked.down) {
       sprite.setVelocityY(-350);

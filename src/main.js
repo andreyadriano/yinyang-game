@@ -12,7 +12,7 @@ var config = {
       debug: false
     }
   },
-  // Suporte a tela cheia
+  // Fullscreen support
   scale: {
     mode: Phaser.Scale.FIT,
     parent: "game",
@@ -20,7 +20,7 @@ var config = {
     width: 800,
     height: 600
   },
-  // VÃÂ¡rias cenas, em sequÃÂªncia
+  // Scenes, in sequence
   scene: [StartScene, GameScene, GameOverScene, CreditsScene]
 };
 

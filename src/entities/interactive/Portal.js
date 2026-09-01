@@ -6,74 +6,74 @@ function createAnimations(anims) {
   animationsCreated = true;
 
   anims.create({
-    key: "portal1girando",
+    key: "portal1Spin",
     frames: anims.generateFrameNumbers("portal1", { start: 0, end: 19 }),
     frameRate: 9,
     repeat: -1
   });
   anims.create({
-    key: "portal2girando",
+    key: "portal2Spin",
     frames: anims.generateFrameNumbers("portal2", { start: 0, end: 19 }),
     frameRate: 9,
     repeat: -1
   });
   anims.create({
-    key: "portalneutro",
-    frames: anims.generateFrameNumbers("portalNeutro", {start: 0, end: 8}),
+    key: "neutralPortalSpin",
+    frames: anims.generateFrameNumbers("neutralPortal", {start: 0, end: 8}),
     frameRate: 9,
     repeat: -1
   });
 }
 
 export default class Portal {
-    constructor(scene, x, y, DX, DY, tipo, { audio, group } = {}){
+    constructor(scene, x, y, DX, DY, type, { audio, group } = {}){
         this.scene = scene;
         this.audio = audio;
-        this.destinoX = DX;
-        this.destinoY = DY;
-        this.tipodeportal = tipo;
+        this.destinationX = DX;
+        this.destinationY = DY;
+        this.portalType = type;
 
         createAnimations(scene.anims);
 
-        // CRIA O PORTAL
-        if(this.tipodeportal === 1){
+        // CREATE THE PORTAL
+        if(this.portalType === 1){
         this.sprite = scene.physics.add.sprite( x, y, "portal1");
         this.sprite.setSize(15, 30);
         }
-        if(this.tipodeportal === 2){
+        if(this.portalType === 2){
         this.sprite = scene.physics.add.sprite( x, y, "portal2");
         this.sprite.setSize(15, 30);
         }
-        if(this.tipodeportal === 3){
-        this.sprite = scene.physics.add.sprite( x, y, "portalNeutro");
+        if(this.portalType === 3){
+        this.sprite = scene.physics.add.sprite( x, y, "neutralPortal");
         this.sprite.setSize(20, 30);
         }
         this.sprite.setBounce(0);
         this.sprite.setCollideWorldBounds(true);
         this.sprite.setImmovable(true);
 
-        // CRIA COLISAO DO PORTAL
+        // SET UP THE PORTAL'S COLLISION
         group.add(this.sprite);
         this.sprite.setData("owner", this);
 
-        // FIM DO CONSTRUCTOR
+        // END OF CONSTRUCTOR
     }
 
     update(){
-      if(this.tipodeportal === 1 && this.sprite.anims.getCurrentKey() != "portal1girando"){
-        this.sprite.anims.play("portal1girando", true);
+      if(this.portalType === 1 && this.sprite.anims.getCurrentKey() != "portal1Spin"){
+        this.sprite.anims.play("portal1Spin", true);
       }
-      if(this.tipodeportal === 2 && this.sprite.anims.getCurrentKey() != "portal2girando"){
-        this.sprite.anims.play("portal2girando", true);
+      if(this.portalType === 2 && this.sprite.anims.getCurrentKey() != "portal2Spin"){
+        this.sprite.anims.play("portal2Spin", true);
       }
-      if(this.tipodeportal === 3 && this.sprite.anims.getCurrentKey() != "portalneutro"){
-        this.sprite.anims.play("portalneutro", true);
+      if(this.portalType === 3 && this.sprite.anims.getCurrentKey() != "neutralPortalSpin"){
+        this.sprite.anims.play("neutralPortalSpin", true);
       }
     }
     
     teleport(playerSprite){
-      playerSprite.setPosition(this.destinoX, this.destinoY);
+      playerSprite.setPosition(this.destinationX, this.destinationY);
       this.audio.get("portal").play();
     }
-    // FIM DA CLASSE
+    // END OF THE CLASS
   }

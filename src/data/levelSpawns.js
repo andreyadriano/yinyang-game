@@ -1,4 +1,4 @@
-// Pontos de spawn do nível (Fase 1). Coordenadas em pixels do mapa.
+// Level spawn points (Level 1). Coordinates in map pixels.
 export const LEVEL_SPAWNS = {
   portals: [
     { x: 2825, y: 1927, destX: 96, destY: 3616, portalType: 1 },

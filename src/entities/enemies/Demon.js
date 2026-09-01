@@ -52,7 +52,7 @@ class Demon extends Enemy {
     constructor(scene, x, y, { gameState, audio, group } = {}){
         super(scene, { gameState, audio, animKeys: ANIM_KEYS, health: 175 });
         this.demonposition = "left";
-        this.bossmorto = 0;
+        this.deathCounted = 0;
         this.bossdying = 0;
         this.bosssatkin = 0;
 
@@ -68,7 +68,7 @@ class Demon extends Enemy {
         group.add(this.sprite);
         this.sprite.setData("owner", this);
 
-        // FIM DO CONSTRUCTOR
+        // END OF CONSTRUCTOR
     }
     update(){
         this.demonX = this.sprite.body.position.x;
@@ -82,14 +82,14 @@ class Demon extends Enemy {
         this.demon_P2 = this.demonX - this.player2X;
         this.demon_P2_Y = this.player2Y - this.demonY;
 
-        // AQUI EH QUANDO O BOSS TOMA DANO
+        // THIS IS WHEN THE BOSS TAKES DAMAGE
 
         if(this.isPlayingAnim("die") && this.animProgress("die") === 1){
             if(this.gameState.bossesDefeated === 0){
                 this.gameState.bossesDefeated = 1;
-                this.bossmorto = 1;
+                this.deathCounted = 1;
             }
-            else if(this.bossmorto === 0 && this.gameState.bossesDefeated === 1){
+            else if(this.deathCounted === 0 && this.gameState.bossesDefeated === 1){
                 this.gameState.bossesDefeated = 2;
             }
             this.sprite.disableBody();
@@ -127,7 +127,7 @@ class Demon extends Enemy {
             this.sprite.anims.play(this.animKeys.idle, true);
         }
 
-        // AQUI EH QUANDO O BOSS ATACA
+        // THIS IS WHEN THE BOSS ATTACKS
 
         else if (this.isPlayingAnim("attack") && this.animProgress("attack") < 0.5 && this.demonposition === 'left'){
             this.sprite.setSize(70, 100).setOffset(100,60);
@@ -152,7 +152,7 @@ class Demon extends Enemy {
             this.bossatkin = 0;
         }
 
-        // AQUI EH O COMPORTAMENTO EM RELACAO AO PLAYER 1
+        // THIS IS THE BEHAVIOR RELATIVE TO PLAYER 1
 
         else if(this.scene.physics.closest(this.sprite, [player, player2]) === player && ((this.demon_P1 > 0 && this.demon_P1 < 250) || (this.demon_P1 > -250 && this.demon_P1 < 0)) && this.demon_P1_Y > -75){
             if (this.demon_P1 < 35 && this.demon_P1 > 0){
@@ -183,7 +183,7 @@ class Demon extends Enemy {
             }
         }
 
-        // AQUI EH O COMPORTAMENTO EM RELACAO AO PLAYER 2
+        // THIS IS THE BEHAVIOR RELATIVE TO PLAYER 2
 
         else if(this.scene.physics.closest(this.sprite, [player, player2]) === player2 && ((this.demon_P2 > 0 && this.demon_P2 < 250 ) || (this.demon_P2 > -250 && this.demon_P2 < 0)) && this.demon_P2_Y > -75){
             if (this.demon_P2 < 35 && this.demon_P2 > 0){
@@ -225,7 +225,7 @@ class Demon extends Enemy {
         const currentAnim = playerSprite.anims.getCurrentKey();
         const isAttacking = currentAnim === `${prefix}-attack1` || currentAnim === `${prefix}-attack2` || currentAnim === `${prefix}-attack3`;
 
-        // se o demon ataca o jogador, o jogador eh empurrado pra tras
+        // if the demon attacks the player, the player gets pushed back
         if(this.isPlayingAnim("attack") && this.demonposition === "left" && this.animProgress("attack") === 0.6000000000000001){
             this.audio.get("bossAttack").play({ volume: 0.3 });
             playerSprite.setVelocityX(-125);
@@ -239,7 +239,7 @@ class Demon extends Enemy {
             playerSprite.anims.play(hurtAnim, true);
             this.gameState.soulCount -= 2;
         }
-        // se o jogador ataca o demon, o demon eh jogado um pouco pra tras.
+        // if the player attacks the demon, the demon gets knocked back a bit.
         else if (isAttacking) {
             this.sprite.setVelocityX(facing === "right" ? 150 : -150);
             this.sprite.setVelocityY(-100);
@@ -248,5 +248,5 @@ class Demon extends Enemy {
             this.health -= 1;
         }
     }
-    //FIM DA CLASSE
+    // END OF THE CLASS
 }
