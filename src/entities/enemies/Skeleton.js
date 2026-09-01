@@ -10,48 +10,54 @@ const ANIM_KEYS = {
   die: "skeleton-die"
 };
 
+let animationsCreated = false;
+function createAnimations(anims) {
+  if (animationsCreated) return;
+  animationsCreated = true;
+
+  anims.create({
+      key: 'skeleton-idle',
+      frames: anims.generateFrameNumbers('skeleton-idle', { start: 0, end: 10 }),
+      frameRate: 15,
+      repeat: -1
+    });
+
+  anims.create({
+      key: 'skeleton-walk',
+      frames: anims.generateFrameNumbers('skeleton-walk', { start: 0, end: 12 }),
+      frameRate: 20,
+      repeat: -1
+    });
+  anims.create({
+      key: 'skeleton-hurt',
+      frames: anims.generateFrameNumbers('skeleton-hurt', { start: 0, end: 7 }),
+      frameRate: 20,
+    });
+  anims.create({
+      key: 'skeleton-attack',
+      frames: anims.generateFrameNumbers('skeleton-attack', { start: 0, end: 17 }),
+      frameRate: 30,
+    });
+  anims.create({
+      key: 'skeleton-die',
+      frames: anims.generateFrameNumbers('skeleton-die', { start: 0, end: 14 }),
+      frameRate: 20,
+      repeat: -1
+    });
+}
+
 class Skeleton extends Enemy {
     // Cria a classe do skeleton
 
     constructor(scene, x, y, point, { gameState, audio, group } = {}){
         super(scene, { gameState, audio, animKeys: ANIM_KEYS, health: 50 });
-        const anims = scene.anims;
         this.skeletonpoint = point;
         this.skeletonposition = "right";
         this.skltDIE = 0;
         this.skltHURT = 0;
 
         // VARIAVEIS PROS SONS NÃO FICAREM REPETINDO
-
-        anims.create({
-            key: 'skeleton-idle',
-            frames: anims.generateFrameNumbers('skeleton-idle', { start: 0, end: 10 }),
-            frameRate: 15,
-            repeat: -1
-          });
-
-        anims.create({
-            key: 'skeleton-walk',
-            frames: anims.generateFrameNumbers('skeleton-walk', { start: 0, end: 12 }),
-            frameRate: 20,
-            repeat: -1
-          });
-        anims.create({
-            key: 'skeleton-hurt',
-            frames: anims.generateFrameNumbers('skeleton-hurt', { start: 0, end: 7 }),
-            frameRate: 20,
-          });
-        anims.create({
-            key: 'skeleton-attack',
-            frames: anims.generateFrameNumbers('skeleton-attack', { start: 0, end: 17 }),
-            frameRate: 30,
-          });
-        anims.create({
-            key: 'skeleton-die',
-            frames: anims.generateFrameNumbers('skeleton-die', { start: 0, end: 14 }),
-            frameRate: 20,
-            repeat: -1
-          });
+        createAnimations(scene.anims);
 
           this.sprite = scene.physics.add.sprite( x, y, "skeleton-idle");
           this.sprite.setSize(27,27, true).setOffset(0, 6);

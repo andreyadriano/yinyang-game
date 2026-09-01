@@ -1,48 +1,56 @@
 import { player } from "../../scenes/GameScene.js";
+
+let animationsCreated = false;
+function createAnimations(anims) {
+  if (animationsCreated) return;
+  animationsCreated = true;
+
+  anims.create({
+      key: "chamas-baixas-subindo",
+      frames: anims.generateFrameNumbers("chamas", { start: 0, end: 5 }),
+      frameRate: 5
+    });
+
+  anims.create({
+      key: "chamas-altas-subindo",
+      frames: anims.generateFrameNumbers("chamas", { start: 6, end: 9 }),
+      frameRate: 5
+    });
+
+  anims.create({
+      key: "chamas-maximas",
+      frames: anims.generateFrameNumbers("chamas", { start: 10, end: 18 }),
+      frameRate: 5
+    });
+
+  anims.create({
+      key: "chamas-altas-descendo",
+      frames: anims.generateFrameNumbers("chamas", { start: 19, end: 23 }),
+      frameRate: 5
+    });
+
+  anims.create({
+      key: "chamas-baixas-descendo",
+      frames: anims.generateFrameNumbers("chamas", { start: 24, end: 30 }),
+      frameRate: 5
+    });
+
+  anims.create({
+      key: "recarga",
+      frames: anims.generateFrameNumbers("chamas", { start: 31, end: 49 }),
+      frameRate: 5
+    });
+}
+
 export default class Lancachamas {
 
     //cria o lança chamas
 
     constructor(scene, x, y, delay, { gameState, group } = {}) {
         this.scene = scene;
-        const anims = scene.anims;
         this.gameState = gameState;
-        
-        anims.create({
-            key: "chamas-baixas-subindo",
-            frames: anims.generateFrameNumbers("chamas", { start: 0, end: 5 }),
-            frameRate: 5
-          });
 
-        anims.create({
-            key: "chamas-altas-subindo",
-            frames: anims.generateFrameNumbers("chamas", { start: 6, end: 9 }),
-            frameRate: 5
-          });
-
-        anims.create({
-            key: "chamas-maximas",
-            frames: anims.generateFrameNumbers("chamas", { start: 10, end: 18 }),
-            frameRate: 5
-          });
-
-        anims.create({
-            key: "chamas-altas-descendo",
-            frames: anims.generateFrameNumbers("chamas", { start: 19, end: 23 }),
-            frameRate: 5
-          });
-
-        anims.create({
-            key: "chamas-baixas-descendo",
-            frames: anims.generateFrameNumbers("chamas", { start: 24, end: 30 }),
-            frameRate: 5
-          });
-
-        anims.create({
-            key: "recarga",
-            frames: anims.generateFrameNumbers("chamas", { start: 31, end: 49 }),
-            frameRate: 5
-          });
+        createAnimations(scene.anims);
 
         this.sprite = scene.physics.add.sprite( x, y, "chamas").setScale(0.9,1);
         this.sprite.setSize(16,14).setOffset(1, 66).setImmovable(true);

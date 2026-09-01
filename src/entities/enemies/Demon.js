@@ -11,45 +11,52 @@ const ANIM_KEYS = {
   die: "demon-die1"
 };
 
+let animationsCreated = false;
+function createAnimations(anims) {
+  if (animationsCreated) return;
+  animationsCreated = true;
+
+  anims.create({
+      key: "demon-attack1",
+      frames: anims.generateFrameNumbers('demon-attack1', { start: 0, end: 10 }),
+      frameRate: 8,
+      repeat: -1
+  });
+  anims.create({
+      key: "demon-idle1",
+      frames: anims.generateFrameNumbers('demon-idle1', { start: 0, end: 5 }),
+      frameRate: 5,
+      repeat: -1
+  });
+  anims.create({
+      key: "demon-move1",
+      frames: anims.generateFrameNumbers('demon-idle1', { start: 0, end: 5 }),
+      frameRate: 10,
+      repeat: -1
+  });
+  anims.create({
+      key: "demon-hurt1",
+      frames: anims.generateFrameNumbers('demon-attack1', { start: 0, end: 2 }),
+      frameRate: 10,
+      repeat: -1
+  });
+  anims.create({
+      key: "demon-die1",
+      frames: anims.generateFrameNumbers('demon-attack1', { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: -1
+  });
+}
+
 class Demon extends Enemy {
     constructor(scene, x, y, { gameState, audio, group } = {}){
         super(scene, { gameState, audio, animKeys: ANIM_KEYS, health: 175 });
-        const anims = scene.anims;
         this.demonposition = "left";
         this.bossmorto = 0;
         this.bossdying = 0;
         this.bosssatkin = 0;
 
-        anims.create({
-            key: "demon-attack1",
-            frames: anims.generateFrameNumbers('demon-attack1', { start: 0, end: 10 }),
-            frameRate: 8,
-            repeat: -1
-        });
-        anims.create({
-            key: "demon-idle1",
-            frames: anims.generateFrameNumbers('demon-idle1', { start: 0, end: 5 }),
-            frameRate: 5,
-            repeat: -1
-        });
-        anims.create({
-            key: "demon-move1",
-            frames: anims.generateFrameNumbers('demon-idle1', { start: 0, end: 5 }),
-            frameRate: 10,
-            repeat: -1
-        });
-        anims.create({
-            key: "demon-hurt1",
-            frames: anims.generateFrameNumbers('demon-attack1', { start: 0, end: 2 }),
-            frameRate: 10,
-            repeat: -1
-        });
-        anims.create({
-            key: "demon-die1",
-            frames: anims.generateFrameNumbers('demon-attack1', { start: 0, end: 3 }),
-            frameRate: 10,
-            repeat: -1
-        });
+        createAnimations(scene.anims);
 
         this.sprite = scene.physics.add.sprite( x, y, "demon-idle1");
         this.sprite.setScale(0.5);

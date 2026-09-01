@@ -10,18 +10,10 @@ const ANIM_KEYS = {
   die: "slime-die"
 };
 
-class Slime extends Enemy {
-    // Cria a classe do slime
-
-    constructor(scene, x, y, point, { gameState, audio, group } = {}){
-        super(scene, { gameState, audio, animKeys: ANIM_KEYS, health: 20 });
-        const anims = scene.anims;
-        this.slimepoint = point;
-        this.slimeposition = "left";
-        this.slimedying = 0;
-
-
-        //          ANIMACOES DO SLIME
+let animationsCreated = false;
+function createAnimations(anims) {
+  if (animationsCreated) return;
+  animationsCreated = true;
 
   anims.create({
     key: 'slime-idle',
@@ -50,6 +42,19 @@ class Slime extends Enemy {
     frames: anims.generateFrameNumbers('slimesheet', { start: 17, end: 20 }),
     frameRate: 8
   });
+}
+
+class Slime extends Enemy {
+    // Cria a classe do slime
+
+    constructor(scene, x, y, point, { gameState, audio, group } = {}){
+        super(scene, { gameState, audio, animKeys: ANIM_KEYS, health: 20 });
+        this.slimepoint = point;
+        this.slimeposition = "left";
+        this.slimedying = 0;
+
+        //          ANIMACOES DO SLIME
+        createAnimations(scene.anims);
 
   this.sprite = scene.physics.add.sprite( x, y, "slime0");
   this.sprite.setSize(20,20, true).setOffset(5,4);
