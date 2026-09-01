@@ -1,5 +1,5 @@
-import { topLayer, topLayer2, topLayer3, player, player2, SoulCount, playerPosition, player2Position} from "./GameScene.js";
-import { skeletonATK, skeletonHURT, skeletonDIE} from "./GameScene.js";
+import { topLayer, topLayer2, topLayer3, player, player2, SoulCount, playerPosition, player2Position} from "../../scenes/GameScene.js";
+import { skeletonATK, skeletonHURT, skeletonDIE} from "../../scenes/GameScene.js";
 export { Skeleton };
 
 export default class Skeleton {

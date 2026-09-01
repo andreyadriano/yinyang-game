@@ -1,6 +1,6 @@
 import { GameScene } from "./GameScene.js";
 export { gameover };
-import {start} from "./start.js";
+import {start} from "./StartScene.js";
 
 var setupSceneInput;
 var gameover = new Phaser.Scene("SceneC");

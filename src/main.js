@@ -1,7 +1,7 @@
-import { GameScene } from "./GameScene.js";
-import { start } from "./start.js";
-import { gameover } from "./gameover.js";
-import { credits } from "./credits.js";
+import { GameScene } from "./scenes/GameScene.js";
+import { start } from "./scenes/StartScene.js";
+import { gameover } from "./scenes/GameOverScene.js";
+import { credits } from "./scenes/CreditsScene.js";
 
 var config = {
   type: Phaser.AUTO,

@@ -1,4 +1,4 @@
-import { GameScene, topLayer, topLayer2, player, player2, SoulCount, slimeatk, slimeDIE, playerPosition, player2Position} from "./GameScene.js";
+import { GameScene, topLayer, topLayer2, player, player2, SoulCount, slimeatk, slimeDIE, playerPosition, player2Position} from "../../scenes/GameScene.js";
 export { Slime };
 
 export default class Slime {

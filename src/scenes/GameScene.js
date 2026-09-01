@@ -1,11 +1,11 @@
-import { gameover } from "./gameover.js";
-import {credits} from "./credits.js";
-import Lancachamas from "./lancachamas.js";
-import { Slime } from "./slime.js";
-import {Skeleton} from "./skeleton.js";
-import {Jumper} from "./jumper.js";
-import {Portal} from "./portal.js";
-import {Demon} from "./demon.js";
+import { gameover } from "./GameOverScene.js";
+import {credits} from "./CreditsScene.js";
+import Lancachamas from "../entities/hazards/Lancachamas.js";
+import { Slime } from "../entities/enemies/Slime.js";
+import {Skeleton} from "../entities/enemies/Skeleton.js";
+import {Jumper} from "../entities/interactive/Jumper.js";
+import {Portal} from "../entities/interactive/Portal.js";
+import {Demon} from "../entities/enemies/Demon.js";
 
 export { GameScene, spike, player, player2, SoulCount, BossesMortos, playerPosition, player2Position, portalsound};
 export { slimeatk, slimeDIE, skeletonATK, skeletonDIE, skeletonHURT, bossdie, bossatk }

@@ -1,4 +1,4 @@
-import { topLayer, player, player2 } from "./GameScene.js";
+import { topLayer, player, player2 } from "../../scenes/GameScene.js";
 export {Jumper};
 
 export default class Jumper {

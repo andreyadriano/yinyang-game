@@ -1,17 +1,24 @@
-# Teste nosso jogo!
-O jogo Yin Yang tem um estilo de ação e plataforma, com monstros, armadilhas e diversas mecânicas legais.
+# Yin Yang
 
-Esse é o Projeto Integrador do nosso grupo da oitava fase do curso de telecomunicações do IFSC - São José.
-Os integrantes do grupo são:
-- Andrey (Programador)
-- João Vinicius (Roteiro, Level Design e Animador)
-- Eduardo (Audio Design)
-- Grasiele (Audio Design)
+Jogo 2D de ação e plataforma feito com [Phaser 3](https://phaser.io/).
 
-Tempo de desenvolvimento: 4 meses
+Este foi meu primeiro projeto de programação, desenvolvido ao longo de 4 meses no último semestre do curso técnico em Telecomunicações do IFSC.
 
-Instruções de uso:
-- No navegador Google Chrome, baixe essa extensão: https://chrome.google.com/webstore/detail/web-server-for-chrome/ofhbbkphhbklhfoeikjpcbhemlocgigb.
-- Faça o download do arquivo ZIP na página do jogo.
-- Extraia o ZIP, abra a extensão que foi baixada e coloque a extensão para rodar a pasta que foi extraída.
-- Aproveite o jogo :D
+## Como rodar localmente
+
+O jogo usa módulos ES6, então precisa ser servido por um servidor HTTP local (abrir o `index.html` direto no navegador não funciona):
+
+```bash
+npx serve .
+```
+
+Depois abra o endereço mostrado no terminal.
+
+Aproveite o jogo :D
+
+## Créditos
+
+| Papel                             | Autor                                                |
+| --------------------------------- | ---------------------------------------------------- |
+| Desenvolvimento do software       | [Andrey Adriano da Rosa](https://andreyrosa.dev)     |
+| Roteiro, Level Design e Animações | [João Vinicius Huller](https://linktr.ee/joaohuller) |

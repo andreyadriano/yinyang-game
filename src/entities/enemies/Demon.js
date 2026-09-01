@@ -1,6 +1,6 @@
-import { GameScene, player, player2, SoulCount, BossesMortos,  playerPosition, player2Position } from "./GameScene.js";
-import { topLayer, topLayer2, topLayer3 } from "./GameScene.js";
-import { bossdie, bossatk } from "./GameScene.js";
+import { GameScene, player, player2, SoulCount, BossesMortos,  playerPosition, player2Position } from "../../scenes/GameScene.js";
+import { topLayer, topLayer2, topLayer3 } from "../../scenes/GameScene.js";
+import { bossdie, bossatk } from "../../scenes/GameScene.js";
 
 export {Demon};
 

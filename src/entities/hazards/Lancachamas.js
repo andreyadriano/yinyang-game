@@ -1,4 +1,4 @@
-import { topLayer, player, player2, SoulCount } from "./GameScene.js";
+import { topLayer, player, player2, SoulCount } from "../../scenes/GameScene.js";
 export default class Lancachamas {
 
     //cria o lança chamas

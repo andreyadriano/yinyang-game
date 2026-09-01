@@ -1,4 +1,4 @@
-import { topLayer, topLayer2, player, player2, portalsound } from "./GameScene.js";
+import { topLayer, topLayer2, player, player2, portalsound } from "../../scenes/GameScene.js";
 export {Portal};
 
 export default class Portal {
