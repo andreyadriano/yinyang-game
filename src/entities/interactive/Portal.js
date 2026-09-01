@@ -49,8 +49,8 @@ export default class Portal {
         // CRIA COLISAO DO PORTAL
         scene.physics.add.collider(this.sprite, topLayer);
         scene.physics.add.collider(this.sprite, topLayer2);
-        scene.physics.add.overlap(player, this.sprite, this.P1Teleport, null, this);
-        scene.physics.add.overlap(player2, this.sprite, this.P2Teleport, null, this);
+        scene.physics.add.overlap(player, this.sprite, this.teleport, null, this);
+        scene.physics.add.overlap(player2, this.sprite, this.teleport, null, this);
         
         // FIM DO CONSTRUCTOR
     }
@@ -67,12 +67,8 @@ export default class Portal {
       }
     }
     
-    P1Teleport(player){
-      player.setPosition(this.destinoX, this.destinoY);
-      this.audio.get("portal").play();
-    }
-    P2Teleport(player2){
-      player2.setPosition(this.destinoX, this.destinoY);
+    teleport(playerSprite){
+      playerSprite.setPosition(this.destinoX, this.destinoY);
       this.audio.get("portal").play();
     }
     // FIM DA CLASSE

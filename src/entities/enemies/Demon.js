@@ -1,16 +1,22 @@
 import { player, player2, playerPosition, player2Position } from "../../scenes/GameScene.js";
 import { topLayer, topLayer2, topLayer3 } from "../../scenes/GameScene.js";
+import { Enemy } from "./Enemy.js";
 
 export {Demon};
 
-export default class Demon {
+const ANIM_KEYS = {
+  idle: "demon-idle1",
+  move: "demon-move1",
+  attack: "demon-attack1",
+  hurt: "demon-hurt1",
+  die: "demon-die1"
+};
+
+class Demon extends Enemy {
     constructor(scene, x, y, { gameState, audio } = {}){
-        this.scene = scene;
+        super(scene, { gameState, audio, animKeys: ANIM_KEYS, health: 175 });
         const anims = scene.anims;
-        this.gameState = gameState;
-        this.audio = audio;
         this.demonposition = "left";
-        this.Life = { valor: 175 };
         this.bossmorto = 0;
         this.bossdying = 0;
         this.bosssatkin = 0;
@@ -52,23 +58,17 @@ export default class Demon {
         this.sprite.setBounce(0);
         this.sprite.setCollideWorldBounds(true);
         this.sprite.setVelocityX(-100);
-        
+
         scene.physics.add.collider(this.sprite, topLayer);
         scene.physics.add.collider(this.sprite, topLayer2);
         scene.physics.add.collider(this.sprite, topLayer3);
-  
-        scene.physics.add.overlap(player, this.sprite, this.hitDemon1, null, this);
-        scene.physics.add.overlap(player2, this.sprite, this.hitDemon2, null, this);
-        
+
+        scene.physics.add.overlap(player, this.sprite, this.handlePlayerHit, null, this);
+        scene.physics.add.overlap(player2, this.sprite, this.handlePlayerHit, null, this);
+
         // FIM DO CONSTRUCTOR
     }
     update(){
-        //console.log(this.Life.valor, SoulCount.valor);
-
-        /*if(this.sprite.anims.getCurrentKey() === "demon-attack1"){
-            console.log(this.sprite.anims.getProgress("demon-attack1"));
-        }*/
-
         this.demonX = this.sprite.body.position.x;
         this.demonY = this.sprite.body.position.y;
         this.playerX = player.body.position.x;
@@ -79,10 +79,10 @@ export default class Demon {
         this.demon_P1_Y = this.playerY - this.demonY;
         this.demon_P2 = this.demonX - this.player2X;
         this.demon_P2_Y = this.player2Y - this.demonY;
-        
+
         // AQUI EH QUANDO O BOSS TOMA DANO
 
-        if(this.sprite.anims.getCurrentKey() === "demon-die1" && this.sprite.anims.getProgress("demon-die1") === 1){
+        if(this.isPlayingAnim("die") && this.animProgress("die") === 1){
             if(this.gameState.bossesDefeated === 0){
                 this.gameState.bossesDefeated = 1;
                 this.bossmorto = 1;
@@ -94,58 +94,58 @@ export default class Demon {
             this.sprite.anims.stop(0);
 
         }
-        else if(this.sprite.anims.getCurrentKey() === "demon-die1" && this.sprite.anims.getProgress("demon-die1") < 1){
+        else if(this.isPlayingAnim("die") && this.animProgress("die") < 1){
             this.sprite.setVelocity(0, 0);
             if(!this.audio.get("bossDie").isPlaying && this.bossdying === 0){
                 this.audio.get("bossDie").play();
                 this.bossdying = 1;
             }
         }
-        else if(this.Life.valor <= 0){
-            this.sprite.anims.play("demon-die1");
+        else if(this.health <= 0){
+            this.sprite.anims.play(this.animKeys.die);
         }
         else if (
-            this.sprite.anims.getCurrentKey() === "demon-hurt1" &&
-            this.sprite.anims.getProgress("demon-hurt1") < 1 && this.demonposition === "right") {
+            this.isPlayingAnim("hurt") &&
+            this.animProgress("hurt") < 1 && this.demonposition === "right") {
             this.sprite.setSize(70, 100).setOffset(50,55);
             this.sprite.setTint(0xff0000);
-        } 
+        }
         else if (
-            this.sprite.anims.getCurrentKey() === "demon-hurt1" &&
-            this.sprite.anims.getProgress("demon-hurt1") < 1 && this.demonposition === "left") {
+            this.isPlayingAnim("hurt") &&
+            this.animProgress("hurt") < 1 && this.demonposition === "left") {
             this.sprite.setSize(70, 100).setOffset(100,55);
             this.sprite.setTint(0xff0000);
-        } 
+        }
         else if (
-            this.sprite.anims.getCurrentKey() === "demon-hurt1" &&
-            this.sprite.anims.getProgress("demon-hurt1") === 1) {
+            this.isPlayingAnim("hurt") &&
+            this.animProgress("hurt") === 1) {
             this.sprite.setVelocityX(0);
             this.sprite.setSize(70, 100).setOffset(30,35);
             this.sprite.clearTint();
-            this.sprite.anims.play("demon-idle1", true);
+            this.sprite.anims.play(this.animKeys.idle, true);
         }
 
         // AQUI EH QUANDO O BOSS ATACA
 
-        else if (this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.sprite.anims.getProgress('demon-attack1') < 0.5 && this.demonposition === 'left'){
+        else if (this.isPlayingAnim("attack") && this.animProgress("attack") < 0.5 && this.demonposition === 'left'){
             this.sprite.setSize(70, 100).setOffset(100,60);
         }
-        else if (this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.sprite.anims.getProgress('demon-attack1') < 1 && this.demonposition === 'left'){
+        else if (this.isPlayingAnim("attack") && this.animProgress("attack") < 1 && this.demonposition === 'left'){
             this.sprite.setSize(120, 80).setOffset(0,100);
-        } 
-        else if (this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.sprite.anims.getProgress('demon-attack1') === 1 && this.demonposition==="left"){
-        this.sprite.anims.play('demon-idle1', true);
+        }
+        else if (this.isPlayingAnim("attack") && this.animProgress("attack") === 1 && this.demonposition==="left"){
+        this.sprite.anims.play(this.animKeys.idle, true);
         this.sprite.setSize(70, 100).setOffset(30,35);
         this.bossatkin = 0;
     }
-        else if (this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.sprite.anims.getProgress('demon-attack1') < 0.5 && this.demonposition === 'right'){
+        else if (this.isPlayingAnim("attack") && this.animProgress("attack") < 0.5 && this.demonposition === 'right'){
             this.sprite.setSize(70, 100).setOffset(70,60);
         }
-        else if (this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.sprite.anims.getProgress('demon-attack1') < 1 && this.demonposition === 'right'){
+        else if (this.isPlayingAnim("attack") && this.animProgress("attack") < 1 && this.demonposition === 'right'){
             this.sprite.setSize(120, 80).setOffset(110,100);
-        } 
-        else if (this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.sprite.anims.getProgress('demon-attack1') === 1 && this.demonposition==="right"){
-            this.sprite.anims.play('demon-idle1', true);
+        }
+        else if (this.isPlayingAnim("attack") && this.animProgress("attack") === 1 && this.demonposition==="right"){
+            this.sprite.anims.play(this.animKeys.idle, true);
             this.sprite.setSize(70, 100).setOffset(30,35);
             this.bossatkin = 0;
         }
@@ -156,27 +156,27 @@ export default class Demon {
             if (this.demon_P1 < 35 && this.demon_P1 > 0){
                 this.sprite.setVelocityX(0);
                 this.sprite.setFlipX(false);
-                this.sprite.anims.play('demon-attack1', true);
+                this.sprite.anims.play(this.animKeys.attack, true);
                 this.demonposition = 'left';
-            } 
+            }
             else if (this.demon_P1 > -50 && this.demon_P1 < 0){
                 this.sprite.setVelocityX(0);
                 this.sprite.setFlipX(true);
-                this.sprite.anims.play('demon-attack1', true);
+                this.sprite.anims.play(this.animKeys.attack, true);
                 this.demonposition = 'right';
-            } 
+            }
             else if (this.demon_P1 < 250 && this.demon_P1 > 0){
                 this.sprite.setVelocityX(-150);
                 this.sprite.setSize(70, 80).setOffset(30,55);
                 this.sprite.setFlipX(false);
-                this.sprite.anims.play('demon-move1', true);
+                this.sprite.anims.play(this.animKeys.move, true);
                 this.demonposition = 'left';
-            } 
+            }
             else if (this.demon_P1 > -250 && this.demon_P1 < 0){
                 this.sprite.setVelocityX(150);
                 this.sprite.setSize(70, 80).setOffset(55,55);
                 this.sprite.setFlipX(true);
-                this.sprite.anims.play('demon-move1', true);
+                this.sprite.anims.play(this.animKeys.move, true);
                 this.demonposition = 'right';
             }
         }
@@ -187,145 +187,64 @@ export default class Demon {
             if (this.demon_P2 < 35 && this.demon_P2 > 0){
                 this.sprite.setVelocityX(0);
                 this.sprite.setFlipX(false);
-                this.sprite.anims.play('demon-attack1', true);
+                this.sprite.anims.play(this.animKeys.attack, true);
                 this.demonposition = 'left';
-            } 
+            }
             else if (this.demon_P2 > -50 && this.demon_P2 < 0){
                 this.sprite.setVelocityX(0);
                 this.sprite.setFlipX(true);
-                this.sprite.anims.play('demon-attack1', true);
+                this.sprite.anims.play(this.animKeys.attack, true);
                 this.demonposition = 'right';
-            } 
+            }
             else if (this.demon_P2 < 250 && this.demon_P2 > 0){
                 this.sprite.setVelocityX(-150);
                 this.sprite.setSize(70, 80).setOffset(30,55);
                 this.sprite.setFlipX(false);
-                this.sprite.anims.play('demon-move1', true);
+                this.sprite.anims.play(this.animKeys.move, true);
                 this.demonposition = 'left';
-            } 
+            }
             else if (this.demon_P2 > -250 && this.demon_P2 < 0){
                 this.sprite.setVelocityX(150);
                 this.sprite.setSize(70, 80).setOffset(30,55);
                 this.sprite.setFlipX(true);
-                this.sprite.anims.play('demon-move1', true);
+                this.sprite.anims.play(this.animKeys.move, true);
                 this.demonposition = 'right';
             }
         }
 
-    
+
     }
 
-    hitDemon1(){
-        
-        //se o demon ataca o jogador, o jogador eh empurrado pra tras
-        if(this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.demonposition === "left" && this.sprite.anims.getProgress('demon-attack1') === 0.6000000000000001){
-            this.audio.get("bossAttack").play({ volume: 0.3 });
-            player.setVelocityX(-125);
-            player.setVelocityY(-100);
-            player.anims.play('yin-hurt', true);
-            this.gameState.soulCount -= 2;
-        } else if(this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.demonposition === "right" && this.sprite.anims.getProgress('demon-attack1') === 0.6000000000000001){
-            this.audio.get("bossAttack").play({ volume: 0.3 });
-            player.setVelocityX(125);
-            player.setVelocityY(-100);
-            player.anims.play('yin-hurt', true);
-            this.gameState.soulCount -= 2;
-        }
-        //se o jogador ataca o demon, o demon eh jogado um pouco pra tras. 
-        else if(player.anims.getCurrentKey() === 'yin-attack1' && playerPosition==="right"){
-            this.sprite.setVelocityX(150);
-            this.sprite.setVelocityY(-100);
-            player.setVelocityX(0);
-            this.sprite.anims.play("demon-hurt1", true);
-            this.Life.valor -= 1;
-        } else if(player.anims.getCurrentKey() === 'yin-attack1' && playerPosition==="left"){
-            this.sprite.setVelocityX(-150);
-            this.sprite.setVelocityY(-100);
-            player.setVelocityX(0);
-            this.sprite.anims.play("demon-hurt1", true);
-            this.Life.valor -= 1;
-        } else if(player.anims.getCurrentKey() === 'yin-attack2' && playerPosition==="right"){
-            this.sprite.setVelocityX(150);
-            this.sprite.setVelocityY(-100);
-            player.setVelocityX(0);
-            this.sprite.anims.play("demon-hurt1", true);
-            this.Life.valor -= 1;
-        } else if(player.anims.getCurrentKey() === 'yin-attack2' && playerPosition==="left"){
-            this.sprite.setVelocityX(-150);
-            this.sprite.setVelocityY(-100);
-            player.setVelocityX(0);
-            this.sprite.anims.play("demon-hurt1", true);
-            this.Life.valor -= 1;
-        } else if(player.anims.getCurrentKey() === 'yin-attack3' && playerPosition==="right"){
-            this.sprite.setVelocityX(150);
-            this.sprite.setVelocityY(-100);
-            player.setVelocityX(0);
-            this.sprite.anims.play("demon-hurt1", true);
-            this.Life.valor -= 1;
-        } else if(player.anims.getCurrentKey() === 'yin-attack3' && playerPosition==="left"){
-            this.sprite.setVelocityX(-150);
-            this.sprite.setVelocityY(-100);
-            player.setVelocityX(0);
-            this.sprite.anims.play("demon-hurt1", true);
-            this.Life.valor -= 1;
-        }
-    }
+    handlePlayerHit(playerSprite) {
+        const isPlayer1 = playerSprite === player;
+        const facing = isPlayer1 ? playerPosition : player2Position;
+        const prefix = isPlayer1 ? "yin" : "yang";
+        const hurtAnim = `${prefix}-hurt`;
+        const currentAnim = playerSprite.anims.getCurrentKey();
+        const isAttacking = currentAnim === `${prefix}-attack1` || currentAnim === `${prefix}-attack2` || currentAnim === `${prefix}-attack3`;
 
-    hitDemon2(){
-
-        //se o demon ataca o jogador, o jogador eh empurrado pra tras
-        if(this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.demonposition === "left" && this.sprite.anims.getProgress('demon-attack1') === 0.6000000000000001){
+        // se o demon ataca o jogador, o jogador eh empurrado pra tras
+        if(this.isPlayingAnim("attack") && this.demonposition === "left" && this.animProgress("attack") === 0.6000000000000001){
             this.audio.get("bossAttack").play({ volume: 0.3 });
-            player2.setVelocityX(-125);
-            player2.setVelocityY(-100);
-            player2.anims.play('yang-hurt', true);
+            playerSprite.setVelocityX(-125);
+            playerSprite.setVelocityY(-100);
+            playerSprite.anims.play(hurtAnim, true);
             this.gameState.soulCount -= 2;
-        } else if(this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.demonposition === "right" && this.sprite.anims.getProgress('demon-attack1') === 0.6000000000000001){
+        } else if(this.isPlayingAnim("attack") && this.demonposition === "right" && this.animProgress("attack") === 0.6000000000000001){
             this.audio.get("bossAttack").play({ volume: 0.3 });
-            player2.setVelocityX(125);
-            player2.setVelocityY(-100);
-            player2.anims.play('yang-hurt', true);
+            playerSprite.setVelocityX(125);
+            playerSprite.setVelocityY(-100);
+            playerSprite.anims.play(hurtAnim, true);
             this.gameState.soulCount -= 2;
         }
-        //se o jogador ataca o demon, o demon eh jogado um pouco pra tras. 
-        else if(player2.anims.getCurrentKey() === 'yang-attack1' && player2Position==="right"){
-            this.sprite.setVelocityX(150);
+        // se o jogador ataca o demon, o demon eh jogado um pouco pra tras.
+        else if (isAttacking) {
+            this.sprite.setVelocityX(facing === "right" ? 150 : -150);
             this.sprite.setVelocityY(-100);
-            player2.setVelocityX(0);
-            this.sprite.anims.play("demon-hurt1", true);
-            this.Life.valor -= 1;
-        } else if(player2.anims.getCurrentKey() === 'yang-attack1' && player2Position==="left"){
-            this.sprite.setVelocityX(-150);
-            this.sprite.setVelocityY(-100);
-            player2.setVelocityX(0);
-            this.sprite.anims.play("demon-hurt1", true);
-            this.Life.valor -= 1;
-        } else if(player2.anims.getCurrentKey() === 'yang-attack2' && player2Position==="right"){
-            this.sprite.setVelocityX(150);
-            this.sprite.setVelocityY(-100);
-            player2.setVelocityX(0);
-            this.sprite.anims.play("demon-hurt1", true);
-            this.Life.valor -= 1;
-        } else if(player2.anims.getCurrentKey() === 'yang-attack2' && player2Position==="left"){
-            this.sprite.setVelocityX(-150);
-            this.sprite.setVelocityY(-100);
-            player2.setVelocityX(0);
-            this.sprite.anims.play("demon-hurt1", true);
-            this.Life.valor -= 1;
-        } else if(player2.anims.getCurrentKey() === 'yang-attack3' && player2Position==="right"){
-            this.sprite.setVelocityX(150);
-            this.sprite.setVelocityY(-100);
-            player2.setVelocityX(0);
-            this.sprite.anims.play("demon-hurt1", true);
-            this.Life.valor -= 1;
-        } else if(player2.anims.getCurrentKey() === 'yang-attack3' && player2Position==="left"){
-            this.sprite.setVelocityX(-150);
-            this.sprite.setVelocityY(-100);
-            player2.setVelocityX(0);
-            this.sprite.anims.play("demon-hurt1", true);
-            this.Life.valor -= 1;
+            playerSprite.setVelocityX(0);
+            this.sprite.anims.play(this.animKeys.hurt, true);
+            this.health -= 1;
         }
-
     }
     //FIM DA CLASSE
 }

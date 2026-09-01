@@ -57,8 +57,8 @@ export default class Lancachamas {
         });
         //criando colisão entre lança chamas e o chao
         scene.physics.add.collider(this.sprite, topLayer);
-        scene.physics.add.collider(player, this.sprite, this.hitFire, null, this);
-        scene.physics.add.collider(player2, this.sprite, this.hitFire2, null, this);
+        scene.physics.add.collider(player, this.sprite, this.handlePlayerHit, null, this);
+        scene.physics.add.collider(player2, this.sprite, this.handlePlayerHit, null, this);
 
         
         // FIM DO CONSTRUCTOR
@@ -124,53 +124,17 @@ export default class Lancachamas {
 
     // INICIO DAS FUNCOES DE DANO
 
-    hitFire(player){
+    handlePlayerHit(playerSprite) {
         if(this.sprite.anims.getCurrentKey() != "recarga"){
-        
-            if(this.sprite.body.touching.left){
-                player.anims.play("yin-hurt");
-                player.setVelocityX(-100);
-                player.setVelocityY(-75);
-                this.gameState.soulCount -= 3;
-            }
-            else if(this.sprite.body.touching.right){
-                player.anims.play("yin-hurt");
-                player.setVelocityX(100);
-                player.setVelocityY(-75);
-                this.gameState.soulCount -= 3;
-            }
-            else{
-                player.anims.play("yin-hurt");
-                player.setVelocityX(-100);
-                player.setVelocityY(-75);
-                this.gameState.soulCount -= 3;
-            }
+            const hurtAnim = playerSprite === player ? "yin-hurt" : "yang-hurt";
+            const pushX = this.sprite.body.touching.right ? 100 : -100;
+
+            playerSprite.anims.play(hurtAnim);
+            playerSprite.setVelocityX(pushX);
+            playerSprite.setVelocityY(-75);
+            this.gameState.soulCount -= 3;
         }
     // FIM DA FUNCAO
-    }
-
-    hitFire2(player2){
-        if(this.sprite.anims.getCurrentKey() != "recarga"){
-        
-            if(this.sprite.body.touching.left){
-                player2.anims.play("yang-hurt");
-                player2.setVelocityX(-100);
-                player2.setVelocityY(-75);
-                this.gameState.soulCount -= 3;
-            }
-            else if(this.sprite.body.touching.right){
-                player2.anims.play("yang-hurt");
-                player2.setVelocityX(100);
-                player2.setVelocityY(-75);
-                this.gameState.soulCount -= 3;
-            }
-            else{
-                player2.anims.play("yang-hurt");
-                player2.setVelocityX(-100);
-                player2.setVelocityY(-75);
-                this.gameState.soulCount -= 3;
-            }
-        }
     }
 
 }
