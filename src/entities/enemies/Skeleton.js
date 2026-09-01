@@ -1,13 +1,14 @@
-import { topLayer, topLayer2, topLayer3, player, player2, SoulCount, playerPosition, player2Position} from "../../scenes/GameScene.js";
-import { skeletonATK, skeletonHURT, skeletonDIE} from "../../scenes/GameScene.js";
+import { topLayer, topLayer2, topLayer3, player, player2, playerPosition, player2Position} from "../../scenes/GameScene.js";
 export { Skeleton };
 
 export default class Skeleton {
     // Cria a classe do skeleton
-    
-    constructor(scene, x, y, point){
+
+    constructor(scene, x, y, point, { gameState, audio } = {}){
         this.scene = scene;
         const anims = scene.anims;
+        this.gameState = gameState;
+        this.audio = audio;
         this.skeletonpoint = point;
         this.skeletonposition = "right";
         this.Life = { valor: 50 };
@@ -94,8 +95,8 @@ export default class Skeleton {
         }
         else if(this.sprite.anims.getCurrentKey() === "skeleton-die" && this.sprite.anims.getProgress("skeleton-die") < 1){
           this.sprite.setVelocity(0, 0);
-          if(!skeletonDIE.isPlaying && this.skltDIE === 0){
-            skeletonDIE.play();
+          if(!this.audio.get("skeletonDie").isPlaying && this.skltDIE === 0){
+            this.audio.get("skeletonDie").play();
             this.skltDIE = 1;
           }
         }
@@ -106,8 +107,8 @@ export default class Skeleton {
           this.sprite.anims.getCurrentKey() === "skeleton-hurt" &&
           this.sprite.anims.getProgress("skeleton-hurt") < 1 && this.skeletonposition === "right"
         ) {
-          if(!skeletonHURT.isPlaying && this.skltHURT === 0){
-            skeletonHURT.play();
+          if(!this.audio.get("skeletonHurt").isPlaying && this.skltHURT === 0){
+            this.audio.get("skeletonHurt").play();
             this.skltHURT = 1;
           }
           //this.sprite.setSize(20, 32, true).setOffset(0, 0);
@@ -116,8 +117,8 @@ export default class Skeleton {
           this.sprite.anims.getCurrentKey() === "skeleton-hurt" &&
           this.sprite.anims.getProgress("skeleton-hurt") < 1 && this.skeletonposition === "left"
         ) {
-          if(!skeletonHURT.isPlaying && this.skltHURT === 0){
-            skeletonHURT.play();
+          if(!this.audio.get("skeletonHurt").isPlaying && this.skltHURT === 0){
+            this.audio.get("skeletonHurt").play();
             this.skltHURT = 1;
           }
           //this.sprite.setSize(20, 32, true).setOffset(0, 0);
@@ -269,19 +270,19 @@ export default class Skeleton {
       }
         //se o skeleton ataca o jogador, o jogador eh empurrado pra tras
         else if(this.sprite.anims.getCurrentKey() === 'skeleton-attack' && this.skeletonposition === "left" && this.sprite.anims.getProgress('skeleton-attack') === 0.5294117647058824){
-          skeletonATK.play();
+          this.audio.get("skeletonAttack").play();
           player.setVelocityX(-125);
           player.setVelocityY(-100);
           player.anims.play('yin-hurt', true);
           //slimeatk.play();
-          SoulCount.valor -= 5;
+          this.gameState.soulCount -= 5;
       } else if(this.sprite.anims.getCurrentKey() === 'skeleton-attack' && this.skeletonposition === "right" && this.sprite.anims.getProgress('skeleton-attack') === 0.5294117647058824){
-          skeletonATK.play();
+          this.audio.get("skeletonAttack").play();
           player.setVelocityX(125);
           player.setVelocityY(-100);
           player.anims.play('yin-hurt', true);
           //slimeatk.play();
-          SoulCount.valor -= 5;
+          this.gameState.soulCount -= 5;
       }
     }
     }
@@ -327,17 +328,17 @@ export default class Skeleton {
       }
         //se o skeleton ataca o jogador, o jogador eh empurrado pra tras
         else if(this.sprite.anims.getCurrentKey() === 'skeleton-attack' && this.skeletonposition === "left" && this.sprite.anims.getProgress('skeleton-attack') === 0.5294117647058824){
-          skeletonATK.play();
+          this.audio.get("skeletonAttack").play();
           player2.setVelocityX(-125);
           player2.setVelocityY(-100);
           player2.anims.play('yang-hurt', true);
-          SoulCount.valor -= 5;
+          this.gameState.soulCount -= 5;
       } else if(this.sprite.anims.getCurrentKey() === 'skeleton-attack' && this.skeletonposition === "right" && this.sprite.anims.getProgress('skeleton-attack') === 0.5294117647058824){
-          skeletonATK.play();
+          this.audio.get("skeletonAttack").play();
           player2.setVelocityX(125);
           player2.setVelocityY(-100);
           player2.anims.play('yang-hurt', true);
-          SoulCount.valor -= 5;
+          this.gameState.soulCount -= 5;
       }
     }
     }

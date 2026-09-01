@@ -1,4 +1,6 @@
 import { SCENE_KEYS } from "./sceneKeys.js";
+import { GameState } from "../core/GameState.js";
+import { AudioManager } from "../core/AudioManager.js";
 import Lancachamas from "../entities/hazards/Lancachamas.js";
 import { Slime } from "../entities/enemies/Slime.js";
 import {Skeleton} from "../entities/enemies/Skeleton.js";
@@ -6,8 +8,7 @@ import {Jumper} from "../entities/interactive/Jumper.js";
 import {Portal} from "../entities/interactive/Portal.js";
 import {Demon} from "../entities/enemies/Demon.js";
 
-export { spike, player, player2, SoulCount, BossesMortos, playerPosition, player2Position, portalsound};
-export { slimeatk, slimeDIE, skeletonATK, skeletonDIE, skeletonHURT, bossdie, bossatk }
+export { spike, player, player2, playerPosition, player2Position };
 export { topLayer, topLayer2, topLayer3 }
 
 const JUMP_BUFFER_MS = 333; // ~20 frames at 60fps, kept as a time-based buffer instead of a frame count
@@ -42,7 +43,6 @@ var attackcombo2 = 0;
 
 // VARIAVEL DA VIDA
 var Soul;
-var SoulCount = { valor: 190 };
 
 // MONSTROS
 var slime = {p1: null, p2: null, p3: null, p4: null,
@@ -76,42 +76,15 @@ var keyENTER;
 
 var spike; //variavel dos espinhos
 var barreira1;
-var barreira1open = false;
 var barreira2;
-var barreira2open = false;
 var JailDoor;
 var portal = {p1: null, p2: null, p3: null, p4: null, p5: null, p6: null, p7: null, p8:null};
 
 var ChaveAmarela;
-var possuiChaveAmarela = false;
-
 var ChaveAzul;
-var possuiChaveAzul = false;
-
 
 var graphics; //nem me pergunte
-var gameOver = false;
-var Endgame = false;
 var button;
-
-//VARIAVEIS DE SONS
-var song; // musica da floresta
-var swordwoosh; // som da espada
-var slimeatk; // som do slime atacando
-var jumping; // som do player pulando
-var landing; // som do player caindo no chao
-var portalsound;
-var JailDoorOpen;
-var bossatk;
-var bossdie;
-var skeletonATK;
-var skeletonDIE;
-var skeletonHURT;
-var slimeDIE;
-var chave;
-
-
-var BossesMortos = { valor: 0};
 
 //Variavel do lança-chamas
 var chamas = {p1: null, p2: null, p3: null, p4: null,
@@ -268,26 +241,29 @@ preload() {
 // A FUNCAO CREATE CRIA AS COISAS DENTRO DO JOGO
 create() {
 
+  this.state = new GameState();
+  this.audio = new AudioManager(this);
+
   // CRIACAO DOS SONS
-  song = this.sound.add("song");
-  swordwoosh = this.sound.add("swordwoosh");
-  jumping = this.sound.add("jumping");
-  landing = this.sound.add("landing");
-  portalsound = this.sound.add("portalsound");
-  JailDoorOpen = this.sound.add("JaildoorOpeningSound");
-  
-  bossatk = this.sound.add("BossAtk");
-  bossdie = this.sound.add("BossDying");
-  skeletonATK = this.sound.add("SkeletonAtk");
-  skeletonDIE = this.sound.add("SkeletonDie");
-  skeletonHURT = this.sound.add("SkeletonHurt")
-  slimeDIE = this.sound.add("SlimeDying");
-  slimeatk = this.sound.add("slimeatk");
-  chave = this.sound.add("chave");
+  this.audio.add("music", "song");
+  this.audio.add("swordWoosh", "swordwoosh");
+  this.audio.add("jump", "jumping");
+  this.audio.add("landing", "landing");
+  this.audio.add("portal", "portalsound");
+  this.audio.add("jailDoorOpening", "JaildoorOpeningSound");
+
+  this.audio.add("bossAttack", "BossAtk");
+  this.audio.add("bossDie", "BossDying");
+  this.audio.add("skeletonAttack", "SkeletonAtk");
+  this.audio.add("skeletonDie", "SkeletonDie");
+  this.audio.add("skeletonHurt", "SkeletonHurt");
+  this.audio.add("slimeDie", "SlimeDying");
+  this.audio.add("slimeAttack", "slimeatk");
+  this.audio.add("keyPickup", "chave");
 
 
   //toca musica em loop
-  song.play({
+  this.audio.get("music").play({
     loop: true,
     volume: 0.1
   });
@@ -396,51 +372,51 @@ create() {
 
   // CRIACAO DOS PORTAIS
 
-  portal.p1 = new Portal(this, 2825, 1927, 96, 3616, 1);
-  portal.p2 = new Portal(this, 2825, 2100, 4000, 3616, 2);
-  portal.p3 = new Portal(this, 3770, 1666, 1307, 1443, 3);
-  portal.p4 = new Portal(this, 2330, 1924, 1307, 1443, 3);
-  portal.p5 = new Portal(this, 1257, 2167, 1744, 2573, 3);
-  portal.p6 = new Portal(this, 2051, 2599, 1307, 1443, 3);
-  portal.p7 = new Portal(this, 860, 2480, 1307, 1443, 3);
-  portal.p8 = new Portal(this, 2938, 2910, 1307, 1443, 3);
+  portal.p1 = new Portal(this, 2825, 1927, 96, 3616, 1, { audio: this.audio });
+  portal.p2 = new Portal(this, 2825, 2100, 4000, 3616, 2, { audio: this.audio });
+  portal.p3 = new Portal(this, 3770, 1666, 1307, 1443, 3, { audio: this.audio });
+  portal.p4 = new Portal(this, 2330, 1924, 1307, 1443, 3, { audio: this.audio });
+  portal.p5 = new Portal(this, 1257, 2167, 1744, 2573, 3, { audio: this.audio });
+  portal.p6 = new Portal(this, 2051, 2599, 1307, 1443, 3, { audio: this.audio });
+  portal.p7 = new Portal(this, 860, 2480, 1307, 1443, 3, { audio: this.audio });
+  portal.p8 = new Portal(this, 2938, 2910, 1307, 1443, 3, { audio: this.audio });
  
   // CRIAÇAO DOS LANÇA-CHAMAS
 
-  chamas.p1 = new Lancachamas(this, 1624, 1120, 0);
-  chamas.p2 = new Lancachamas(this, 1608, 1120, 0);
-  chamas.p3 = new Lancachamas(this, 1480, 1476, 0);
-  chamas.p4 = new Lancachamas(this, 1656, 1476, 5100);
-  chamas.p5 = new Lancachamas(this, 1832, 1476, 0);
-  chamas.p6 = new Lancachamas(this, 184, 1940, 0);
-  chamas.p7 = new Lancachamas(this, 263, 1940, 2550);
-  chamas.p8 = new Lancachamas(this, 392, 2167, 0);
-  chamas.p9 = new Lancachamas(this, 584, 2167, 5100);
-  chamas.p10 = new Lancachamas(this, 776, 2167, 0);
-  chamas.p11 = new Lancachamas(this, 968, 2167, 5100);
-  chamas.p12 = new Lancachamas(this, 1576, 2245, 0);
-  chamas.p13 = new Lancachamas(this, 1624, 2245, 5100);
-  chamas.p14 = new Lancachamas(this, 1672, 2245, 5100);
-  chamas.p15 = new Lancachamas(this, 1720, 2245, 0);
-  chamas.p16 = new Lancachamas(this, 1992, 2071, 5100);
-  chamas.p17 = new Lancachamas(this, 2008, 2071, 5100);
-  chamas.p18 = new Lancachamas(this, 2568, 1351, 0);
-  chamas.p19 = new Lancachamas(this, 2568, 1551, 0);
-  chamas.p20 = new Lancachamas(this, 3368, 1123, 0);
-  chamas.p21 = new Lancachamas(this, 3864, 1170, 0);
-  chamas.p22 = new Lancachamas(this, 3704, 1170, 0);
-  chamas.p23 = new Lancachamas(this, 824, 2995, 0);
-  chamas.p24 = new Lancachamas(this, 760, 2960, 5100);
-  chamas.p25 = new Lancachamas(this, 488, 2960, 0);
-  chamas.p26 = new Lancachamas(this, 200, 3055, 5100);
-  chamas.p27 = new Lancachamas(this, 88, 3055, 5100);
-  chamas.p28 = new Lancachamas(this, 2984, 3105, 0);
-  chamas.p29 = new Lancachamas(this, 2984, 3125, 5100);
-  chamas.p30 = new Lancachamas(this, 3304, 3125, 5100);
-  chamas.p31 = new Lancachamas(this, 3304, 3105, 0);
-  chamas.p32 = new Lancachamas(this, 3592, 3335, 0);
-  chamas.p33 = new Lancachamas(this, 3592, 3115, 5100);
-  chamas.p34 = new Lancachamas(this, 3848, 1938, 0);
+  chamas.p1 = new Lancachamas(this, 1624, 1120, 0, { gameState: this.state });
+  chamas.p2 = new Lancachamas(this, 1608, 1120, 0, { gameState: this.state });
+  chamas.p3 = new Lancachamas(this, 1480, 1476, 0, { gameState: this.state });
+  chamas.p4 = new Lancachamas(this, 1656, 1476, 5100, { gameState: this.state });
+  chamas.p5 = new Lancachamas(this, 1832, 1476, 0, { gameState: this.state });
+  chamas.p6 = new Lancachamas(this, 184, 1940, 0, { gameState: this.state });
+  chamas.p7 = new Lancachamas(this, 263, 1940, 2550, { gameState: this.state });
+  chamas.p8 = new Lancachamas(this, 392, 2167, 0, { gameState: this.state });
+  chamas.p9 = new Lancachamas(this, 584, 2167, 5100, { gameState: this.state });
+  chamas.p10 = new Lancachamas(this, 776, 2167, 0, { gameState: this.state });
+  chamas.p11 = new Lancachamas(this, 968, 2167, 5100, { gameState: this.state });
+  chamas.p12 = new Lancachamas(this, 1576, 2245, 0, { gameState: this.state });
+  chamas.p13 = new Lancachamas(this, 1624, 2245, 5100, { gameState: this.state });
+  chamas.p14 = new Lancachamas(this, 1672, 2245, 5100, { gameState: this.state });
+  chamas.p15 = new Lancachamas(this, 1720, 2245, 0, { gameState: this.state });
+  chamas.p16 = new Lancachamas(this, 1992, 2071, 5100, { gameState: this.state });
+  chamas.p17 = new Lancachamas(this, 2008, 2071, 5100, { gameState: this.state });
+  chamas.p18 = new Lancachamas(this, 2568, 1351, 0, { gameState: this.state });
+  chamas.p19 = new Lancachamas(this, 2568, 1551, 0, { gameState: this.state });
+  chamas.p20 = new Lancachamas(this, 3368, 1123, 0, { gameState: this.state });
+  chamas.p21 = new Lancachamas(this, 3864, 1170, 0, { gameState: this.state });
+  chamas.p22 = new Lancachamas(this, 3704, 1170, 0, { gameState: this.state });
+  chamas.p23 = new Lancachamas(this, 824, 2995, 0, { gameState: this.state });
+  chamas.p24 = new Lancachamas(this, 760, 2960, 5100, { gameState: this.state });
+  chamas.p25 = new Lancachamas(this, 488, 2960, 0, { gameState: this.state });
+  chamas.p26 = new Lancachamas(this, 200, 3055, 5100, { gameState: this.state });
+  chamas.p27 = new Lancachamas(this, 88, 3055, 5100, { gameState: this.state });
+  chamas.p28 = new Lancachamas(this, 2984, 3105, 0, { gameState: this.state });
+  chamas.p29 = new Lancachamas(this, 2984, 3125, 5100, { gameState: this.state });
+  chamas.p30 = new Lancachamas(this, 3304, 3125, 5100, { gameState: this.state });
+  chamas.p31 = new Lancachamas(this, 3304, 3105, 0, { gameState: this.state });
+  chamas.p32 = new Lancachamas(this, 3592, 3335, 0, { gameState: this.state });
+  chamas.p33 = new Lancachamas(this, 3592, 3115, 5100, { gameState: this.state });
+  chamas.p34 = new Lancachamas(this, 3848, 1938, 0, { gameState: this.state });
   
   // CRIACAO DOS JUMPERS
   
@@ -459,43 +435,43 @@ create() {
   
   // CRIACAO DOS SLIMES
   
-  slime.p1 = new Slime(this, 400, 350, 400);
-  slime.p2 = new Slime(this, 800, 350, 800);
-  slime.p3 = new Slime(this, 1200, 350, 1200);
-  slime.p4 = new Slime(this, 3144, 3150, 3144);
-  slime.p5 = new Slime(this, 3470, 3310, 3470);
-  slime.p6 = new Slime(this, 345, 930, 350);
-  slime.p7 = new Slime(this, 997, 930, 997);
-  slime.p8 = new Slime(this, 480, 2160, 480);
-  slime.p9 = new Slime(this, 854, 2160, 854);
-  slime.p10 = new Slime(this, 1559, 1460, 1559);
-  slime.p11 = new Slime(this, 3200, 1330, 3200);
-  slime.p12 = new Slime(this, 1043, 1570, 1043);
-  slime.p13 = new Slime(this, 3782, 1150, 3782);
-  slime.p14 = new Slime(this, 1426, 3630, 1426);
-  slime.p15 = new Slime(this, 625, 2950, 625);
-  slime.p16 = new Slime(this, 3449, 2320, 3449);
-  slime.p17 = new Slime(this, 3726, 2465, 3726);
+  slime.p1 = new Slime(this, 400, 350, 400, { gameState: this.state, audio: this.audio });
+  slime.p2 = new Slime(this, 800, 350, 800, { gameState: this.state, audio: this.audio });
+  slime.p3 = new Slime(this, 1200, 350, 1200, { gameState: this.state, audio: this.audio });
+  slime.p4 = new Slime(this, 3144, 3150, 3144, { gameState: this.state, audio: this.audio });
+  slime.p5 = new Slime(this, 3470, 3310, 3470, { gameState: this.state, audio: this.audio });
+  slime.p6 = new Slime(this, 345, 930, 350, { gameState: this.state, audio: this.audio });
+  slime.p7 = new Slime(this, 997, 930, 997, { gameState: this.state, audio: this.audio });
+  slime.p8 = new Slime(this, 480, 2160, 480, { gameState: this.state, audio: this.audio });
+  slime.p9 = new Slime(this, 854, 2160, 854, { gameState: this.state, audio: this.audio });
+  slime.p10 = new Slime(this, 1559, 1460, 1559, { gameState: this.state, audio: this.audio });
+  slime.p11 = new Slime(this, 3200, 1330, 3200, { gameState: this.state, audio: this.audio });
+  slime.p12 = new Slime(this, 1043, 1570, 1043, { gameState: this.state, audio: this.audio });
+  slime.p13 = new Slime(this, 3782, 1150, 3782, { gameState: this.state, audio: this.audio });
+  slime.p14 = new Slime(this, 1426, 3630, 1426, { gameState: this.state, audio: this.audio });
+  slime.p15 = new Slime(this, 625, 2950, 625, { gameState: this.state, audio: this.audio });
+  slime.p16 = new Slime(this, 3449, 2320, 3449, { gameState: this.state, audio: this.audio });
+  slime.p17 = new Slime(this, 3726, 2465, 3726, { gameState: this.state, audio: this.audio });
   
   // CRIACAO DOS SKELETONS
   
-  skeleton.p1 = new Skeleton(this, 683, 2160, 683);
-  skeleton.p2 = new Skeleton(this, 3142, 3310, 3142);
-  skeleton.p3 = new Skeleton(this, 3467, 3150, 3467);
-  skeleton.p4 = new Skeleton(this, 470, 1200, 470);
-  skeleton.p5 = new Skeleton(this, 1763, 1120, 1763);
-  skeleton.p6 = new Skeleton(this, 1749, 1460, 1749);
-  skeleton.p7 = new Skeleton(this, 1485, 2225, 1485);
-  skeleton.p8 = new Skeleton(this, 971, 3630, 971);
-  skeleton.p9 = new Skeleton(this, 1136, 3630, 1136);
-  skeleton.p10 = new Skeleton(this, 975, 3015, 975);
-  skeleton.p11 = new Skeleton(this, 360, 2875, 360);
-  skeleton.p12 = new Skeleton(this, 3901, 2465, 3901);
+  skeleton.p1 = new Skeleton(this, 683, 2160, 683, { gameState: this.state, audio: this.audio });
+  skeleton.p2 = new Skeleton(this, 3142, 3310, 3142, { gameState: this.state, audio: this.audio });
+  skeleton.p3 = new Skeleton(this, 3467, 3150, 3467, { gameState: this.state, audio: this.audio });
+  skeleton.p4 = new Skeleton(this, 470, 1200, 470, { gameState: this.state, audio: this.audio });
+  skeleton.p5 = new Skeleton(this, 1763, 1120, 1763, { gameState: this.state, audio: this.audio });
+  skeleton.p6 = new Skeleton(this, 1749, 1460, 1749, { gameState: this.state, audio: this.audio });
+  skeleton.p7 = new Skeleton(this, 1485, 2225, 1485, { gameState: this.state, audio: this.audio });
+  skeleton.p8 = new Skeleton(this, 971, 3630, 971, { gameState: this.state, audio: this.audio });
+  skeleton.p9 = new Skeleton(this, 1136, 3630, 1136, { gameState: this.state, audio: this.audio });
+  skeleton.p10 = new Skeleton(this, 975, 3015, 975, { gameState: this.state, audio: this.audio });
+  skeleton.p11 = new Skeleton(this, 360, 2875, 360, { gameState: this.state, audio: this.audio });
+  skeleton.p12 = new Skeleton(this, 3901, 2465, 3901, { gameState: this.state, audio: this.audio });
 
   // CRIACAO DOS BOSSES DEMONS
   
-  demon.p1 = new Demon(this, 3400, 2910, 3300);
-  demon.p2 = new Demon(this, 640, 2464, 640);
+  demon.p1 = new Demon(this, 3400, 2910, 3300, { gameState: this.state, audio: this.audio });
+  demon.p2 = new Demon(this, 640, 2464, 640, { gameState: this.state, audio: this.audio });
 
   topLayer6 = map.createStaticLayer("topLayerCastle2", [terrain6]);
   topLayer8 = map.createStaticLayer("LayerSecreto", [terrain8]);
@@ -876,8 +852,8 @@ chamas.p34.update();
 
 
     // GAMEOVER
-    if (gameOver === true) {
-      song.stop();
+    if (this.state.isGameOver === true) {
+      this.audio.get("music").stop();
       if(player.anims.getCurrentKey() != "yin-die"){
       player.anims.play("yin-die");
       }
@@ -885,35 +861,35 @@ chamas.p34.update();
       player2.anims.play("yang-die");
       }
     }
-    if(Endgame === true){
-      song.stop();
+    if(this.state.isEndgame === true){
+      this.audio.get("music").stop();
       this.physics.pause();
       this.scene.start(SCENE_KEYS.CREDITS);
     }
 
     // VIDA
-    if (SoulCount.valor > 0 && SoulCount.valor <= 190){
-      Soul.setFrame(SoulCount.valor)
+    if (this.state.soulCount > 0 && this.state.soulCount <= 190){
+      Soul.setFrame(this.state.soulCount)
     }
-    else if(SoulCount.valor <= 0){
-      gameOver = true;
+    else if(this.state.soulCount <= 0){
+      this.state.isGameOver = true;
     }
-    
+
     // ANIMACAO DA JAILDOOR
     if (JailDoor.anims.getCurrentKey() === "JailDoor_Opening" && JailDoor.anims.getProgress("JailDoor_Opening") < 1){
       //JailDoor.disableBody();
     }
     else if(JailDoor.anims.getCurrentKey() === "JailDoor_Opening" && JailDoor.anims.getProgress("JailDoor_Opening") === 1){
-      Endgame = true;
+      this.state.isEndgame = true;
       JailDoor.disableBody();
     }
 
     // ANIMACAO DA CHAVE AMARELA
-    if(ChaveAmarela.anims.getCurrentKey() != "ChaveAmarela" && possuiChaveAmarela === false){
+    if(ChaveAmarela.anims.getCurrentKey() != "ChaveAmarela" && this.state.hasYellowKey === false){
       ChaveAmarela.anims.play("ChaveAmarela", true);
     }
     // ANIMACAO DA CHAVE AZUL
-    if(ChaveAzul.anims.getCurrentKey() != "ChaveAzul" && possuiChaveAzul === false){
+    if(ChaveAzul.anims.getCurrentKey() != "ChaveAzul" && this.state.hasBlueKey === false){
       ChaveAzul.anims.play("ChaveAzul", true);
     }
 
@@ -923,7 +899,7 @@ chamas.p34.update();
     }
     else if(barreira1.anims.getCurrentKey() === "barreira1open" && barreira1.anims.getProgress("barreira1open") < 1){
     }
-    else if(barreira1.anims.getCurrentKey() != "barreira1idle" && barreira1.anims.getCurrentKey() != "barreira1open" && barreira1open === false){
+    else if(barreira1.anims.getCurrentKey() != "barreira1idle" && barreira1.anims.getCurrentKey() != "barreira1open" && this.state.isBarrier1Open === false){
       barreira1.anims.play("barreira1idle", true);
     }
 
@@ -933,15 +909,15 @@ chamas.p34.update();
     }
     else if(barreira2.anims.getCurrentKey() === "barreira2open" && barreira2.anims.getProgress("barreira2open") < 1){
     }
-    else if(barreira2.anims.getCurrentKey() != "barreira2idle" && barreira2.anims.getCurrentKey() != "barreira2open" && barreira2open === false){
+    else if(barreira2.anims.getCurrentKey() != "barreira2idle" && barreira2.anims.getCurrentKey() != "barreira2open" && this.state.isBarrier2Open === false){
       barreira2.anims.play("barreira2idle", true);
     }
 
-  
+
     //          PLAYER 1 ANIMATIONS
 
     if (keyP.isDown) {
-      console.log(player.body.position.x, player.body.position.y, BossesMortos.valor, JailDoor.anims.getCurrentKey(), Endgame, gameOver);
+      console.log(player.body.position.x, player.body.position.y, this.state.bossesDefeated, JailDoor.anims.getCurrentKey(), this.state.isEndgame, this.state.isGameOver);
     }
 
     if (P1jump === true){
@@ -1047,7 +1023,7 @@ chamas.p34.update();
 
    else if (cursors.up.isDown && player.body.blocked.down) {
     player.setVelocityY(-350);
-    jumping.play({
+    this.audio.get("jump").play({
       volume:0.3
     });
     P1jump = true;
@@ -1057,7 +1033,7 @@ chamas.p34.update();
     });*/
   } else if (!player.body.blocked.down && cursors.up.isDown && P1jump && P1jumpdelay >= JUMP_BUFFER_MS){
     player.setVelocityY(-350);
-    jumping.play({
+    this.audio.get("jump").play({
       volume:0.3
     });
     P1jump = false;
@@ -1073,7 +1049,7 @@ chamas.p34.update();
     player.setFlipX(true);
     player.setVelocityX(0);
     player.anims.play("yin-attack1", true);
-    swordwoosh.play({volume: 0.3});
+    this.audio.get("swordWoosh").play({volume: 0.3});
     attackcombo = 1;
   } else if (
     keyENTER.isDown &&
@@ -1085,7 +1061,7 @@ chamas.p34.update();
     player.setFlipX(false);
     player.setVelocityX(0);
     player.anims.play("yin-attack1", true);
-    swordwoosh.play({volume: 0.3});
+    this.audio.get("swordWoosh").play({volume: 0.3});
     attackcombo = 1;
   } else if (
     keyENTER.isDown &&
@@ -1097,7 +1073,7 @@ chamas.p34.update();
     player.setFlipX(true);
     player.setVelocityX(0);
     player.anims.play("yin-attack2", true);
-    swordwoosh.play({volume: 0.3});
+    this.audio.get("swordWoosh").play({volume: 0.3});
     attackcombo = 2;
   } else if (
     keyENTER.isDown &&
@@ -1109,7 +1085,7 @@ chamas.p34.update();
     player.setFlipX(false);
     player.setVelocityX(0);
     player.anims.play("yin-attack2", true);
-    swordwoosh.play({volume: 0.3});
+    this.audio.get("swordWoosh").play({volume: 0.3});
     attackcombo = 2;
   } else if (
     keyENTER.isDown &&
@@ -1121,7 +1097,7 @@ chamas.p34.update();
     player.setFlipX(true);
     player.setVelocityX(0);
     player.anims.play("yin-attack3", true);
-    swordwoosh.play({volume: 0.3});
+    this.audio.get("swordWoosh").play({volume: 0.3});
     attackcombo = 0;
   } else if (
     keyENTER.isDown &&
@@ -1133,7 +1109,7 @@ chamas.p34.update();
     player.setFlipX(false);
     player.setVelocityX(0);
     player.anims.play("yin-attack3", true);
-    swordwoosh.play({volume: 0.3});
+    this.audio.get("swordWoosh").play({volume: 0.3});
     attackcombo = 0;
   } else if (
     player.body.velocity.y < 0 &&
@@ -1363,7 +1339,7 @@ else if (
 
  else if (keyW.isDown && player2.body.blocked.down) {
   player2.setVelocityY(-350);
-  jumping.play({
+  this.audio.get("jump").play({
     volume:0.3
   });
   P2jump = true;
@@ -1373,7 +1349,7 @@ else if (
   });*/
 } else if (!player2.body.blocked.down && keyW.isDown && P2jump && P2jumpdelay >= JUMP_BUFFER_MS){
   player2.setVelocityY(-350);
-  jumping.play({
+  this.audio.get("jump").play({
     volume:0.3
   });
   P2jump = false;
@@ -1389,7 +1365,7 @@ else if (
   player2.setFlipX(true);
   player2.setVelocityX(0);
   player2.anims.play("yang-attack1", true);
-  swordwoosh.play({volume: 0.3});
+  this.audio.get("swordWoosh").play({volume: 0.3});
   attackcombo2 = 1;
 } else if (
   cursors.space.isDown &&
@@ -1401,7 +1377,7 @@ else if (
   player2.setFlipX(false);
   player2.setVelocityX(0);
   player2.anims.play("yang-attack1", true);
-  swordwoosh.play({volume: 0.3});
+  this.audio.get("swordWoosh").play({volume: 0.3});
   attackcombo2 = 1;
 } else if (
   cursors.space.isDown &&
@@ -1413,7 +1389,7 @@ else if (
   player2.setFlipX(true);
   player2.setVelocityX(0);
   player2.anims.play("yang-attack2", true);
-  swordwoosh.play({volume: 0.3});
+  this.audio.get("swordWoosh").play({volume: 0.3});
   attackcombo2 = 2;
 } else if (
   cursors.space.isDown &&
@@ -1425,7 +1401,7 @@ else if (
   player2.setFlipX(false);
   player2.setVelocityX(0);
   player2.anims.play("yang-attack2", true);
-  swordwoosh.play({volume: 0.3});
+  this.audio.get("swordWoosh").play({volume: 0.3});
   attackcombo2 = 2;
 } else if (
   cursors.space.isDown &&
@@ -1437,7 +1413,7 @@ else if (
   player2.setFlipX(true);
   player2.setVelocityX(0);
   player2.anims.play("yang-attack3", true);
-  swordwoosh.play({volume: 0.3});
+  this.audio.get("swordWoosh").play({volume: 0.3});
   attackcombo2 = 0;
 } else if (
   cursors.space.isDown &&
@@ -1449,7 +1425,7 @@ else if (
   player2.setFlipX(false);
   player2.setVelocityX(0);
   player2.anims.play("yang-attack3", true);
-  swordwoosh.play({volume: 0.3});
+  this.audio.get("swordWoosh").play({volume: 0.3});
   attackcombo2 = 0;
 } else if (
   player2.body.velocity.y < 0 &&
@@ -1587,7 +1563,7 @@ function hitSpike(player, spike) {
   if(player.anims.getCurrentKey() != "yin-die"){
   player.anims.play("yin-hurt");
   player.setVelocityY(-420);
-  SoulCount.valor -= 4;
+  this.state.soulCount -= 4;
   }
 };
 
@@ -1597,75 +1573,75 @@ function hitSpike2(player2, spike) {
   if(player2.anims.getCurrentKey() != "yang-die"){
   player2.anims.play("yang-hurt");
   player2.setVelocityY(-420);
-  SoulCount.valor -= 4;
+  this.state.soulCount -= 4;
   }
 };
 
 function Barreira1OPEN(player, barreira1){
-  if(barreira1open === false && possuiChaveAmarela === true){
+  if(this.state.isBarrier1Open === false && this.state.hasYellowKey === true){
     barreira1.anims.play("barreira1open");
-    possuiChaveAmarela = false;
+    this.state.hasYellowKey = false;
   }
 }
 
 function Barreira2OPEN(player, barreira2){
-  if(barreira2open === false && possuiChaveAzul === true){
+  if(this.state.isBarrier2Open === false && this.state.hasBlueKey === true){
     barreira2.anims.play("barreira2open");
-    possuiChaveAzul = false;
+    this.state.hasBlueKey = false;
   }
 }
 function Barreira1OPEN2(player2, barreira1){
-  if(barreira1open === false && possuiChaveAmarela === true){
+  if(this.state.isBarrier1Open === false && this.state.hasYellowKey === true){
     barreira1.anims.play("barreira1open");
-    possuiChaveAmarela = false;
+    this.state.hasYellowKey = false;
   }
 }
 function Barreira2OPEN2(player2, barreira2){
-  if(barreira2open === false && possuiChaveAzul === true){
+  if(this.state.isBarrier2Open === false && this.state.hasBlueKey === true){
     barreira2.anims.play("barreira2open");
-    possuiChaveAzul = false;
+    this.state.hasBlueKey = false;
   }
 }
 
 function ColetarChaveAM1(player, ChaveAmarela){
-  possuiChaveAmarela = true;
-  chave.play();
+  this.state.hasYellowKey = true;
+  this.audio.get("keyPickup").play();
   ChaveAmarela.disableBody(true, true);
 }
 function ColetarChaveAM2(player2, ChaveAmarela){
-  possuiChaveAmarela = true;
-  chave.play();
+  this.state.hasYellowKey = true;
+  this.audio.get("keyPickup").play();
   ChaveAmarela.disableBody(true, true);
 }
 function ColetarChaveAZ1(player, ChaveAzul){
-  possuiChaveAzul = true;
-  chave.play();
+  this.state.hasBlueKey = true;
+  this.audio.get("keyPickup").play();
   ChaveAzul.disableBody(true, true);
 }
 function ColetarChaveAZ2(player2, ChaveAzul){
-  possuiChaveAzul = true;
-  chave.play();
+  this.state.hasBlueKey = true;
+  this.audio.get("keyPickup").play();
   ChaveAzul.disableBody(true, true);
 }
 
 // FUNCOES DE ABERTURA DA JAILDOOR
 function OpenJailDoor1(player, JailDoor){
-	if(BossesMortos.valor === 2){
+	if(this.state.bossesDefeated === 2){
   if(JailDoor.anims.getCurrentKey() != "JailDoor_Opening"){
     JailDoor.anims.play("JailDoor_Opening", true);
   }
-  if(!JailDoorOpen.isPlaying){
-    JailDoorOpen.play();
+  if(!this.audio.get("jailDoorOpening").isPlaying){
+    this.audio.get("jailDoorOpening").play();
   }
   }
 }
 function OpenJailDoor2(player2, JailDoor){
-	if(BossesMortos.valor === 2){
+	if(this.state.bossesDefeated === 2){
   if(JailDoor.anims.getCurrentKey() != "JailDoor_Opening"){
     JailDoor.anims.play("JailDoor_Opening", true);
   }
-  if(!JailDoorOpen.isPlaying){
-    JailDoorOpen.play();
+  if(!this.audio.get("jailDoorOpening").isPlaying){
+    this.audio.get("jailDoorOpening").play();
   }
   }
 }

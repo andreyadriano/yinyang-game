@@ -1,13 +1,14 @@
-import { player, player2, SoulCount, BossesMortos,  playerPosition, player2Position } from "../../scenes/GameScene.js";
+import { player, player2, playerPosition, player2Position } from "../../scenes/GameScene.js";
 import { topLayer, topLayer2, topLayer3 } from "../../scenes/GameScene.js";
-import { bossdie, bossatk } from "../../scenes/GameScene.js";
 
 export {Demon};
 
 export default class Demon {
-    constructor(scene, x, y){
+    constructor(scene, x, y, { gameState, audio } = {}){
         this.scene = scene;
         const anims = scene.anims;
+        this.gameState = gameState;
+        this.audio = audio;
         this.demonposition = "left";
         this.Life = { valor: 175 };
         this.bossmorto = 0;
@@ -82,21 +83,21 @@ export default class Demon {
         // AQUI EH QUANDO O BOSS TOMA DANO
 
         if(this.sprite.anims.getCurrentKey() === "demon-die1" && this.sprite.anims.getProgress("demon-die1") === 1){
-            if(BossesMortos.valor === 0){
-                BossesMortos.valor = 1;
+            if(this.gameState.bossesDefeated === 0){
+                this.gameState.bossesDefeated = 1;
                 this.bossmorto = 1;
             }
-            else if(this.bossmorto === 0 && BossesMortos.valor === 1){
-                BossesMortos.valor = 2;
+            else if(this.bossmorto === 0 && this.gameState.bossesDefeated === 1){
+                this.gameState.bossesDefeated = 2;
             }
             this.sprite.disableBody();
             this.sprite.anims.stop(0);
-            
+
         }
         else if(this.sprite.anims.getCurrentKey() === "demon-die1" && this.sprite.anims.getProgress("demon-die1") < 1){
             this.sprite.setVelocity(0, 0);
-            if(!bossdie.isPlaying && this.bossdying === 0){
-                bossdie.play();
+            if(!this.audio.get("bossDie").isPlaying && this.bossdying === 0){
+                this.audio.get("bossDie").play();
                 this.bossdying = 1;
             }
         }
@@ -218,17 +219,17 @@ export default class Demon {
         
         //se o demon ataca o jogador, o jogador eh empurrado pra tras
         if(this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.demonposition === "left" && this.sprite.anims.getProgress('demon-attack1') === 0.6000000000000001){
-            bossatk.play({ volume: 0.3 });
+            this.audio.get("bossAttack").play({ volume: 0.3 });
             player.setVelocityX(-125);
             player.setVelocityY(-100);
             player.anims.play('yin-hurt', true);
-            SoulCount.valor -= 2;
+            this.gameState.soulCount -= 2;
         } else if(this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.demonposition === "right" && this.sprite.anims.getProgress('demon-attack1') === 0.6000000000000001){
-            bossatk.play({ volume: 0.3 });
+            this.audio.get("bossAttack").play({ volume: 0.3 });
             player.setVelocityX(125);
             player.setVelocityY(-100);
             player.anims.play('yin-hurt', true);
-            SoulCount.valor -= 2;
+            this.gameState.soulCount -= 2;
         }
         //se o jogador ataca o demon, o demon eh jogado um pouco pra tras. 
         else if(player.anims.getCurrentKey() === 'yin-attack1' && playerPosition==="right"){
@@ -274,17 +275,17 @@ export default class Demon {
 
         //se o demon ataca o jogador, o jogador eh empurrado pra tras
         if(this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.demonposition === "left" && this.sprite.anims.getProgress('demon-attack1') === 0.6000000000000001){
-            bossatk.play({ volume: 0.3 });
+            this.audio.get("bossAttack").play({ volume: 0.3 });
             player2.setVelocityX(-125);
             player2.setVelocityY(-100);
             player2.anims.play('yang-hurt', true);
-            SoulCount.valor -= 2;
+            this.gameState.soulCount -= 2;
         } else if(this.sprite.anims.getCurrentKey() === 'demon-attack1' && this.demonposition === "right" && this.sprite.anims.getProgress('demon-attack1') === 0.6000000000000001){
-            bossatk.play({ volume: 0.3 });
+            this.audio.get("bossAttack").play({ volume: 0.3 });
             player2.setVelocityX(125);
             player2.setVelocityY(-100);
             player2.anims.play('yang-hurt', true);
-            SoulCount.valor -= 2;
+            this.gameState.soulCount -= 2;
         }
         //se o jogador ataca o demon, o demon eh jogado um pouco pra tras. 
         else if(player2.anims.getCurrentKey() === 'yang-attack1' && player2Position==="right"){

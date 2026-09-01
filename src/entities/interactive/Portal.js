@@ -1,10 +1,11 @@
-import { topLayer, topLayer2, player, player2, portalsound } from "../../scenes/GameScene.js";
+import { topLayer, topLayer2, player, player2 } from "../../scenes/GameScene.js";
 export {Portal};
 
 export default class Portal {
-    constructor(scene, x, y, DX, DY, tipo){
+    constructor(scene, x, y, DX, DY, tipo, { audio } = {}){
         this.scene = scene;
         const anims = scene.anims;
+        this.audio = audio;
         this.destinoX = DX;
         this.destinoY = DY;
         this.tipodeportal = tipo;
@@ -68,11 +69,11 @@ export default class Portal {
     
     P1Teleport(player){
       player.setPosition(this.destinoX, this.destinoY);
-      portalsound.play();
+      this.audio.get("portal").play();
     }
     P2Teleport(player2){
       player2.setPosition(this.destinoX, this.destinoY);
-      portalsound.play();
+      this.audio.get("portal").play();
     }
     // FIM DA CLASSE
   }
