@@ -1,8 +1,7 @@
-import { topLayer, topLayer2, player, player2 } from "../../scenes/GameScene.js";
 export {Portal};
 
 export default class Portal {
-    constructor(scene, x, y, DX, DY, tipo, { audio } = {}){
+    constructor(scene, x, y, DX, DY, tipo, { audio, group } = {}){
         this.scene = scene;
         const anims = scene.anims;
         this.audio = audio;
@@ -47,11 +46,9 @@ export default class Portal {
         this.sprite.setImmovable(true);
 
         // CRIA COLISAO DO PORTAL
-        scene.physics.add.collider(this.sprite, topLayer);
-        scene.physics.add.collider(this.sprite, topLayer2);
-        scene.physics.add.overlap(player, this.sprite, this.teleport, null, this);
-        scene.physics.add.overlap(player2, this.sprite, this.teleport, null, this);
-        
+        group.add(this.sprite);
+        this.sprite.setData("owner", this);
+
         // FIM DO CONSTRUCTOR
     }
 

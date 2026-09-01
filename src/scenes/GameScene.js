@@ -383,108 +383,137 @@ create() {
   .setOrigin(0.5)
   .setScrollFactor(0).setScale(1.5);
 
+  // GRUPOS DE FISICA POR TIPO DE INIMIGO/OBJETO
+  // Um collider/overlap por grupo em vez de um por instância; cada entidade
+  // se adiciona ao grupo e marca sprite.setData("owner", this) no construtor.
+  const resolveOwner = (playerSprite, entitySprite) => entitySprite.getData("owner").handlePlayerHit(playerSprite);
+
+  this.slimeGroup = this.physics.add.group();
+  this.physics.add.collider(this.slimeGroup, [topLayer, topLayer2]);
+  this.physics.add.overlap([player, player2], this.slimeGroup, resolveOwner, null, this);
+
+  this.skeletonGroup = this.physics.add.group();
+  this.physics.add.collider(this.skeletonGroup, [topLayer, topLayer2, topLayer3]);
+  this.physics.add.overlap([player, player2], this.skeletonGroup, resolveOwner, null, this);
+
+  this.demonGroup = this.physics.add.group();
+  this.physics.add.collider(this.demonGroup, [topLayer, topLayer2, topLayer3]);
+  this.physics.add.overlap([player, player2], this.demonGroup, resolveOwner, null, this);
+
+  this.lancachamasGroup = this.physics.add.group();
+  this.physics.add.collider(this.lancachamasGroup, topLayer);
+  this.physics.add.collider([player, player2], this.lancachamasGroup, resolveOwner, null, this);
+
+  this.portalGroup = this.physics.add.group();
+  this.physics.add.collider(this.portalGroup, [topLayer, topLayer2]);
+  this.physics.add.overlap([player, player2], this.portalGroup, (playerSprite, portalSprite) => portalSprite.getData("owner").teleport(playerSprite), null, this);
+
+  this.jumperGroup = this.physics.add.group();
+  this.physics.add.collider(this.jumperGroup, topLayer);
+  this.physics.add.collider([player, player2], this.jumperGroup);
+
   // CRIACAO DOS PORTAIS
 
-  portal.p1 = new Portal(this, 2825, 1927, 96, 3616, 1, { audio: this.audio });
-  portal.p2 = new Portal(this, 2825, 2100, 4000, 3616, 2, { audio: this.audio });
-  portal.p3 = new Portal(this, 3770, 1666, 1307, 1443, 3, { audio: this.audio });
-  portal.p4 = new Portal(this, 2330, 1924, 1307, 1443, 3, { audio: this.audio });
-  portal.p5 = new Portal(this, 1257, 2167, 1744, 2573, 3, { audio: this.audio });
-  portal.p6 = new Portal(this, 2051, 2599, 1307, 1443, 3, { audio: this.audio });
-  portal.p7 = new Portal(this, 860, 2480, 1307, 1443, 3, { audio: this.audio });
-  portal.p8 = new Portal(this, 2938, 2910, 1307, 1443, 3, { audio: this.audio });
+  portal.p1 = new Portal(this, 2825, 1927, 96, 3616, 1, { audio: this.audio, group: this.portalGroup });
+  portal.p2 = new Portal(this, 2825, 2100, 4000, 3616, 2, { audio: this.audio, group: this.portalGroup });
+  portal.p3 = new Portal(this, 3770, 1666, 1307, 1443, 3, { audio: this.audio, group: this.portalGroup });
+  portal.p4 = new Portal(this, 2330, 1924, 1307, 1443, 3, { audio: this.audio, group: this.portalGroup });
+  portal.p5 = new Portal(this, 1257, 2167, 1744, 2573, 3, { audio: this.audio, group: this.portalGroup });
+  portal.p6 = new Portal(this, 2051, 2599, 1307, 1443, 3, { audio: this.audio, group: this.portalGroup });
+  portal.p7 = new Portal(this, 860, 2480, 1307, 1443, 3, { audio: this.audio, group: this.portalGroup });
+  portal.p8 = new Portal(this, 2938, 2910, 1307, 1443, 3, { audio: this.audio, group: this.portalGroup });
  
   // CRIAÇAO DOS LANÇA-CHAMAS
 
-  chamas.p1 = new Lancachamas(this, 1624, 1120, 0, { gameState: this.state });
-  chamas.p2 = new Lancachamas(this, 1608, 1120, 0, { gameState: this.state });
-  chamas.p3 = new Lancachamas(this, 1480, 1476, 0, { gameState: this.state });
-  chamas.p4 = new Lancachamas(this, 1656, 1476, 5100, { gameState: this.state });
-  chamas.p5 = new Lancachamas(this, 1832, 1476, 0, { gameState: this.state });
-  chamas.p6 = new Lancachamas(this, 184, 1940, 0, { gameState: this.state });
-  chamas.p7 = new Lancachamas(this, 263, 1940, 2550, { gameState: this.state });
-  chamas.p8 = new Lancachamas(this, 392, 2167, 0, { gameState: this.state });
-  chamas.p9 = new Lancachamas(this, 584, 2167, 5100, { gameState: this.state });
-  chamas.p10 = new Lancachamas(this, 776, 2167, 0, { gameState: this.state });
-  chamas.p11 = new Lancachamas(this, 968, 2167, 5100, { gameState: this.state });
-  chamas.p12 = new Lancachamas(this, 1576, 2245, 0, { gameState: this.state });
-  chamas.p13 = new Lancachamas(this, 1624, 2245, 5100, { gameState: this.state });
-  chamas.p14 = new Lancachamas(this, 1672, 2245, 5100, { gameState: this.state });
-  chamas.p15 = new Lancachamas(this, 1720, 2245, 0, { gameState: this.state });
-  chamas.p16 = new Lancachamas(this, 1992, 2071, 5100, { gameState: this.state });
-  chamas.p17 = new Lancachamas(this, 2008, 2071, 5100, { gameState: this.state });
-  chamas.p18 = new Lancachamas(this, 2568, 1351, 0, { gameState: this.state });
-  chamas.p19 = new Lancachamas(this, 2568, 1551, 0, { gameState: this.state });
-  chamas.p20 = new Lancachamas(this, 3368, 1123, 0, { gameState: this.state });
-  chamas.p21 = new Lancachamas(this, 3864, 1170, 0, { gameState: this.state });
-  chamas.p22 = new Lancachamas(this, 3704, 1170, 0, { gameState: this.state });
-  chamas.p23 = new Lancachamas(this, 824, 2995, 0, { gameState: this.state });
-  chamas.p24 = new Lancachamas(this, 760, 2960, 5100, { gameState: this.state });
-  chamas.p25 = new Lancachamas(this, 488, 2960, 0, { gameState: this.state });
-  chamas.p26 = new Lancachamas(this, 200, 3055, 5100, { gameState: this.state });
-  chamas.p27 = new Lancachamas(this, 88, 3055, 5100, { gameState: this.state });
-  chamas.p28 = new Lancachamas(this, 2984, 3105, 0, { gameState: this.state });
-  chamas.p29 = new Lancachamas(this, 2984, 3125, 5100, { gameState: this.state });
-  chamas.p30 = new Lancachamas(this, 3304, 3125, 5100, { gameState: this.state });
-  chamas.p31 = new Lancachamas(this, 3304, 3105, 0, { gameState: this.state });
-  chamas.p32 = new Lancachamas(this, 3592, 3335, 0, { gameState: this.state });
-  chamas.p33 = new Lancachamas(this, 3592, 3115, 5100, { gameState: this.state });
-  chamas.p34 = new Lancachamas(this, 3848, 1938, 0, { gameState: this.state });
+  chamas.p1 = new Lancachamas(this, 1624, 1120, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p2 = new Lancachamas(this, 1608, 1120, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p3 = new Lancachamas(this, 1480, 1476, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p4 = new Lancachamas(this, 1656, 1476, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p5 = new Lancachamas(this, 1832, 1476, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p6 = new Lancachamas(this, 184, 1940, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p7 = new Lancachamas(this, 263, 1940, 2550, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p8 = new Lancachamas(this, 392, 2167, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p9 = new Lancachamas(this, 584, 2167, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p10 = new Lancachamas(this, 776, 2167, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p11 = new Lancachamas(this, 968, 2167, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p12 = new Lancachamas(this, 1576, 2245, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p13 = new Lancachamas(this, 1624, 2245, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p14 = new Lancachamas(this, 1672, 2245, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p15 = new Lancachamas(this, 1720, 2245, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p16 = new Lancachamas(this, 1992, 2071, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p17 = new Lancachamas(this, 2008, 2071, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p18 = new Lancachamas(this, 2568, 1351, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p19 = new Lancachamas(this, 2568, 1551, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p20 = new Lancachamas(this, 3368, 1123, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p21 = new Lancachamas(this, 3864, 1170, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p22 = new Lancachamas(this, 3704, 1170, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p23 = new Lancachamas(this, 824, 2995, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p24 = new Lancachamas(this, 760, 2960, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p25 = new Lancachamas(this, 488, 2960, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p26 = new Lancachamas(this, 200, 3055, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p27 = new Lancachamas(this, 88, 3055, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p28 = new Lancachamas(this, 2984, 3105, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p29 = new Lancachamas(this, 2984, 3125, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p30 = new Lancachamas(this, 3304, 3125, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p31 = new Lancachamas(this, 3304, 3105, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p32 = new Lancachamas(this, 3592, 3335, 0, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p33 = new Lancachamas(this, 3592, 3115, 5100, { gameState: this.state, group: this.lancachamasGroup });
+  chamas.p34 = new Lancachamas(this, 3848, 1938, 0, { gameState: this.state, group: this.lancachamasGroup });
   
   // CRIACAO DOS JUMPERS
   
-  jumper.p1 = new Jumper(this, 496, 1815, -900);
-  jumper.p2 = new Jumper(this, 624, 1527, -900);
-  jumper.p3 = new Jumper(this, 1136, 2183, -900);
-  jumper.p4 = new Jumper(this, 4048, 2487, -900);
-  jumper.p5 = new Jumper(this, 3744, 2263, -900);
-  jumper.p6 = new Jumper(this, 3936, 1943, -1200);
-  jumper.p7 = new Jumper(this, 144, 3159, -1500);
-  jumper.p8 = new Jumper(this, 2496, 3334, -1200);
-  jumper.p9 = new Jumper(this, 2240, 3655, -1200);
-  jumper.p10 = new Jumper(this, 1328, 3335, -1200);
-  jumper.p11 = new Jumper(this, 1584, 3655, -1200);
-  jumper.p12 = new Jumper(this, 3889, 3330, -1200);
+  jumper.p1 = new Jumper(this, 496, 1815, -900, { group: this.jumperGroup });
+  jumper.p2 = new Jumper(this, 624, 1527, -900, { group: this.jumperGroup });
+  jumper.p3 = new Jumper(this, 1136, 2183, -900, { group: this.jumperGroup });
+  jumper.p4 = new Jumper(this, 4048, 2487, -900, { group: this.jumperGroup });
+  jumper.p5 = new Jumper(this, 3744, 2263, -900, { group: this.jumperGroup });
+  jumper.p6 = new Jumper(this, 3936, 1943, -1200, { group: this.jumperGroup });
+  jumper.p7 = new Jumper(this, 144, 3159, -1500, { group: this.jumperGroup });
+  jumper.p8 = new Jumper(this, 2496, 3334, -1200, { group: this.jumperGroup });
+  jumper.p9 = new Jumper(this, 2240, 3655, -1200, { group: this.jumperGroup });
+  jumper.p10 = new Jumper(this, 1328, 3335, -1200, { group: this.jumperGroup });
+  jumper.p11 = new Jumper(this, 1584, 3655, -1200, { group: this.jumperGroup });
+  jumper.p12 = new Jumper(this, 3889, 3330, -1200, { group: this.jumperGroup });
   
   // CRIACAO DOS SLIMES
   
-  slime.p1 = new Slime(this, 400, 350, 400, { gameState: this.state, audio: this.audio });
-  slime.p2 = new Slime(this, 800, 350, 800, { gameState: this.state, audio: this.audio });
-  slime.p3 = new Slime(this, 1200, 350, 1200, { gameState: this.state, audio: this.audio });
-  slime.p4 = new Slime(this, 3144, 3150, 3144, { gameState: this.state, audio: this.audio });
-  slime.p5 = new Slime(this, 3470, 3310, 3470, { gameState: this.state, audio: this.audio });
-  slime.p6 = new Slime(this, 345, 930, 350, { gameState: this.state, audio: this.audio });
-  slime.p7 = new Slime(this, 997, 930, 997, { gameState: this.state, audio: this.audio });
-  slime.p8 = new Slime(this, 480, 2160, 480, { gameState: this.state, audio: this.audio });
-  slime.p9 = new Slime(this, 854, 2160, 854, { gameState: this.state, audio: this.audio });
-  slime.p10 = new Slime(this, 1559, 1460, 1559, { gameState: this.state, audio: this.audio });
-  slime.p11 = new Slime(this, 3200, 1330, 3200, { gameState: this.state, audio: this.audio });
-  slime.p12 = new Slime(this, 1043, 1570, 1043, { gameState: this.state, audio: this.audio });
-  slime.p13 = new Slime(this, 3782, 1150, 3782, { gameState: this.state, audio: this.audio });
-  slime.p14 = new Slime(this, 1426, 3630, 1426, { gameState: this.state, audio: this.audio });
-  slime.p15 = new Slime(this, 625, 2950, 625, { gameState: this.state, audio: this.audio });
-  slime.p16 = new Slime(this, 3449, 2320, 3449, { gameState: this.state, audio: this.audio });
-  slime.p17 = new Slime(this, 3726, 2465, 3726, { gameState: this.state, audio: this.audio });
+  slime.p1 = new Slime(this, 400, 350, 400, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p2 = new Slime(this, 800, 350, 800, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p3 = new Slime(this, 1200, 350, 1200, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p4 = new Slime(this, 3144, 3150, 3144, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p5 = new Slime(this, 3470, 3310, 3470, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p6 = new Slime(this, 345, 930, 350, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p7 = new Slime(this, 997, 930, 997, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p8 = new Slime(this, 480, 2160, 480, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p9 = new Slime(this, 854, 2160, 854, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p10 = new Slime(this, 1559, 1460, 1559, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p11 = new Slime(this, 3200, 1330, 3200, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p12 = new Slime(this, 1043, 1570, 1043, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p13 = new Slime(this, 3782, 1150, 3782, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p14 = new Slime(this, 1426, 3630, 1426, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p15 = new Slime(this, 625, 2950, 625, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p16 = new Slime(this, 3449, 2320, 3449, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
+  slime.p17 = new Slime(this, 3726, 2465, 3726, { gameState: this.state, audio: this.audio, group: this.slimeGroup });
   
   // CRIACAO DOS SKELETONS
   
-  skeleton.p1 = new Skeleton(this, 683, 2160, 683, { gameState: this.state, audio: this.audio });
-  skeleton.p2 = new Skeleton(this, 3142, 3310, 3142, { gameState: this.state, audio: this.audio });
-  skeleton.p3 = new Skeleton(this, 3467, 3150, 3467, { gameState: this.state, audio: this.audio });
-  skeleton.p4 = new Skeleton(this, 470, 1200, 470, { gameState: this.state, audio: this.audio });
-  skeleton.p5 = new Skeleton(this, 1763, 1120, 1763, { gameState: this.state, audio: this.audio });
-  skeleton.p6 = new Skeleton(this, 1749, 1460, 1749, { gameState: this.state, audio: this.audio });
-  skeleton.p7 = new Skeleton(this, 1485, 2225, 1485, { gameState: this.state, audio: this.audio });
-  skeleton.p8 = new Skeleton(this, 971, 3630, 971, { gameState: this.state, audio: this.audio });
-  skeleton.p9 = new Skeleton(this, 1136, 3630, 1136, { gameState: this.state, audio: this.audio });
-  skeleton.p10 = new Skeleton(this, 975, 3015, 975, { gameState: this.state, audio: this.audio });
-  skeleton.p11 = new Skeleton(this, 360, 2875, 360, { gameState: this.state, audio: this.audio });
-  skeleton.p12 = new Skeleton(this, 3901, 2465, 3901, { gameState: this.state, audio: this.audio });
+  skeleton.p1 = new Skeleton(this, 683, 2160, 683, { gameState: this.state, audio: this.audio, group: this.skeletonGroup });
+  skeleton.p2 = new Skeleton(this, 3142, 3310, 3142, { gameState: this.state, audio: this.audio, group: this.skeletonGroup });
+  skeleton.p3 = new Skeleton(this, 3467, 3150, 3467, { gameState: this.state, audio: this.audio, group: this.skeletonGroup });
+  skeleton.p4 = new Skeleton(this, 470, 1200, 470, { gameState: this.state, audio: this.audio, group: this.skeletonGroup });
+  skeleton.p5 = new Skeleton(this, 1763, 1120, 1763, { gameState: this.state, audio: this.audio, group: this.skeletonGroup });
+  skeleton.p6 = new Skeleton(this, 1749, 1460, 1749, { gameState: this.state, audio: this.audio, group: this.skeletonGroup });
+  skeleton.p7 = new Skeleton(this, 1485, 2225, 1485, { gameState: this.state, audio: this.audio, group: this.skeletonGroup });
+  skeleton.p8 = new Skeleton(this, 971, 3630, 971, { gameState: this.state, audio: this.audio, group: this.skeletonGroup });
+  skeleton.p9 = new Skeleton(this, 1136, 3630, 1136, { gameState: this.state, audio: this.audio, group: this.skeletonGroup });
+  skeleton.p10 = new Skeleton(this, 975, 3015, 975, { gameState: this.state, audio: this.audio, group: this.skeletonGroup });
+  skeleton.p11 = new Skeleton(this, 360, 2875, 360, { gameState: this.state, audio: this.audio, group: this.skeletonGroup });
+  skeleton.p12 = new Skeleton(this, 3901, 2465, 3901, { gameState: this.state, audio: this.audio, group: this.skeletonGroup });
 
   // CRIACAO DOS BOSSES DEMONS
   
-  demon.p1 = new Demon(this, 3400, 2910, 3300, { gameState: this.state, audio: this.audio });
-  demon.p2 = new Demon(this, 640, 2464, 640, { gameState: this.state, audio: this.audio });
+  demon.p1 = new Demon(this, 3400, 2910, { gameState: this.state, audio: this.audio, group: this.demonGroup });
+  demon.p2 = new Demon(this, 640, 2464, { gameState: this.state, audio: this.audio, group: this.demonGroup });
 
   topLayer6 = map.createStaticLayer("topLayerCastle2", [terrain6]);
   topLayer8 = map.createStaticLayer("LayerSecreto", [terrain8]);

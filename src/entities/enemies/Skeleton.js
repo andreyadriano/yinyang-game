@@ -1,4 +1,4 @@
-import { topLayer, topLayer2, topLayer3, player, player2, playerPosition, player2Position} from "../../scenes/GameScene.js";
+import { player, player2, playerPosition, player2Position} from "../../scenes/GameScene.js";
 import { Enemy } from "./Enemy.js";
 export { Skeleton };
 
@@ -13,7 +13,7 @@ const ANIM_KEYS = {
 class Skeleton extends Enemy {
     // Cria a classe do skeleton
 
-    constructor(scene, x, y, point, { gameState, audio } = {}){
+    constructor(scene, x, y, point, { gameState, audio, group } = {}){
         super(scene, { gameState, audio, animKeys: ANIM_KEYS, health: 50 });
         const anims = scene.anims;
         this.skeletonpoint = point;
@@ -60,12 +60,8 @@ class Skeleton extends Enemy {
           this.sprite.setVelocityX(-100);
           //this.sprite.setOrigin(0.5);
 
-          scene.physics.add.collider(this.sprite, topLayer);
-          scene.physics.add.collider(this.sprite, topLayer2);
-          scene.physics.add.collider(this.sprite, topLayer3);
-
-          scene.physics.add.overlap(player, this.sprite, this.handlePlayerHit, null, this)
-          scene.physics.add.overlap(player2, this.sprite, this.handlePlayerHit, null, this)
+          group.add(this.sprite);
+          this.sprite.setData("owner", this);
 
           //FIM DO CONSTRUCTOR
     }

@@ -1,5 +1,4 @@
 import { player, player2, playerPosition, player2Position } from "../../scenes/GameScene.js";
-import { topLayer, topLayer2, topLayer3 } from "../../scenes/GameScene.js";
 import { Enemy } from "./Enemy.js";
 
 export {Demon};
@@ -13,7 +12,7 @@ const ANIM_KEYS = {
 };
 
 class Demon extends Enemy {
-    constructor(scene, x, y, { gameState, audio } = {}){
+    constructor(scene, x, y, { gameState, audio, group } = {}){
         super(scene, { gameState, audio, animKeys: ANIM_KEYS, health: 175 });
         const anims = scene.anims;
         this.demonposition = "left";
@@ -59,12 +58,8 @@ class Demon extends Enemy {
         this.sprite.setCollideWorldBounds(true);
         this.sprite.setVelocityX(-100);
 
-        scene.physics.add.collider(this.sprite, topLayer);
-        scene.physics.add.collider(this.sprite, topLayer2);
-        scene.physics.add.collider(this.sprite, topLayer3);
-
-        scene.physics.add.overlap(player, this.sprite, this.handlePlayerHit, null, this);
-        scene.physics.add.overlap(player2, this.sprite, this.handlePlayerHit, null, this);
+        group.add(this.sprite);
+        this.sprite.setData("owner", this);
 
         // FIM DO CONSTRUCTOR
     }

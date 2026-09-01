@@ -1,9 +1,9 @@
-import { topLayer, player, player2 } from "../../scenes/GameScene.js";
+import { player } from "../../scenes/GameScene.js";
 export default class Lancachamas {
 
     //cria o lança chamas
 
-    constructor(scene, x, y, delay, { gameState } = {}) {
+    constructor(scene, x, y, delay, { gameState, group } = {}) {
         this.scene = scene;
         const anims = scene.anims;
         this.gameState = gameState;
@@ -55,12 +55,9 @@ export default class Lancachamas {
             },
             repeat: 0
         });
-        //criando colisão entre lança chamas e o chao
-        scene.physics.add.collider(this.sprite, topLayer);
-        scene.physics.add.collider(player, this.sprite, this.handlePlayerHit, null, this);
-        scene.physics.add.collider(player2, this.sprite, this.handlePlayerHit, null, this);
+        group.add(this.sprite);
+        this.sprite.setData("owner", this);
 
-        
         // FIM DO CONSTRUCTOR
     }
 

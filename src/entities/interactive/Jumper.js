@@ -1,8 +1,8 @@
-import { topLayer, player, player2 } from "../../scenes/GameScene.js";
+import { player, player2 } from "../../scenes/GameScene.js";
 export {Jumper};
 
 export default class Jumper {
-    constructor(scene, x, y, height){
+    constructor(scene, x, y, height, { group } = {}){
         this.scene = scene;
         const anims = scene.anims;
         this.velocidade = height;
@@ -32,13 +32,7 @@ export default class Jumper {
         
 
         //CRIA COLISAO ENTRE PLAYERS E JUMPER
-        scene.physics.add.collider(this.sprite, topLayer);
-
-
-        scene.physics.add.collider(this.sprite, player);
-        scene.physics.add.collider(this.sprite, player2);
-
-
+        group.add(this.sprite);
 
     // FIM DO CONSTRUCTOR
     }
