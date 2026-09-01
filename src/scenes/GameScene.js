@@ -1,6 +1,7 @@
 import { SCENE_KEYS } from "./sceneKeys.js";
 import { GameState } from "../core/GameState.js";
 import { AudioManager } from "../core/AudioManager.js";
+import { Player } from "../entities/player/Player.js";
 import Lancachamas from "../entities/hazards/Lancachamas.js";
 import { Slime } from "../entities/enemies/Slime.js";
 import {Skeleton} from "../entities/enemies/Skeleton.js";
@@ -10,8 +11,6 @@ import {Demon} from "../entities/enemies/Demon.js";
 
 export { spike, player, player2, playerPosition, player2Position };
 export { topLayer, topLayer2, topLayer3 }
-
-const JUMP_BUFFER_MS = 333; // ~20 frames at 60fps, kept as a time-based buffer instead of a frame count
 
 /*
   Coordenadas para teleporte:
@@ -29,17 +28,11 @@ const JUMP_BUFFER_MS = 333; // ~20 frames at 60fps, kept as a time-based buffer 
 
 //VARIAVEIS DO PLAYER 1
 var player;
-var P1jump = false;
-var P1jumpdelay = 0;
 var playerPosition = "right"; // se o player ta virado pra esquerda ou direita
-var attackcombo = 0; //define qual dos 3 ataques o jogador vai usar, possibilitando um oombo
 
 // VARIAVEIS DO PLAYER 2
 var player2;
-var P2jump = false;
-var P2jumpdelay = 0;
 var player2Position = "right";
-var attackcombo2 = 0;
 
 // VARIAVEL DA VIDA
 var Soul;
@@ -353,17 +346,37 @@ create() {
     JailDoor.setCollideWorldBounds(true);
     JailDoor.setImmovable(true);
 
+  // ADICAO DO TECLADO
+
+  cursors = this.input.keyboard.createCursorKeys();
+  keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+  keyA= this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+  keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+  keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+  keyP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+  keyENTER = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+
   // CRIACAO DO JOGADOR 1
-  player = this.physics.add.sprite(100, 350, "yin");
-  player.setSize(13, 25, true).setOffset(18, 10);
-  player.setBounce(0);
-  player.setCollideWorldBounds(true);
+  this.player1 = new Player(this, {
+    x: 100,
+    y: 350,
+    spriteKey: "yin",
+    controls: { up: cursors.up, down: cursors.down, left: cursors.left, right: cursors.right, attack: keyENTER },
+    groundLayers: [topLayer, topLayer2],
+    audio: this.audio
+  });
+  player = this.player1.sprite;
 
   // CRIACAO DO JOGADOR 2
-  player2 = this.physics.add.sprite(75, 350, "yang");
-  player2.setSize(13, 25, true).setOffset(18, 10);
-  player2.setBounce(0);
-  player2.setCollideWorldBounds(true);
+  this.player2 = new Player(this, {
+    x: 75,
+    y: 350,
+    spriteKey: "yang",
+    controls: { up: keyW, down: keyS, left: keyA, right: keyD, attack: cursors.space },
+    groundLayers: [topLayer, topLayer2],
+    audio: this.audio
+  });
+  player2 = this.player2.sprite;
 
   Soul = this.add
   .image(20, 20, "soul")
@@ -477,16 +490,6 @@ create() {
   topLayer8 = map.createStaticLayer("LayerSecreto", [terrain8]);
 
 
-  // ADICAO DO TECLADO
-
-  cursors = this.input.keyboard.createCursorKeys();
-  keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
-  keyA= this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-  keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-  keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-  keyP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
-  keyENTER = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-
   //pointer = this.input.addPointer(1);
 
   // ADICIONANDO COLISAO AO JOGO
@@ -494,11 +497,6 @@ create() {
   // LAYERS
   topLayer.setCollisionByProperty({ collides: true });
   topLayer2.setCollisionByProperty({ collides: true });
-  // PLAYERS
-  this.physics.add.collider(player, topLayer);
-  this.physics.add.collider(player, topLayer2);
-  this.physics.add.collider(player2, topLayer);
-  this.physics.add.collider(player2, topLayer2);
   // BARREIRAS
   this.physics.add.collider(barreira1, topLayer);
   this.physics.add.collider(barreira1, topLayer2);
@@ -854,12 +852,8 @@ chamas.p34.update();
     // GAMEOVER
     if (this.state.isGameOver === true) {
       this.audio.get("music").stop();
-      if(player.anims.getCurrentKey() != "yin-die"){
-      player.anims.play("yin-die");
-      }
-      if(player2.anims.getCurrentKey() != "yang-die"){
-      player2.anims.play("yang-die");
-      }
+      this.player1.forceDeath();
+      this.player2.forceDeath();
     }
     if(this.state.isEndgame === true){
       this.audio.get("music").stop();
@@ -914,641 +908,17 @@ chamas.p34.update();
     }
 
 
-    //          PLAYER 1 ANIMATIONS
+    //          PLAYER ANIMATIONS
 
     if (keyP.isDown) {
       console.log(player.body.position.x, player.body.position.y, this.state.bossesDefeated, JailDoor.anims.getCurrentKey(), this.state.isEndgame, this.state.isGameOver);
     }
 
-    if (P1jump === true){
-      P1jumpdelay += delta;
-    }
-  
-    if (player.anims.getCurrentKey() === "yin-idle"){
-      player.setSize(13, 25, true).setOffset(18, 10);
-    }
-    
-    // DIE
-    if (
-      player.anims.getCurrentKey() === "yin-die" &&
-      player.anims.getProgress("yin-die") < 1
-    ) {
-        player.setVelocity(0, 0);
-    } else if (
-      player.anims.getCurrentKey() === "yin-die" &&
-      player.anims.getProgress("yin-die") === 1
-    ) {
-      this.physics.pause();
-      this.scene.start(SCENE_KEYS.GAME_OVER);
-    }
+    this.player1.update(time, delta);
+    this.player2.update(time, delta);
+    playerPosition = this.player1.position;
+    player2Position = this.player2.position;
 
-    //          HURT
-    else if (
-    player.anims.getCurrentKey() === "yin-hurt" &&
-    player.anims.getProgress("yin-hurt") < 1
-  ) {
-    player.setTint(0xff0000);
-  } else if (
-    player.anims.getCurrentKey() === "yin-hurt" &&
-    player.anims.getProgress("yin-hurt") === 1
-  ) {
-    player.clearTint();
-    player.anims.play("yin-idle", true);
-
-  
-
-
-    //      ATTACK 1
-  } else if (
-    player.anims.getCurrentKey() === "yin-attack1" &&
-    player.anims.getProgress("yin-attack1") < 1 &&
-    playerPosition === "right"
-  ) {
-    player.setSize(15, 30, true).setOffset(25, 5);
-  } else if (
-    player.anims.getCurrentKey() === "yin-attack1" &&
-    player.anims.getProgress("yin-attack1") < 1 &&
-    playerPosition === "left"
-  ) {
-    player.setSize(15, 30, true).setOffset(10, 5);
-  } else if (
-    player.anims.getCurrentKey() === "yin-attack1" &&
-    player.anims.getProgress("yin-attack1") === 1
-  ) {
-    player.anims.play("yin-idle", true);
-  }
-
-  //          ATTACK 2
-  else if (
-    player.anims.getCurrentKey() === "yin-attack2" &&
-    player.anims.getProgress("yin-attack2") < 1 &&
-    playerPosition === "right"
-  ) {
-    player.setSize(15, 30, true).setOffset(25, 5);
-  } else if (
-    player.anims.getCurrentKey() === "yin-attack2" &&
-    player.anims.getProgress("yin-attack2") < 1 &&
-    playerPosition === "left"
-  ) {
-    player.setSize(15, 30, true).setOffset(10, 5);
-  } else if (
-    player.anims.getCurrentKey() === "yin-attack2" &&
-    player.anims.getProgress("yin-attack2") === 1
-  ) {
-    player.anims.play("yin-idle", true);
-  }
-
-  //           ATTACK 3
-  else if (
-    player.anims.getCurrentKey() === "yin-attack3" &&
-    player.anims.getProgress("yin-attack3") < 1 &&
-    playerPosition === "right"
-  ) {
-    player.setSize(15, 30, true).setOffset(25, 5);
-  } else if (
-    player.anims.getCurrentKey() === "yin-attack3" &&
-    player.anims.getProgress("yin-attack3") < 1 &&
-    playerPosition === "left"
-  ) {
-    player.setSize(15, 30, true).setOffset(10, 5);
-  } else if (
-    player.anims.getCurrentKey() === "yin-attack3" &&
-    player.anims.getProgress("yin-attack3") === 1
-  ) {
-    player.anims.play("yin-idle", true);
-  }
-  
-
-  //          CONDICOES PARA EXECUTAR ACOES
-
-   else if (cursors.up.isDown && player.body.blocked.down) {
-    player.setVelocityY(-350);
-    this.audio.get("jump").play({
-      volume:0.3
-    });
-    P1jump = true;
-  /*} else if (!player.body.wasTouching.down && player.body.touching.down){
-    landing.play({
-      volume: 0.3
-    });*/
-  } else if (!player.body.blocked.down && cursors.up.isDown && P1jump && P1jumpdelay >= JUMP_BUFFER_MS){
-    player.setVelocityY(-350);
-    this.audio.get("jump").play({
-      volume:0.3
-    });
-    P1jump = false;
-    P1jumpdelay = 0;
-
-  } else if (
-    keyENTER.isDown &&
-    cursors.down.isUp &&
-    player.body.blocked.down &&
-    playerPosition === "left" &&
-    attackcombo === 0
-  ) {
-    player.setFlipX(true);
-    player.setVelocityX(0);
-    player.anims.play("yin-attack1", true);
-    this.audio.get("swordWoosh").play({volume: 0.3});
-    attackcombo = 1;
-  } else if (
-    keyENTER.isDown &&
-    cursors.down.isUp &&
-    player.body.blocked.down &&
-    playerPosition === "right" &&
-    attackcombo === 0
-  ) {
-    player.setFlipX(false);
-    player.setVelocityX(0);
-    player.anims.play("yin-attack1", true);
-    this.audio.get("swordWoosh").play({volume: 0.3});
-    attackcombo = 1;
-  } else if (
-    keyENTER.isDown &&
-    cursors.down.isUp &&
-    player.body.blocked.down &&
-    playerPosition === "left" &&
-    attackcombo === 1
-  ) {
-    player.setFlipX(true);
-    player.setVelocityX(0);
-    player.anims.play("yin-attack2", true);
-    this.audio.get("swordWoosh").play({volume: 0.3});
-    attackcombo = 2;
-  } else if (
-    keyENTER.isDown &&
-    cursors.down.isUp &&
-    player.body.blocked.down &&
-    playerPosition === "right" &&
-    attackcombo === 1
-  ) {
-    player.setFlipX(false);
-    player.setVelocityX(0);
-    player.anims.play("yin-attack2", true);
-    this.audio.get("swordWoosh").play({volume: 0.3});
-    attackcombo = 2;
-  } else if (
-    keyENTER.isDown &&
-    cursors.down.isUp &&
-    player.body.blocked.down &&
-    playerPosition === "left" &&
-    attackcombo === 2
-  ) {
-    player.setFlipX(true);
-    player.setVelocityX(0);
-    player.anims.play("yin-attack3", true);
-    this.audio.get("swordWoosh").play({volume: 0.3});
-    attackcombo = 0;
-  } else if (
-    keyENTER.isDown &&
-    cursors.down.isUp &&
-    player.body.blocked.down &&
-    playerPosition === "right" &&
-    attackcombo === 2
-  ) {
-    player.setFlipX(false);
-    player.setVelocityX(0);
-    player.anims.play("yin-attack3", true);
-    this.audio.get("swordWoosh").play({volume: 0.3});
-    attackcombo = 0;
-  } else if (
-    player.body.velocity.y < 0 &&
-    cursors.left.isUp &&
-    cursors.right.isUp &&
-    playerPosition === "left"
-  ) {
-    player.setFlipX(true);
-    player.setVelocityX(0);
-    player.anims.play("yin-jump", true);
-    attackcombo = 0;
-  } else if (
-    player.body.velocity.y < 0 &&
-    cursors.left.isUp &&
-    cursors.right.isUp &&
-    playerPosition === "right"
-  ) {
-    player.setFlipX(false);
-    player.setVelocityX(0);
-    player.anims.play("yin-jump", true);
-    attackcombo = 0;
-  } else if (player.body.velocity.y < 0 && cursors.left.isDown) {
-    player.setFlipX(true);
-    player.setVelocityX(-300);
-    player.anims.play("yin-jump", true);
-    playerPosition = "left";
-    attackcombo = 0;
-  } else if (player.body.velocity.y < 0 && cursors.right.isDown) {
-    player.setFlipX(false);
-    player.setVelocityX(300);
-    player.anims.play("yin-jump", true);
-    playerPosition = "right";
-    attackcombo = 0;
-  } else if (
-    !player.body.blocked.down &&
-    player.body.velocity.y > 0 &&
-    cursors.left.isUp &&
-    cursors.right.isUp &&
-    playerPosition === "left"
-  ) {
-    player.setFlipX(true);
-    player.setVelocityX(0);
-    player.anims.play("yin-fall", true);
-    attackcombo = 0;
-  } else if (
-    !player.body.blocked.down &&
-    player.body.velocity.y > 0 &&
-    cursors.left.isUp &&
-    cursors.right.isUp &&
-    playerPosition === "right"
-  ) {
-    player.setFlipX(false);
-    player.setVelocityX(0);
-    player.anims.play("yin-fall", true);
-    attackcombo = 0;
-  } else if (!player.body.blocked.down && player.body.velocity.y > 0 && cursors.left.isDown) {
-    player.setFlipX(true);
-    player.setVelocityX(-300);
-    player.anims.play("yin-fall", true);
-    playerPosition = "left";
-    attackcombo = 0;
-  } else if (!player.body.blocked.down && player.body.velocity.y > 0 && cursors.right.isDown) {
-    player.setFlipX(false);
-    player.setVelocityX(300);
-    player.anims.play("yin-fall", true);
-    playerPosition = "right";
-    attackcombo = 0;
-  } else if (cursors.left.isDown && player.body.blocked.down) {
-    player.setFlipX(true);
-    player.setVelocityX(-300);
-    player.anims.play("yin-run", true);
-    playerPosition = "left";
-    attackcombo = 0;
-  } else if (cursors.right.isDown && player.body.blocked.down) {
-    player.setFlipX(false);
-    player.setVelocityX(300);
-    player.anims.play("yin-run", true);
-    playerPosition = "right";
-    attackcombo = 0;
-  } else if (
-    cursors.down.isDown &&
-    player.body.blocked.down &&
-    keyENTER.isUp &&
-    playerPosition === "left"
-  ) {
-    player.setFlipX(true);
-    player.setVelocityX(0);
-    player.anims.play("yin-crouch", true);
-    attackcombo = 0;
-  } else if (
-    cursors.down.isDown &&
-    player.body.blocked.down &&
-    keyENTER.isUp &&
-    playerPosition === "right"
-  ) {
-    player.setFlipX(false);
-    player.setVelocityX(0);
-    player.anims.play("yin-crouch", true);
-    player.setSize(13, 20, true).setOffset(18, 15);
-    attackcombo = 0;
-  } else if (
-    player.body.blocked.down &&
-    cursors.right.isUp &&
-    cursors.left.isUp &&
-    keyENTER.isUp &&
-    cursors.down.isUp &&
-    playerPosition === "left"
-  ) {
-    player.setFlipX(true);
-    player.setVelocityX(0);
-    player.anims.play("yin-idle", true);
-  } else if (
-    player.body.blocked.down &&
-    cursors.right.isUp &&
-    cursors.left.isUp &&
-    keyENTER.isUp &&
-    cursors.down.isUp &&
-    playerPosition === "right"
-  ) {
-    player.setFlipX(false);
-    player.setVelocityX(0);
-    player.anims.play("yin-idle", true);
-  }
-
-  // PLAYER 2 ANIMATIONS
-
-  if (P2jump === true){
-    P2jumpdelay += delta;
-  }
-
-  if (player2.anims.getCurrentKey("yang-idle")){
-    player2.setSize(13, 25, true).setOffset(18, 10);
-  }
-  
-  //          DIE
-  if (
-    player2.anims.getCurrentKey() === "yang-die" &&
-    player2.anims.getProgress("yang-die") < 1
-  ) {
-      player2.setVelocity(0, 0);
-  } else if (
-    player2.anims.getCurrentKey() === "yang-die" &&
-    player2.anims.getProgress("yang-die") === 1
-  ) {
-      this.physics.pause();
-      this.scene.start(SCENE_KEYS.GAME_OVER);
-  }
-
-  //          HURT
-  else if (
-  player2.anims.getCurrentKey() === "yang-hurt" &&
-  player2.anims.getProgress("yang-hurt") < 1
-) {
-  player2.setTint(0xff0000);
-} else if (
-  player2.anims.getCurrentKey() === "yang-hurt" &&
-  player2.anims.getProgress("yang-hurt") === 1
-) {
-  player2.clearTint();
-  player2.anims.play("yang-idle", true);
-
-
-
-
-  //      ATTACK 1
-} else if (
-  player2.anims.getCurrentKey() === "yang-attack1" &&
-  player2.anims.getProgress("yang-attack1") < 1 &&
-  player2Position === "right"
-) {
-  player2.setSize(15, 30, true).setOffset(25, 5);
-} else if (
-  player2.anims.getCurrentKey() === "yang-attack1" &&
-  player2.anims.getProgress("yang-attack1") < 1 &&
-  player2Position === "left"
-) {
-  player2.setSize(15, 30, true).setOffset(10, 5);
-} else if (
-  player2.anims.getCurrentKey() === "yang-attack1" &&
-  player2.anims.getProgress("yang-attack1") === 1
-) {
-  player2.anims.play("yang-idle", true);
-}
-
-//          ATTACK 2
-else if (
-  player2.anims.getCurrentKey() === "yang-attack2" &&
-  player2.anims.getProgress("yang-attack2") < 1 &&
-  player2Position === "right"
-) {
-  player2.setSize(15, 30, true).setOffset(25, 5);
-} else if (
-  player2.anims.getCurrentKey() === "yang-attack2" &&
-  player2.anims.getProgress("yang-attack2") < 1 &&
-  player2Position === "left"
-) {
-  player2.setSize(15, 30, true).setOffset(10, 5);
-} else if (
-  player2.anims.getCurrentKey() === "yang-attack2" &&
-  player2.anims.getProgress("yang-attack2") === 1
-) {
-  player2.anims.play("yang-idle", true);
-}
-
-//           ATTACK 3
-else if (
-  player2.anims.getCurrentKey() === "yang-attack3" &&
-  player2.anims.getProgress("yang-attack3") < 1 &&
-  player2Position === "right"
-) {
-  player2.setSize(15, 30, true).setOffset(25, 5);
-} else if (
-  player2.anims.getCurrentKey() === "yang-attack3" &&
-  player2.anims.getProgress("yang-attack3") < 1 &&
-  player2Position === "left"
-) {
-  player2.setSize(15, 30, true).setOffset(10, 5);
-} else if (
-  player2.anims.getCurrentKey() === "yang-attack3" &&
-  player2.anims.getProgress("yang-attack3") === 1
-) {
-  player2.anims.play("yang-idle", true);
-}
-
-
-//          CONDICOES PARA EXECUTAR ACOES
-
- else if (keyW.isDown && player2.body.blocked.down) {
-  player2.setVelocityY(-350);
-  this.audio.get("jump").play({
-    volume:0.3
-  });
-  P2jump = true;
-/*} else if (!player2.body.wasTouching.down && player2.body.touching.down){
-  landing.play({
-    volume: 0.3
-  });*/
-} else if (!player2.body.blocked.down && keyW.isDown && P2jump && P2jumpdelay >= JUMP_BUFFER_MS){
-  player2.setVelocityY(-350);
-  this.audio.get("jump").play({
-    volume:0.3
-  });
-  P2jump = false;
-  P2jumpdelay = 0;
-
-} else if (
-  cursors.space.isDown &&
-  keyS.isUp &&
-  player2.body.blocked.down &&
-  player2Position === "left" &&
-  attackcombo2 === 0
-) {
-  player2.setFlipX(true);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-attack1", true);
-  this.audio.get("swordWoosh").play({volume: 0.3});
-  attackcombo2 = 1;
-} else if (
-  cursors.space.isDown &&
-  keyS.isUp &&
-  player2.body.blocked.down &&
-  player2Position === "right" &&
-  attackcombo2 === 0
-) {
-  player2.setFlipX(false);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-attack1", true);
-  this.audio.get("swordWoosh").play({volume: 0.3});
-  attackcombo2 = 1;
-} else if (
-  cursors.space.isDown &&
-  keyS.isUp &&
-  player2.body.blocked.down &&
-  player2Position === "left" &&
-  attackcombo2 === 1
-) {
-  player2.setFlipX(true);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-attack2", true);
-  this.audio.get("swordWoosh").play({volume: 0.3});
-  attackcombo2 = 2;
-} else if (
-  cursors.space.isDown &&
-  keyS.isUp &&
-  player2.body.blocked.down &&
-  player2Position === "right" &&
-  attackcombo2 === 1
-) {
-  player2.setFlipX(false);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-attack2", true);
-  this.audio.get("swordWoosh").play({volume: 0.3});
-  attackcombo2 = 2;
-} else if (
-  cursors.space.isDown &&
-  keyS.isUp &&
-  player2.body.blocked.down &&
-  player2Position === "left" &&
-  attackcombo2 === 2
-) {
-  player2.setFlipX(true);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-attack3", true);
-  this.audio.get("swordWoosh").play({volume: 0.3});
-  attackcombo2 = 0;
-} else if (
-  cursors.space.isDown &&
-  keyS.isUp &&
-  player2.body.blocked.down &&
-  player2Position === "right" &&
-  attackcombo2 === 2
-) {
-  player2.setFlipX(false);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-attack3", true);
-  this.audio.get("swordWoosh").play({volume: 0.3});
-  attackcombo2 = 0;
-} else if (
-  player2.body.velocity.y < 0 &&
-  keyA.isUp &&
-  keyD.isUp &&
-  player2Position === "left"
-) {
-  player2.setFlipX(true);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-jump", true);
-  attackcombo2 = 0;
-} else if (
-  player2.body.velocity.y < 0 &&
-  keyA.isUp &&
-  keyD.isUp &&
-  player2Position === "right"
-) {
-  player2.setFlipX(false);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-jump", true);
-  attackcombo2 = 0;
-} else if (player2.body.velocity.y < 0 && keyA.isDown) {
-  player2.setFlipX(true);
-  player2.setVelocityX(-300);
-  player2.anims.play("yang-jump", true);
-  player2Position = "left";
-  attackcombo2 = 0;
-} else if (player2.body.velocity.y < 0 && keyD.isDown) {
-  player2.setFlipX(false);
-  player2.setVelocityX(300);
-  player2.anims.play("yang-jump", true);
-  player2Position = "right";
-  attackcombo2 = 0;
-} else if (
-  !player2.body.blocked.down &&
-  player2.body.velocity.y > 0 &&
-  keyA.isUp &&
-  keyD.isUp &&
-  player2Position === "left"
-) {
-  player2.setFlipX(true);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-fall", true);
-  attackcombo2 = 0;
-} else if (
-  !player2.body.blocked.down &&
-  player2.body.velocity.y > 0 &&
-  keyA.isUp &&
-  keyD.isUp &&
-  player2Position === "right"
-) {
-  player2.setFlipX(false);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-fall", true);
-  attackcombo2 = 0;
-} else if (!player2.body.blocked.down && player2.body.velocity.y > 0 && keyA.isDown) {
-  player2.setFlipX(true);
-  player2.setVelocityX(-300);
-  player2.anims.play("yang-fall", true);
-  player2Position = "left";
-  attackcombo2 = 0;
-} else if (!player2.body.blocked.down && player2.body.velocity.y > 0 && keyD.isDown) {
-  player2.setFlipX(false);
-  player2.setVelocityX(300);
-  player2.anims.play("yang-fall", true);
-  player2Position = "right";
-  attackcombo2 = 0;
-} else if (keyA.isDown && player2.body.blocked.down) {
-  player2.setFlipX(true);
-  player2.setVelocityX(-300);
-  player2.anims.play("yang-run", true);
-  player2Position = "left";
-  attackcombo2 = 0;
-} else if (keyD.isDown && player2.body.blocked.down) {
-  player2.setFlipX(false);
-  player2.setVelocityX(300);
-  player2.anims.play("yang-run", true);
-  player2Position = "right";
-  attackcombo2 = 0;
-} else if (
-  keyS.isDown &&
-  player2.body.blocked.down &&
-  cursors.space.isUp &&
-  player2Position === "left"
-) {
-  player2.setFlipX(true);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-crouch", true);
-  attackcombo2 = 0;
-} else if (
-  keyS.isDown &&
-  player2.body.blocked.down &&
-  cursors.space.isUp &&
-  player2Position === "right"
-) {
-  player2.setFlipX(false);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-crouch", true);
-  player2.setSize(13, 20, true).setOffset(18, 15);
-  attackcombo2 = 0;
-} else if (
-  player2.body.blocked.down &&
-  keyD.isUp &&
-  keyA.isUp &&
-  cursors.space.isUp &&
-  keyS.isUp &&
-  player2Position === "left"
-) {
-  player2.setFlipX(true);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-idle", true);
-} else if (
-  player2.body.blocked.down &&
-  keyD.isUp &&
-  keyA.isUp &&
-  cursors.space.isUp &&
-  keyS.isUp &&
-  player2Position === "right"
-) {
-  player2.setFlipX(false);
-  player2.setVelocityX(0);
-  player2.anims.play("yang-idle", true);
-}
 // FIM DO UPDATE
   }
 }
