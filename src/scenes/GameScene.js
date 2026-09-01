@@ -1,5 +1,4 @@
-import { gameover } from "./GameOverScene.js";
-import {credits} from "./CreditsScene.js";
+import { SCENE_KEYS } from "./sceneKeys.js";
 import Lancachamas from "../entities/hazards/Lancachamas.js";
 import { Slime } from "../entities/enemies/Slime.js";
 import {Skeleton} from "../entities/enemies/Skeleton.js";
@@ -7,9 +6,11 @@ import {Jumper} from "../entities/interactive/Jumper.js";
 import {Portal} from "../entities/interactive/Portal.js";
 import {Demon} from "../entities/enemies/Demon.js";
 
-export { GameScene, spike, player, player2, SoulCount, BossesMortos, playerPosition, player2Position, portalsound};
+export { spike, player, player2, SoulCount, BossesMortos, playerPosition, player2Position, portalsound};
 export { slimeatk, slimeDIE, skeletonATK, skeletonDIE, skeletonHURT, bossdie, bossatk }
 export { topLayer, topLayer2, topLayer3 }
+
+const JUMP_BUFFER_MS = 333; // ~20 frames at 60fps, kept as a time-based buffer instead of a frame count
 
 /*
   Coordenadas para teleporte:
@@ -136,12 +137,14 @@ var topLayer8;
 var topLayer9;
 
 
-var GameScene = new Phaser.Scene("gamescene");
-
+export class GameScene extends Phaser.Scene {
+  constructor() {
+    super(SCENE_KEYS.GAME);
+  }
 
 // A FUNCAO PRELOAD FAZ O PRECARREGAMENTO DE IMAGENS E SONS DO JOGO
-GameScene.preload = function() {
-  
+preload() {
+
   //Assets do ambiente e dos objetos
   
   this.load.image("caverna","assets/ambiente/tilesets/cavernaSemfundo.png");
@@ -260,11 +263,11 @@ GameScene.preload = function() {
   });
 
 // FIM DO PRELOAD
-};
+}
 
 // A FUNCAO CREATE CRIA AS COISAS DENTRO DO JOGO
-GameScene.create = function() {
-  
+create() {
+
   // CRIACAO DOS SONS
   song = this.sound.add("song");
   swordwoosh = this.sound.add("swordwoosh");
@@ -774,10 +777,10 @@ this.cameras.add(0, 300, 800, 300).startFollow(player, true, 0.5, 0.5).setBounds
   });
 
 // FIM DO CREATE
-};
+}
 
 // A FUNCAO UPDATE EH A QUE FAZ O JOGO ACONTECER, ELA SE REPETE INFINITAMENTE VÃRIAS VEZES POR SEGUNDO
-GameScene.update = function() {
+update(time, delta) {
 
 jumper.p1.update();
 jumper.p2.update();
@@ -885,7 +888,7 @@ chamas.p34.update();
     if(Endgame === true){
       song.stop();
       this.physics.pause();
-      this.scene.start(credits);
+      this.scene.start(SCENE_KEYS.CREDITS);
     }
 
     // VIDA
@@ -942,7 +945,7 @@ chamas.p34.update();
     }
 
     if (P1jump === true){
-      P1jumpdelay ++;
+      P1jumpdelay += delta;
     }
   
     if (player.anims.getCurrentKey() === "yin-idle"){
@@ -960,7 +963,7 @@ chamas.p34.update();
       player.anims.getProgress("yin-die") === 1
     ) {
       this.physics.pause();
-      this.scene.start(gameover);
+      this.scene.start(SCENE_KEYS.GAME_OVER);
     }
 
     //          HURT
@@ -1052,7 +1055,7 @@ chamas.p34.update();
     landing.play({
       volume: 0.3
     });*/
-  } else if (!player.body.blocked.down && cursors.up.isDown && P1jump && P1jumpdelay >= 20){
+  } else if (!player.body.blocked.down && cursors.up.isDown && P1jump && P1jumpdelay >= JUMP_BUFFER_MS){
     player.setVelocityY(-350);
     jumping.play({
       volume:0.3
@@ -1258,7 +1261,7 @@ chamas.p34.update();
   // PLAYER 2 ANIMATIONS
 
   if (P2jump === true){
-    P2jumpdelay ++;
+    P2jumpdelay += delta;
   }
 
   if (player2.anims.getCurrentKey("yang-idle")){
@@ -1276,7 +1279,7 @@ chamas.p34.update();
     player2.anims.getProgress("yang-die") === 1
   ) {
       this.physics.pause();
-      this.scene.start(gameover);
+      this.scene.start(SCENE_KEYS.GAME_OVER);
   }
 
   //          HURT
@@ -1368,7 +1371,7 @@ else if (
   landing.play({
     volume: 0.3
   });*/
-} else if (!player2.body.blocked.down && keyW.isDown && P2jump && P2jumpdelay >= 20){
+} else if (!player2.body.blocked.down && keyW.isDown && P2jump && P2jumpdelay >= JUMP_BUFFER_MS){
   player2.setVelocityY(-350);
   jumping.play({
     volume:0.3
@@ -1571,7 +1574,8 @@ else if (
   player2.anims.play("yang-idle", true);
 }
 // FIM DO UPDATE
-};
+  }
+}
 
 
 
@@ -1590,7 +1594,7 @@ function hitSpike(player, spike) {
 function hitSpike2(player2, spike) {
 
   player2.setTint(0xff0000);
-  if(player.anims.getCurrentKey() != "yang-die"){
+  if(player2.anims.getCurrentKey() != "yang-die"){
   player2.anims.play("yang-hurt");
   player2.setVelocityY(-420);
   SoulCount.valor -= 4;
@@ -1600,26 +1604,26 @@ function hitSpike2(player2, spike) {
 function Barreira1OPEN(player, barreira1){
   if(barreira1open === false && possuiChaveAmarela === true){
     barreira1.anims.play("barreira1open");
-    possuiChaveAmarela === false;
+    possuiChaveAmarela = false;
   }
 }
 
 function Barreira2OPEN(player, barreira2){
   if(barreira2open === false && possuiChaveAzul === true){
     barreira2.anims.play("barreira2open");
-    possuiChaveAzul === false;
+    possuiChaveAzul = false;
   }
 }
 function Barreira1OPEN2(player2, barreira1){
   if(barreira1open === false && possuiChaveAmarela === true){
     barreira1.anims.play("barreira1open");
-    possuiChaveAmarela === false;
+    possuiChaveAmarela = false;
   }
 }
 function Barreira2OPEN2(player2, barreira2){
   if(barreira2open === false && possuiChaveAzul === true){
     barreira2.anims.play("barreira2open");
-    possuiChaveAzul === false;
+    possuiChaveAzul = false;
   }
 }
 

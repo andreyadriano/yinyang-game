@@ -1,19 +1,22 @@
-import { GameScene } from "./GameScene.js";
-export { credits }
+import { SCENE_KEYS } from "./sceneKeys.js";
+export { CreditsScene };
 
-var credits = new Phaser.Scene("SceneD");
-var fim;
+class CreditsScene extends Phaser.Scene {
+  constructor() {
+    super(SCENE_KEYS.CREDITS);
+  }
 
-credits.preload = function (){
-    this.load.image("creditsimage", "assets/interface/TelaFinal.png")
-    this.load.audio("fim", "assets/sounds/bgm/ebunny_-_Life.mp3")
-};
+  preload() {
+    this.load.image("creditsimage", "assets/interface/TelaFinal.png");
+    this.load.audio("fim", "assets/sounds/bgm/ebunny_-_Life.mp3");
+  }
 
-credits.create = function (){
+  create() {
     this.add.image(400, 300, "creditsimage");
-    fim = this.sound.add("fim");
-    fim.play({
-        loop: true,
-        volume: 0.3
+    this.fim = this.sound.add("fim");
+    this.fim.play({
+      loop: true,
+      volume: 0.3
     });
-};
+  }
+}

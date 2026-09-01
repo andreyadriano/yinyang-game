@@ -1,31 +1,30 @@
-import { GameScene } from "./GameScene.js";
-export { gameover };
-import {start} from "./StartScene.js";
+import { SCENE_KEYS } from "./sceneKeys.js";
+export { GameOverScene };
 
-var setupSceneInput;
-var gameover = new Phaser.Scene("SceneC");
-var cursors;
-var youlose;
-
-gameover.preload = function() {
-  this.load.audio("youlose", "assets/sounds/sfx/you_lose.ogg");
-
-  this.load.image("gameover", "assets/interface/gameover.png");
-};
-gameover.create = function() {
-  //console.log("SceneA");
-
-  this.add.image(400, 300, "gameover");
-
-  youlose = this.sound.add("youlose");
-
-  youlose.play();
-
-  cursors = this.input.keyboard.createCursorKeys();
-};
-
-gameover.update = function (){
-  if(cursors.space.isDown){
-    youlose.play();
+class GameOverScene extends Phaser.Scene {
+  constructor() {
+    super(SCENE_KEYS.GAME_OVER);
   }
-};
+
+  preload() {
+    this.load.audio("youlose", "assets/sounds/sfx/you_lose.ogg");
+
+    this.load.image("gameover", "assets/interface/gameover.png");
+  }
+
+  create() {
+    this.add.image(400, 300, "gameover");
+
+    this.youlose = this.sound.add("youlose");
+
+    this.youlose.play();
+
+    this.cursors = this.input.keyboard.createCursorKeys();
+  }
+
+  update() {
+    if (this.cursors.space.isDown) {
+      this.youlose.play();
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import { GameScene } from "./scenes/GameScene.js";
-import { start } from "./scenes/StartScene.js";
-import { gameover } from "./scenes/GameOverScene.js";
-import { credits } from "./scenes/CreditsScene.js";
+import { StartScene } from "./scenes/StartScene.js";
+import { GameOverScene } from "./scenes/GameOverScene.js";
+import { CreditsScene } from "./scenes/CreditsScene.js";
 
 var config = {
   type: Phaser.AUTO,
@@ -21,7 +21,7 @@ var config = {
     height: 600
   },
   // VÃÂ¡rias cenas, em sequÃÂªncia
-  scene: [start, GameScene, gameover, credits]
+  scene: [StartScene, GameScene, GameOverScene, CreditsScene]
 };
 
 var game = new Phaser.Game(config);
