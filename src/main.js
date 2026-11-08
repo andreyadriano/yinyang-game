@@ -3,6 +3,7 @@ import { GameScene } from "./scenes/GameScene.js";
 import { StartScene } from "./scenes/StartScene.js";
 import { GameOverScene } from "./scenes/GameOverScene.js";
 import { CreditsScene } from "./scenes/CreditsScene.js";
+import { TouchControlsScene } from "./scenes/TouchControlsScene.js";
 
 const config = {
   type: Phaser.AUTO,
@@ -22,7 +23,7 @@ const config = {
     height: 600
   },
   // Scenes, in sequence
-  scene: [PreloadScene, StartScene, GameScene, GameOverScene, CreditsScene]
+  scene: [PreloadScene, StartScene, GameScene, GameOverScene, CreditsScene, TouchControlsScene]
 };
 
 const game = new Phaser.Game(config);

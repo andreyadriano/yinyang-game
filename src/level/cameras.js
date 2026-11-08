@@ -11,3 +11,10 @@ export function setupSplitScreenCameras(scene, players) {
     .startFollow(players[0].sprite, true, 0.5, 0.5)
     .setBounds(0, 150, WORLD_SIZE, WORLD_SIZE);
 }
+
+// One player per device: a single full-screen camera that follows the local player.
+export function setupSingleCamera(scene, player) {
+  scene.cameras.main.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
+  scene.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
+  scene.cameras.main.startFollow(player.sprite, true, 0.5, 0.5);
+}

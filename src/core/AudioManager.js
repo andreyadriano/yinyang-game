@@ -14,6 +14,16 @@ export class AudioManager {
     Object.entries(soundMap).forEach(([key, assetKey]) => this.add(key, assetKey));
   }
 
+  // Phones keep audio locked until the first touch: play as soon as it is unlocked.
+  playWhenUnlocked(key, config) {
+    const sound = this.get(key);
+    if (this.scene.sound.locked) {
+      this.scene.sound.once("unlocked", () => sound.play(config));
+    } else {
+      sound.play(config);
+    }
+  }
+
   get(key) {
     return this.sounds[key];
   }

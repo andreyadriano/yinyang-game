@@ -14,6 +14,14 @@ class GameOverScene extends Phaser.Scene {
     this.youlose.play();
 
     this.cursors = this.input.keyboard.createCursorKeys();
+
+    // After a moment (so a tap meant for the game does not skip this screen), a tap or Enter
+    // goes back to the start screen to play again.
+    this.time.delayedCall(1500, () => {
+      const restart = () => this.scene.start(SCENE_KEYS.START);
+      this.input.once("pointerup", restart);
+      this.input.keyboard.once("keydown-ENTER", restart);
+    });
   }
 
   update() {

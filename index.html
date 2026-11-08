@@ -1,17 +1,23 @@
-<!doctype html> 
-<html lang="en"> 
-<head> 
+<!doctype html>
+<html lang="pt-BR">
+<head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#000000" />
   <title>Yin Yang</title>
   <link rel="icon" href="data:," />
-    <link rel="STYLESHEET" href="main.css" type="text/css">
-  </head>
+  <link rel="stylesheet" href="main.css" type="text/css" />
+</head>
 <body>
   <div id="game"></div>
+  <div id="rotate-device">Gire o aparelho para a horizontal para jogar</div>
+
   <!-- Phaser 4.2.1 (pinned; update the version in CLAUDE.md too) -->
   <script src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js"></script>
 
-  <!-- Multiple files. Based on https://medium.com/@mattlag/es6-modules-getting-started-gotchas-2ad154f38e2e -->
+  <!-- ES modules, no build step -->
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

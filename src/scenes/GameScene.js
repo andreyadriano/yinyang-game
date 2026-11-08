@@ -3,16 +3,18 @@ import { GAME_SOUNDS } from "../data/assets.js";
 import { LEVEL_SPAWNS } from "../data/levelSpawns.js";
 import { GameState } from "../core/GameState.js";
 import { AudioManager } from "../core/AudioManager.js";
+import { resolveGameMode } from "../core/gameMode.js";
 import { LevelMap } from "../level/LevelMap.js";
 import { createEntityGroups } from "../level/EntityGroups.js";
 import { spawnLevel } from "../level/spawnLevel.js";
-import { setupSplitScreenCameras } from "../level/splitScreenCameras.js";
+import { setupSingleCamera, setupSplitScreenCameras } from "../level/cameras.js";
 import { Player } from "../entities/player/Player.js";
 import { Spikes } from "../entities/hazards/Spikes.js";
 import { Key } from "../entities/interactive/Key.js";
 import { Barrier } from "../entities/interactive/Barrier.js";
 import { JailDoor } from "../entities/interactive/JailDoor.js";
 import { createKeyboardInputs } from "../input/KeyboardInput.js";
+import { TouchInput } from "../input/TouchInput.js";
 import { bindFullscreenKey } from "../input/fullscreen.js";
 import { Hud } from "../ui/Hud.js";
 
@@ -25,10 +27,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    this.mode = resolveGameMode();
     this.state = new GameState();
     this.audio = new AudioManager(this);
     this.audio.addAll(GAME_SOUNDS);
-    this.audio.get("music").play({ loop: true, volume: 0.1 });
+    this.audio.playWhenUnlocked("music", { loop: true, volume: 0.1 });
 
     // Scenery, with the objects that sit between its layers
     const level = new LevelMap(this, "level1");
@@ -55,8 +58,17 @@ export class GameScene extends Phaser.Scene {
     // Objects that react to the players touching them
     [this.spikes, ...this.barriers, ...this.keys, this.jailDoor].forEach((object) => object.bindPlayers(this.players));
 
-    setupSplitScreenCameras(this, this.players);
+    if (this.mode.camera === "split") {
+      setupSplitScreenCameras(this, this.players);
+    } else {
+      setupSingleCamera(this, this.players[0]);
+    }
     bindFullscreenKey(this);
+
+    if (this.touchInput) {
+      this.scene.launch(SCENE_KEYS.TOUCH_CONTROLS, { gameScene: this, touchInput: this.touchInput });
+      this.events.once("shutdown", () => this.scene.stop(SCENE_KEYS.TOUCH_CONTROLS));
+    }
   }
 
   createLevelObjects(groundLayers) {
@@ -66,10 +78,13 @@ export class GameScene extends Phaser.Scene {
     this.jailDoor = new JailDoor(this, LEVEL_SPAWNS.jailDoor, deps);
   }
 
-  // One player per entry in LEVEL_SPAWNS.players, each with its own keyboard scheme.
+  // The players that play on this device (see the game mode), each with its own input source:
+  // the touch buttons on phones, otherwise one keyboard scheme per player.
   createPlayers(groundLayers) {
-    const inputs = createKeyboardInputs(this);
-    return LEVEL_SPAWNS.players.map(
+    this.touchInput = this.mode.touch ? new TouchInput() : null;
+    const inputs = this.touchInput ? [this.touchInput] : createKeyboardInputs(this);
+    const spawns = LEVEL_SPAWNS.players.filter(({ character }) => this.mode.characters.includes(character));
+    return spawns.map(
       ({ character, x, y }, index) =>
         new Player(this, { id: index + 1, character, x, y, input: inputs[index], groundLayers, audio: this.audio })
     );

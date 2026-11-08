@@ -4,4 +4,5 @@ export const SCENE_KEYS = {
   GAME: "game",
   GAME_OVER: "gameOver",
   CREDITS: "credits",
+  TOUCH_CONTROLS: "touchControls",
 };
