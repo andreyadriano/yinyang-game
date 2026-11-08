@@ -25,7 +25,7 @@ export class Spikes {
   handlePlayerHit(player) {
     player.sprite.setTint(0xff0000);
     if (!player.isDead()) {
-      player.sprite.anims.play(player.anim("hurt"));
+      player.hurt({ restart: true });
       player.sprite.setVelocityY(SPIKE_BOUNCE_VELOCITY);
       this.gameState.soulCount -= SPIKE_DAMAGE;
     }

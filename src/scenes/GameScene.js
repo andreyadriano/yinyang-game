@@ -2,6 +2,7 @@ import { SCENE_KEYS } from "./sceneKeys.js";
 import { GameState } from "../core/GameState.js";
 import { AudioManager } from "../core/AudioManager.js";
 import { Player } from "../entities/player/Player.js";
+import { KeyboardInput } from "../input/KeyboardInput.js";
 import Flamethrower from "../entities/hazards/Flamethrower.js";
 import { Slime } from "../entities/enemies/Slime.js";
 import {Skeleton} from "../entities/enemies/Skeleton.js";
@@ -239,9 +240,9 @@ create() {
   const keyD = this.input.keyboard.addKey(KeyCodes.D);
   const keyENTER = this.input.keyboard.addKey(KeyCodes.ENTER);
 
-  const controlSchemes = [
-    { up: cursors.up, down: cursors.down, left: cursors.left, right: cursors.right, attack: keyENTER },
-    { up: keyW, down: keyS, left: keyA, right: keyD, attack: cursors.space }
+  const inputs = [
+    new KeyboardInput({ up: cursors.up, down: cursors.down, left: cursors.left, right: cursors.right, attack: keyENTER }),
+    new KeyboardInput({ up: keyW, down: keyS, left: keyA, right: keyD, attack: cursors.space })
   ];
 
   // PLAYERS (one per entry in LEVEL_SPAWNS.players; each enemy and object works on this.players)
@@ -251,7 +252,7 @@ create() {
       character,
       x,
       y,
-      controls: controlSchemes[index],
+      input: inputs[index],
       groundLayers,
       audio: this.audio
     })
@@ -368,7 +369,7 @@ create() {
     key: "yin-die",
     frames: this.anims.generateFrameNumbers("yin", { start: 59, end: 68 }),
     frameRate: 5,
-    repeat: -1
+    repeat: 0
   });
 
   this.anims.create({
@@ -425,7 +426,7 @@ create() {
     key: "yin-hurt",
     frames: this.anims.generateFrameNumbers("yin", { start: 59, end: 61 }),
     frameRate: 9,
-    repeat: -1
+    repeat: 0
   });
 
   // PLAYER 2 ANIMATIONS
@@ -440,7 +441,7 @@ create() {
     key: "yang-die",
     frames: this.anims.generateFrameNumbers("yang", { start: 59, end: 68 }),
     frameRate: 5,
-    repeat: -1
+    repeat: 0
   });
 
   this.anims.create({
@@ -497,7 +498,7 @@ create() {
     key: "yang-hurt",
     frames: this.anims.generateFrameNumbers("yang", { start: 59, end: 61 }),
     frameRate: 9,
-    repeat: -1
+    repeat: 0
   });
 
 // END OF CREATE

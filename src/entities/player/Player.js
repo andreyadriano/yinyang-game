@@ -1,26 +1,45 @@
 import { SCENE_KEYS } from "../../scenes/sceneKeys.js";
 
 const JUMP_BUFFER_MS = 333; // ~20 frames at 60fps, kept as a time-based buffer instead of a frame count
+const JUMP_VELOCITY = -350;
+const MOVE_SPEED = 300;
+
+// Physics body sizes: setSize(width, height, true) followed by setOffset(offsetX, offsetY).
+const HITBOX = {
+  standing: { width: 13, height: 25, offsetX: 18, offsetY: 10 },
+  crouching: { width: 13, height: 20, offsetX: 18, offsetY: 15 },
+  attackRight: { width: 15, height: 30, offsetX: 25, offsetY: 5 },
+  attackLeft: { width: 15, height: 30, offsetX: 10, offsetY: 5 }
+};
+
+// FREE covers idle, run, jump, fall and crouch (they are derived from the intent and the physics every frame).
+// The other states lock the player until their animation ends.
+const STATE = { FREE: "free", ATTACK: "attack", HURT: "hurt", DIE: "die" };
+
+const ATTACK_ANIMS = ["attack1", "attack2", "attack3"];
 
 export class Player {
   // `character` is both the texture key and the animation prefix ("yin" or "yang").
-  constructor(scene, { id, character, x, y, controls, groundLayers, audio } = {}) {
+  // `input` is an input source (see KeyboardInput): it returns the intent for each frame.
+  constructor(scene, { id, character, x, y, input, groundLayers, audio } = {}) {
     this.scene = scene;
     this.id = id;
     this.character = character;
-    this.controls = controls;
+    this.input = input;
     this.audio = audio;
 
     this.facing = "right";
+    this.state = STATE.FREE;
     this.attackCombo = 0;
     this.isJumping = false;
     this.jumpBufferMs = 0;
 
     this.sprite = scene.physics.add.sprite(x, y, character);
-    this.sprite.setSize(13, 25, true).setOffset(18, 10);
+    this.setHitbox(HITBOX.standing);
     this.sprite.setBounce(0);
     this.sprite.setCollideWorldBounds(true);
     this.sprite.setData("owner", this);
+    this.sprite.on("animationcomplete", (animation) => this.onAnimationComplete(animation.key));
 
     groundLayers.forEach((layer) => {
       scene.physics.add.collider(this.sprite, layer);
@@ -31,211 +50,172 @@ export class Player {
     return `${this.character}-${name}`;
   }
 
-  isAttacking() {
-    return this.isPlayingAnim("attack1") || this.isPlayingAnim("attack2") || this.isPlayingAnim("attack3");
-  }
-
-  isDead() {
-    return this.isPlayingAnim("die");
-  }
-
-  // Pushed back by an enemy or hazard: sets velocity and plays the hurt animation.
-  takeHit(velocityX, velocityY) {
-    this.sprite.setVelocityX(velocityX);
-    this.sprite.setVelocityY(velocityY);
-    this.sprite.anims.play(this.anim("hurt"), true);
-  }
-
   isPlayingAnim(name) {
     return this.sprite.anims.getCurrentKey() === this.anim(name);
   }
 
-  animProgress(name) {
-    return this.sprite.anims.getProgress(this.anim(name));
+  isAttacking() {
+    return this.state === STATE.ATTACK;
+  }
+
+  isDead() {
+    return this.state === STATE.DIE;
+  }
+
+  // Pushed back by an enemy or hazard: sets velocity and plays the hurt animation.
+  takeHit(velocityX, velocityY) {
+    if (this.isDead()) return;
+    this.sprite.setVelocityX(velocityX);
+    this.sprite.setVelocityY(velocityY);
+    this.hurt();
+  }
+
+  // Enters the hurt state. With `restart`, the animation starts over even if it is already playing.
+  hurt({ restart = false } = {}) {
+    if (this.isDead()) return;
+    this.state = STATE.HURT;
+    this.sprite.anims.play(this.anim("hurt"), !restart);
   }
 
   forceDeath() {
-    if (!this.isPlayingAnim("die")) {
-      this.sprite.anims.play(this.anim("die"));
-    }
+    if (this.isDead()) return;
+    this.state = STATE.DIE;
+    this.sprite.anims.play(this.anim("die"));
   }
 
   update(time, delta) {
-    const sprite = this.sprite;
-    const controls = this.controls;
+    const intent = this.input.read();
 
     if (this.isJumping) {
       this.jumpBufferMs += delta;
     }
 
     if (this.isPlayingAnim("idle")) {
-      sprite.setSize(13, 25, true).setOffset(18, 10);
+      this.setHitbox(HITBOX.standing);
     }
 
-    // DIE
-    if (this.isPlayingAnim("die") && this.animProgress("die") < 1) {
-      sprite.setVelocity(0, 0);
-    } else if (this.isPlayingAnim("die") && this.animProgress("die") === 1) {
+    switch (this.state) {
+      case STATE.DIE:
+        this.sprite.setVelocity(0, 0);
+        break;
+      case STATE.HURT:
+        this.sprite.setTint(0xff0000);
+        break;
+      case STATE.ATTACK:
+        this.setHitbox(this.facing === "right" ? HITBOX.attackRight : HITBOX.attackLeft);
+        break;
+      default:
+        this.updateFree(intent);
+    }
+  }
+
+  // Animations that end a locked state (they do not repeat, so animationcomplete fires).
+  onAnimationComplete(key) {
+    if (this.state === STATE.ATTACK && ATTACK_ANIMS.some((name) => key === this.anim(name))) {
+      this.state = STATE.FREE;
+      this.sprite.anims.play(this.anim("idle"), true);
+    } else if (this.state === STATE.HURT && key === this.anim("hurt")) {
+      this.sprite.clearTint();
+      this.state = STATE.FREE;
+      this.sprite.anims.play(this.anim("idle"), true);
+    } else if (this.state === STATE.DIE && key === this.anim("die")) {
       this.scene.physics.pause();
       this.scene.scene.start(SCENE_KEYS.GAME_OVER);
     }
+  }
 
-    // HURT
-    else if (this.isPlayingAnim("hurt") && this.animProgress("hurt") < 1) {
-      sprite.setTint(0xff0000);
-    } else if (this.isPlayingAnim("hurt") && this.animProgress("hurt") === 1) {
-      sprite.clearTint();
-      sprite.anims.play(this.anim("idle"), true);
+  // Free movement. Branches are ordered by priority: the first one that applies wins.
+  updateFree(intent) {
+    const body = this.sprite.body;
+    const onGround = body.blocked.down;
 
-    // ATTACK 1
-    } else if (this.isPlayingAnim("attack1") && this.animProgress("attack1") < 1 && this.facing === "right") {
-      sprite.setSize(15, 30, true).setOffset(25, 5);
-    } else if (this.isPlayingAnim("attack1") && this.animProgress("attack1") < 1 && this.facing === "left") {
-      sprite.setSize(15, 30, true).setOffset(10, 5);
-    } else if (this.isPlayingAnim("attack1") && this.animProgress("attack1") === 1) {
-      sprite.anims.play(this.anim("idle"), true);
+    if (intent.up && onGround) {
+      this.jump();
+    } else if (!onGround && intent.up && this.isJumping && this.jumpBufferMs >= JUMP_BUFFER_MS) {
+      this.doubleJump();
+    } else if (intent.attack && !intent.down && onGround) {
+      this.startAttack();
+    } else if (body.velocity.y < 0) {
+      this.moveInAir(intent, "jump");
+    } else if (!onGround && body.velocity.y > 0) {
+      this.moveInAir(intent, "fall");
+    } else if (onGround) {
+      this.moveOnGround(intent);
     }
+  }
 
-    // ATTACK 2
-    else if (this.isPlayingAnim("attack2") && this.animProgress("attack2") < 1 && this.facing === "right") {
-      sprite.setSize(15, 30, true).setOffset(25, 5);
-    } else if (this.isPlayingAnim("attack2") && this.animProgress("attack2") < 1 && this.facing === "left") {
-      sprite.setSize(15, 30, true).setOffset(10, 5);
-    } else if (this.isPlayingAnim("attack2") && this.animProgress("attack2") === 1) {
-      sprite.anims.play(this.anim("idle"), true);
+  jump() {
+    this.sprite.setVelocityY(JUMP_VELOCITY);
+    this.audio.get("jump").play({ volume: 0.3 });
+    this.isJumping = true;
+  }
+
+  doubleJump() {
+    this.sprite.setVelocityY(JUMP_VELOCITY);
+    this.audio.get("jump").play({ volume: 0.3 });
+    this.isJumping = false;
+    this.jumpBufferMs = 0;
+  }
+
+  // Three-hit combo: each press starts the next attack, and the third one resets the combo.
+  startAttack() {
+    this.state = STATE.ATTACK;
+    this.sprite.setFlipX(this.facing === "left");
+    this.sprite.setVelocityX(0);
+    this.sprite.anims.play(this.anim(ATTACK_ANIMS[this.attackCombo]), true);
+    this.audio.get("swordWoosh").play({ volume: 0.3 });
+    this.attackCombo = (this.attackCombo + 1) % ATTACK_ANIMS.length;
+  }
+
+  // Airborne: keep moving horizontally with the intent (left wins over right) and play `animName`.
+  moveInAir(intent, animName) {
+    this.steer(intent);
+    this.sprite.anims.play(this.anim(animName), true);
+    this.attackCombo = 0;
+  }
+
+  moveOnGround(intent) {
+    if (intent.left || intent.right) {
+      this.steer(intent);
+      this.sprite.anims.play(this.anim("run"), true);
+      this.attackCombo = 0;
+    } else if (intent.down && !intent.attack) {
+      this.crouch();
+    } else if (!intent.down && !intent.attack) {
+      this.sprite.setFlipX(this.facing === "left");
+      this.sprite.setVelocityX(0);
+      this.sprite.anims.play(this.anim("idle"), true);
     }
+  }
 
-    // ATTACK 3
-    else if (this.isPlayingAnim("attack3") && this.animProgress("attack3") < 1 && this.facing === "right") {
-      sprite.setSize(15, 30, true).setOffset(25, 5);
-    } else if (this.isPlayingAnim("attack3") && this.animProgress("attack3") < 1 && this.facing === "left") {
-      sprite.setSize(15, 30, true).setOffset(10, 5);
-    } else if (this.isPlayingAnim("attack3") && this.animProgress("attack3") === 1) {
-      sprite.anims.play(this.anim("idle"), true);
+  crouch() {
+    this.sprite.setFlipX(this.facing === "left");
+    this.sprite.setVelocityX(0);
+    this.sprite.anims.play(this.anim("crouch"), true);
+    // The smaller hitbox only applies when facing right (this is how it behaved before the refactor).
+    if (this.facing === "right") {
+      this.setHitbox(HITBOX.crouching);
     }
+    this.attackCombo = 0;
+  }
 
-    // CONDITIONS TO PERFORM ACTIONS
-
-    else if (controls.up.isDown && sprite.body.blocked.down) {
-      sprite.setVelocityY(-350);
-      this.audio.get("jump").play({ volume: 0.3 });
-      this.isJumping = true;
-    } else if (!sprite.body.blocked.down && controls.up.isDown && this.isJumping && this.jumpBufferMs >= JUMP_BUFFER_MS) {
-      sprite.setVelocityY(-350);
-      this.audio.get("jump").play({ volume: 0.3 });
-      this.isJumping = false;
-      this.jumpBufferMs = 0;
-    } else if (controls.attack.isDown && controls.down.isUp && sprite.body.blocked.down && this.facing === "left" && this.attackCombo === 0) {
-      sprite.setFlipX(true);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("attack1"), true);
-      this.audio.get("swordWoosh").play({ volume: 0.3 });
-      this.attackCombo = 1;
-    } else if (controls.attack.isDown && controls.down.isUp && sprite.body.blocked.down && this.facing === "right" && this.attackCombo === 0) {
-      sprite.setFlipX(false);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("attack1"), true);
-      this.audio.get("swordWoosh").play({ volume: 0.3 });
-      this.attackCombo = 1;
-    } else if (controls.attack.isDown && controls.down.isUp && sprite.body.blocked.down && this.facing === "left" && this.attackCombo === 1) {
-      sprite.setFlipX(true);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("attack2"), true);
-      this.audio.get("swordWoosh").play({ volume: 0.3 });
-      this.attackCombo = 2;
-    } else if (controls.attack.isDown && controls.down.isUp && sprite.body.blocked.down && this.facing === "right" && this.attackCombo === 1) {
-      sprite.setFlipX(false);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("attack2"), true);
-      this.audio.get("swordWoosh").play({ volume: 0.3 });
-      this.attackCombo = 2;
-    } else if (controls.attack.isDown && controls.down.isUp && sprite.body.blocked.down && this.facing === "left" && this.attackCombo === 2) {
-      sprite.setFlipX(true);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("attack3"), true);
-      this.audio.get("swordWoosh").play({ volume: 0.3 });
-      this.attackCombo = 0;
-    } else if (controls.attack.isDown && controls.down.isUp && sprite.body.blocked.down && this.facing === "right" && this.attackCombo === 2) {
-      sprite.setFlipX(false);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("attack3"), true);
-      this.audio.get("swordWoosh").play({ volume: 0.3 });
-      this.attackCombo = 0;
-    } else if (sprite.body.velocity.y < 0 && controls.left.isUp && controls.right.isUp && this.facing === "left") {
-      sprite.setFlipX(true);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("jump"), true);
-      this.attackCombo = 0;
-    } else if (sprite.body.velocity.y < 0 && controls.left.isUp && controls.right.isUp && this.facing === "right") {
-      sprite.setFlipX(false);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("jump"), true);
-      this.attackCombo = 0;
-    } else if (sprite.body.velocity.y < 0 && controls.left.isDown) {
-      sprite.setFlipX(true);
-      sprite.setVelocityX(-300);
-      sprite.anims.play(this.anim("jump"), true);
+  // Turns and moves horizontally according to the intent; stops when neither direction is held.
+  steer(intent) {
+    if (intent.left) {
+      this.sprite.setFlipX(true);
+      this.sprite.setVelocityX(-MOVE_SPEED);
       this.facing = "left";
-      this.attackCombo = 0;
-    } else if (sprite.body.velocity.y < 0 && controls.right.isDown) {
-      sprite.setFlipX(false);
-      sprite.setVelocityX(300);
-      sprite.anims.play(this.anim("jump"), true);
+    } else if (intent.right) {
+      this.sprite.setFlipX(false);
+      this.sprite.setVelocityX(MOVE_SPEED);
       this.facing = "right";
-      this.attackCombo = 0;
-    } else if (!sprite.body.blocked.down && sprite.body.velocity.y > 0 && controls.left.isUp && controls.right.isUp && this.facing === "left") {
-      sprite.setFlipX(true);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("fall"), true);
-      this.attackCombo = 0;
-    } else if (!sprite.body.blocked.down && sprite.body.velocity.y > 0 && controls.left.isUp && controls.right.isUp && this.facing === "right") {
-      sprite.setFlipX(false);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("fall"), true);
-      this.attackCombo = 0;
-    } else if (!sprite.body.blocked.down && sprite.body.velocity.y > 0 && controls.left.isDown) {
-      sprite.setFlipX(true);
-      sprite.setVelocityX(-300);
-      sprite.anims.play(this.anim("fall"), true);
-      this.facing = "left";
-      this.attackCombo = 0;
-    } else if (!sprite.body.blocked.down && sprite.body.velocity.y > 0 && controls.right.isDown) {
-      sprite.setFlipX(false);
-      sprite.setVelocityX(300);
-      sprite.anims.play(this.anim("fall"), true);
-      this.facing = "right";
-      this.attackCombo = 0;
-    } else if (controls.left.isDown && sprite.body.blocked.down) {
-      sprite.setFlipX(true);
-      sprite.setVelocityX(-300);
-      sprite.anims.play(this.anim("run"), true);
-      this.facing = "left";
-      this.attackCombo = 0;
-    } else if (controls.right.isDown && sprite.body.blocked.down) {
-      sprite.setFlipX(false);
-      sprite.setVelocityX(300);
-      sprite.anims.play(this.anim("run"), true);
-      this.facing = "right";
-      this.attackCombo = 0;
-    } else if (controls.down.isDown && sprite.body.blocked.down && controls.attack.isUp && this.facing === "left") {
-      sprite.setFlipX(true);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("crouch"), true);
-      this.attackCombo = 0;
-    } else if (controls.down.isDown && sprite.body.blocked.down && controls.attack.isUp && this.facing === "right") {
-      sprite.setFlipX(false);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("crouch"), true);
-      sprite.setSize(13, 20, true).setOffset(18, 15);
-      this.attackCombo = 0;
-    } else if (sprite.body.blocked.down && controls.right.isUp && controls.left.isUp && controls.attack.isUp && controls.down.isUp && this.facing === "left") {
-      sprite.setFlipX(true);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("idle"), true);
-    } else if (sprite.body.blocked.down && controls.right.isUp && controls.left.isUp && controls.attack.isUp && controls.down.isUp && this.facing === "right") {
-      sprite.setFlipX(false);
-      sprite.setVelocityX(0);
-      sprite.anims.play(this.anim("idle"), true);
+    } else {
+      this.sprite.setFlipX(this.facing === "left");
+      this.sprite.setVelocityX(0);
     }
+  }
+
+  setHitbox({ width, height, offsetX, offsetY }) {
+    this.sprite.setSize(width, height, true).setOffset(offsetX, offsetY);
   }
 }

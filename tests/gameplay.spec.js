@@ -178,3 +178,73 @@ test("com os dois chefes derrotados, a porta da cela abre e leva aos créditos",
   await page.waitForFunction(() => window.__game.scene.isActive("credits"), null, { timeout: 15_000 });
   await page.keyboard.up("ArrowRight");
 });
+
+// ---------- camada de entrada e máquina de estados do jogador ----------
+
+test("o jogador obedece à intenção de qualquer fonte de entrada, sem teclado", async ({ page }) => {
+  await page.evaluate(() => {
+    const player = window.__game.scene.getScene("game").players[0];
+    player.input = { read: () => ({ left: false, right: true, up: false, down: false, attack: false }) };
+  });
+  const before = await page.evaluate(`${scene}.players[0].sprite.x`);
+  await page.waitForTimeout(600);
+  const after = await page.evaluate(`${scene}.players[0].sprite.x`);
+  expect(after).toBeGreaterThan(before + 50);
+});
+
+test("o ataque trava o jogador até a animação acabar e então ele volta ao estado livre", async ({ page }) => {
+  await page.keyboard.down("Enter");
+  await page.waitForFunction(`${scene}.players[0].state === "attack"`, null, { timeout: 3000 });
+  await page.keyboard.up("Enter");
+  expect(await page.evaluate(`${scene}.players[0].isAttacking()`)).toBe(true);
+  await page.waitForFunction(`${scene}.players[0].state === "free"`, null, { timeout: 3000 });
+  expect(await page.evaluate(`${scene}.players[0].sprite.anims.getCurrentKey()`)).toBe("yin-idle");
+});
+
+test("o combo de ataque encadeia attack1, attack2, attack3 e recomeça", async ({ page }) => {
+  await page.evaluate(() => {
+    const player = window.__game.scene.getScene("game").players[0];
+    window.__attacks = [];
+    const original = player.startAttack.bind(player);
+    player.startAttack = () => {
+      original();
+      window.__attacks.push(player.sprite.anims.getCurrentKey());
+    };
+  });
+  await page.keyboard.down("Enter");
+  await page.waitForFunction(() => window.__attacks.length >= 4, null, { timeout: 8000, polling: "raf" });
+  await page.keyboard.up("Enter");
+  const attacks = await page.evaluate(() => window.__attacks.slice(0, 4));
+  expect(attacks).toEqual(["yin-attack1", "yin-attack2", "yin-attack3", "yin-attack1"]);
+});
+
+test("ao ser ferido o jogador fica vermelho e depois volta ao normal", async ({ page }) => {
+  await page.evaluate(`${scene}.players[0].takeHit(-125, -100)`);
+  expect(await page.evaluate(`${scene}.players[0].state`)).toBe("hurt");
+  await page.waitForFunction(`${scene}.players[0].state === "free"`, null, { timeout: 3000 });
+  expect(await page.evaluate(`${scene}.players[0].sprite.isTinted`)).toBe(false);
+});
+
+test("o segundo pulo no ar só vale depois do tempo de espera", async ({ page }) => {
+  await page.evaluate(() => {
+    const sprite = window.__game.scene.getScene("game").players[0].sprite;
+    window.__jumps = 0;
+    let previous = 0;
+    const count = () => {
+      const vy = sprite.body.velocity.y;
+      if (vy <= -340 && previous > -340) window.__jumps++;
+      previous = vy;
+      requestAnimationFrame(count);
+    };
+    count();
+  });
+  await page.keyboard.down("ArrowUp");
+  await page.waitForFunction(() => window.__jumps >= 2, null, { timeout: 6000, polling: "raf" });
+  await page.keyboard.up("ArrowUp");
+});
+
+test("quando a vida acaba o jogador morre e o jogo vai para a tela de game over", async ({ page }) => {
+  await page.evaluate(`${scene}.state.soulCount = 0`);
+  await page.waitForFunction(`${scene}.players[0].isDead() && ${scene}.players[1].isDead()`, null, { timeout: 3000 });
+  await page.waitForFunction(() => window.__game.scene.isActive("gameOver"), null, { timeout: 10_000 });
+});
