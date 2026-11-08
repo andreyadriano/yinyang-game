@@ -18,23 +18,24 @@ npm run format     # Prettier
 ```
 src/
   main.js                  config do Phaser; expõe window.__game para os testes
-  core/                    GameState, AudioManager, loadAssets (carrega um manifesto)
+  core/                    GameState, AudioManager, loadAssets (carrega um manifesto), gameMode (quem joga neste aparelho)
   data/
     assets.js              manifesto: todo asset do jogo (imagens, spritesheets, mapa, áudio) e GAME_SOUNDS
     levelSpawns.js         jogadores, espinhos, barreiras, chaves, porta e inimigos da fase
     playerAnimations.js    tabela das animações dos jogadores
-  scenes/                  PreloadScene (carrega tudo), StartScene, GameScene, GameOverScene, CreditsScene
+  scenes/                  PreloadScene (carrega tudo), StartScene, GameScene, GameOverScene, CreditsScene,
+                           TouchControlsScene (botões na tela, só em aparelhos de toque)
   level/                   LevelMap (camadas do Tiled), EntityGroups (grupos de física),
-                           spawnLevel (cria inimigos e objetos), splitScreenCameras
+                           spawnLevel (cria inimigos e objetos), cameras (tela dividida e câmera única)
   entities/
     player/                Player (id, character, facing; tag sprite.setData("owner")), playerAnimations
     enemies/               Enemy (base com máquina de estados), Slime, Skeleton, Demon
     hazards/               Flamethrower, Spikes
     interactive/           Portal, Jumper, Key, Barrier, JailDoor
-  input/                   fontes de entrada (KeyboardInput) que devolvem { left, right, up, down, attack }; fullscreen
+  input/                   fontes de entrada (KeyboardInput, TouchInput) que devolvem { left, right, up, down, attack }; fullscreen
   ui/                      Hud
 assets/                    sprites, tilesets, mapa (Tiled JSON) e áudio
-tests/                     smoke.spec.js, gameplay.spec.js, assets.spec.js (Playwright)
+tests/                     smoke, gameplay, mobile (celular emulado, toque real) e assets (Playwright)
 ```
 
 ## Convenções
@@ -99,3 +100,20 @@ O projeto foi migrado da 3.21 para a 4.2.1. Muito material na internet ainda mos
 - O guia oficial de migração está no pacote npm (`phaser/changelog/v4/4.0/MIGRATION-GUIDE.md`): lá constam também tint (`setTintFill` virou `setTintMode`), `Geom.Point` (agora `Vector2`), `Math.TAU` (agora PI * 2) e o `roundPixels` (agora `false` por padrão).
 
 Ao atualizar a versão do Phaser: troque o número em `index.html` e aqui, rode `npm test` e compare capturas de tela antes e depois, porque o renderizador pode mudar a aparência sem quebrar nenhum teste.
+
+## Modos de jogo e celular
+
+Quem joga neste aparelho é decidido por `resolveGameMode()` (`src/core/gameMode.js`):
+
+- `local`: dois jogadores no mesmo teclado, tela dividida (padrão no desktop).
+- `solo`: **um jogador por aparelho**, câmera única (padrão em aparelhos de toque; é também a base do co-op online, em que o outro jogador é remoto).
+- Dá para forçar na URL: `?mode=solo`, `?mode=local`, e em solo `?character=yang`.
+
+Regras para não quebrar o celular:
+
+- `scene.players` só tem os jogadores **locais**: pode ter 1 ou 2. Nunca use `players[1]` fora do código da tela dividida.
+- Toda entrada nova (toque, rede) implementa `read()` e devolve a intenção; o `Player` não sabe de onde ela vem.
+- Botões na tela ficam na `TouchControlsScene` (cena própria, para não se mexerem com as câmeras do jogo). Cada botão novo entra em `this.buttons`, que os testes usam para achar a posição.
+- Áudio: no celular ele só destrava no primeiro toque; use `audio.playWhenUnlocked()` para música.
+- Testes de celular: `tests/mobile.spec.js` usa a emulação "Pixel 7 landscape" e toques reais via CDP (`Fingers`), inclusive com dois dedos.
+- Limitação conhecida: o jogo é 4:3 e deixa barras pretas nas laterais de celulares compridos (Etapa 7).

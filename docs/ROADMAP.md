@@ -89,17 +89,20 @@ Esta é a etapa mais importante: mobile e online dependem dela.
 
 Com a base pronta, o mobile entra primeiro por ser mais simples e por obrigar o jogo a ter câmera única, que o online também vai usar.
 
-### Etapa 4: mobile básico (single player)
+### Etapa 4: mobile básico (um jogador por aparelho)
+
+Decisão tomada: **uma pessoa por aparelho**. No celular o jogo tem um único jogador local e câmera única; o segundo jogador só existe no desktop (tela dividida) ou, no futuro, como jogador remoto no co-op online (Etapa 6). A escolha vem do `resolveGameMode()` (`src/core/gameMode.js`): aparelho de toque → `solo`, senão → `local`; dá para forçar com `?mode=solo` ou `?mode=local` (e `?character=yang`).
 
 - [x] Atualizar o Phaser: feito, 3.21.0 → **4.2.1** (a mais recente). Mudanças no código: `createStaticLayer` → `createLayer` e `getCurrentKey` → `getName`. Os 31 testes passam e capturas de tela de 6 pontos do mapa ficaram visualmente idênticas às da 3.21.
-- [ ] `TouchInput`: D-pad virtual e botões de pulo e ataque, com multitouch, produzindo a mesma intenção do teclado.
-- [ ] Modo de câmera única: a cena escolhe entre **split-screen local** (desktop) e **câmera única** (mobile e online).
-- [ ] Escala e orientação: forçar paisagem, aceitar proporções variadas de tela e esconder a barra do navegador.
-- [ ] Botões na tela para tela cheia e pausa, no lugar das teclas F e P.
-- [ ] Desbloquear o áudio no primeiro toque.
-- [ ] `meta viewport` e bloqueio de zoom e rolagem.
+- [x] `TouchInput` + `TouchControlsScene`: D-pad (esquerda, direita, agachar), pulo e ataque, com vários dedos ao mesmo tempo, produzindo a mesma intenção do teclado.
+- [x] Modo de câmera única: `GameScene` escolhe entre tela dividida (`local`) e câmera única (`solo`).
+- [~] Escala e orientação: em pé aparece o aviso "Gire o aparelho" e o jogo some; barra do navegador escondida pelo CSS e pela tela cheia. **Falta** aceitar proporções variadas: o jogo continua 4:3 (800x600) e deixa barras pretas nas laterais de celulares compridos (em um Pixel 7 só ~55% da largura é usada). Fica para a Etapa 7.
+- [x] Botões na tela para pausa e tela cheia (o de tela cheia some onde o navegador não suporta, como o iPhone), no lugar das teclas F e P.
+- [x] Desbloquear o áudio no primeiro toque: um único toque na tela inicial agora começa o jogo (antes eram dois) e a música espera o desbloqueio.
+- [x] `meta viewport`, bloqueio de zoom e rolagem, e sem "puxar para atualizar".
+- [x] Extra necessário: depois do game over, um toque (ou Enter) volta à tela inicial; antes não havia como recomeçar.
 
-**Pronto quando:** o jogo roda no Chrome e no Safari de um celular, em paisagem, com controles de toque.
+**Pronto quando:** o jogo roda no Chrome e no Safari de um celular, em paisagem, com controles de toque. *(Verificado só em emulação do Chrome com toques reais, 12 testes em `tests/mobile.spec.js`. Falta testar em aparelho de verdade, principalmente no Safari do iPhone.)*
 
 ### Etapa 5: preparar a simulação para a rede
 
@@ -121,6 +124,14 @@ Com a base pronta, o mobile entra primeiro por ser mais simples e por obrigar o 
 
 **Pronto quando:** dois aparelhos, desktop e celular, completam o jogo juntos.
 
+**Desenho proposto** (como o modo `solo` da Etapa 4 se encaixa):
+
+- Cada aparelho roda um `GameScene` com **um jogador local** (teclado ou toque) e uma câmera única. O outro personagem é um jogador remoto, também um `Player`, mas com `NetworkInput` no lugar do teclado.
+- O **host** roda toda a simulação (física, inimigos, vida, chaves, chefes) com os dois jogadores: o dele e o remoto, movido pela intenção que o convidado envia. A cada ~50 ms o host manda um retrato do estado (posições, animações, estados, vida, objetos). O **convidado** não simula inimigos nem física: desenha o retrato recebido e interpola, e envia só a sua intenção.
+- Por isso a Etapa 5 vem antes: ids estáveis nas entidades, estado serializável, eventos explícitos e passo de simulação com tempo fixo. O convidado também precisa de um modo de cena "cliente" em que as entidades são só sprites.
+- **Transporte (recomendação):** um servidor Node pequeno com WebSocket que só repassa mensagens entre duas pessoas da mesma sala (código de 4 letras). Motivo: WebRTC direto costuma falhar em redes de celular (NAT de operadora) sem um servidor TURN, que é outro servidor para manter; e um repasse por WebSocket aguenta bem um jogo cooperativo com host autoritativo. Custo: hospedar o servidor (plano gratuito ou barato).
+- Limitação conhecida: o convidado sente a latência da rede entre o toque e o movimento do seu personagem. Se incomodar, o convidado passa a simular o próprio jogador localmente e corrige com o host (previsão no cliente), depois.
+
 ### Etapa 7: polimento mobile
 
 - [ ] Desempenho em aparelhos fracos (mapa grande de 4096 px, mais de 100 sprites).
@@ -132,10 +143,10 @@ Com a base pronta, o mobile entra primeiro por ser mais simples e por obrigar o 
 
 Quatro decisões precisam ser tomadas antes ou durante as etapas; as duas primeiras mudam o escopo do mobile.
 
-- [ ] **Quem joga no celular?** Se o mobile for sempre single player ou online, a câmera dividida existe só no desktop. Dois jogadores no mesmo celular mudariam muito o layout, e não é recomendado. *Decidir antes da Etapa 4.*
+- [x] **Quem joga no celular?** *(Decidido: uma pessoa por aparelho; ver Etapa 4.)* Se o mobile for sempre single player ou online, a câmera dividida existe só no desktop. Dois jogadores no mesmo celular mudariam muito o layout, e não é recomendado. *Decidir antes da Etapa 4.*
 - [x] **Versão do Phaser.** *(Resolvido: atualizado para a 4.2.1.)* O código usa `createStaticLayer`, removido na 3.50. É preciso confirmar qual versão o `index.html` carrega e planejar a atualização (a recomendação é depois da Etapa 3 e antes da Etapa 4). *Verificar na Etapa 0.*
 - [ ] **Transporte do online.** WebRTC direto (sem servidor, mas com problemas de NAT) ou servidor Node pequeno (custo de hospedagem, mais confiável). *Decidir antes da Etapa 6.*
-- [ ] **Build com Vite?** Hoje não há build. Um bundler ajuda a PWA e o carregamento no celular, mas acrescenta complexidade. *Decidir na Etapa 4.*
+- [ ] **Build com Vite?** *(Adiado: o mobile básico não precisou. Reavaliar na Etapa 7, para PWA e carregamento.)* Hoje não há build. Um bundler ajuda a PWA e o carregamento no celular, mas acrescenta complexidade. *Decidir na Etapa 4.*
 
 **Riscos**
 
