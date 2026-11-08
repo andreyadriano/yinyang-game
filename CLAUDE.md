@@ -10,7 +10,11 @@ npm install
 npm start          # serve em http://localhost:3000 (precisa de servidor HTTP por causa dos módulos ES6)
 npm test           # teste de fumaça (Playwright + Google Chrome do sistema)
 npm run lint       # ESLint
-npm run relay      # servidor de repasse do modo online (ws://localhost:8787); os testes já o sobem sozinhos
+npm run relay      # servidor de repasse do modo online em Node (ws://localhost:8787); os testes já o sobem sozinhos
+npm run worker:dev # o mesmo servidor como Cloudflare Worker, local (ws://localhost:8788)
+npm run test:worker        # o contrato do servidor contra o Worker
+npm run test:online-worker # o jogo online inteiro passando pelo Worker
+npm run worker:deploy      # publica o Worker (ver worker/README.md)
 npm run format     # Prettier
 ```
 
@@ -41,9 +45,10 @@ src/
   input/                   fontes de entrada (KeyboardInput, TouchInput, NetworkInput) que devolvem { left, right, up, down, attack }; fullscreen
   ui/                      Hud, OnlineStatus (sala e quem está conectado)
 server/                    relay.js: servidor de repasse em Node (usa net/RoomCore.js)
+worker/                    o mesmo servidor como Cloudflare Worker + Durable Object (README.md tem o passo a passo do deploy)
 assets/                    sprites, tilesets, mapa (Tiled JSON) e áudio
 tests/                     smoke, gameplay, groups, mobile (celular emulado, toque real), simulation, unit, audio,
-                           net, relay, online (duas páginas jogando juntas) e assets (Playwright)
+                           net, relay, relay-worker, online (duas páginas jogando juntas) e assets (Playwright)
 ```
 
 ## Convenções
@@ -147,13 +152,15 @@ Como funciona (`src/net`):
 
 - `HostSession`: o Yang é um `Player` com `NetworkInput`, movido pela intenção que o convidado manda (1 número por mensagem). A cada 3 passos (20 vezes por segundo) manda um snapshot **só com o que mudou** (`snapshotDelta`; o ponto da animação só vai quando a animação troca); um completo quando o amigo entra e a cada 5 s. Repassa os sons (`audio.events`). Ao sair, manda como a partida acabou (`end`).
 - `GuestSession`: aplica os snapshots com `setState(estado, { position: false, progress: false })` e faz as entidades deslizarem até a posição nova (`glide`), então o movimento fica suave. A física do convidado fica pausada; `GameScene.update` só chama `session.update`.
-- `RoomCore` (`src/net/RoomCore.js`) são as regras da sala (primeiro é anfitrião, segundo é convidado, terceiro é recusado, o que é repassado). É usada pelo `server/relay.js` e será usada pelo Durable Object da Cloudflare.
+- `RoomCore` (`src/net/RoomCore.js`) são as regras da sala (primeiro é anfitrião, segundo é convidado, terceiro é recusado, o que é repassado). É usada pelo `server/relay.js` (Node) e pelo Durable Object da Cloudflare (`worker/src/Room.js`). As duas implementações passam pelo **mesmo contrato de testes** (`tests/helpers/relayContract.js`); ao mudar uma regra da sala, rode `npm test` (que roda os dois).
 - Para saber se os dois têm a mesma versão, cada lado manda `hello` com uma impressão digital dos ids das entidades (`hashIds`). Diferentes: o jogo avisa e para.
-- Servidor: `src/net/config.js`. Em localhost é `ws://localhost:8787` (`npm run relay`); `PRODUCTION_RELAY_URL` ainda está vazio até publicar o Worker; `?relay=ws://...` troca na URL.
+- Servidor: `src/net/config.js`. Em localhost é `ws://localhost:8787` (`npm run relay`); `PRODUCTION_RELAY_URL` fica vazio até publicar o Worker (passo a passo em `worker/README.md`); `?relay=ws://...` troca na URL.
 
 Regras:
 
 - Mensagens novas entram em `src/net/protocol.js` (documentadas no topo do arquivo) e, se o servidor deve repassá-las, na lista `GAME_MESSAGES`.
 - Qualquer coisa que o convidado precisa ver tem de estar em `getState()`; qualquer som que ele precisa ouvir tem de passar por `audio.play()` (não por `audio.get(...).play()`).
 - Testes online: `tests/online.spec.js` abre duas páginas (dois contextos do Chrome) contra o relay local. Use códigos de sala válidos nos testes e um diferente por teste.
+- O Durable Object **hiberna** quando a sala fica em silêncio (o anfitrião esperando o amigo): a memória some e o `RoomCore` é reconstruído a partir dos sockets (cada um guarda papel e sala em `serializeAttachment`). Não guarde estado da sala só em variáveis do objeto.
+- Não confie em o servidor fechar a conexão de **outro** socket (no `wrangler dev` ela fica pela metade): o cliente se desconecta sozinho ao receber `peer-left` sendo convidado (`WebSocketTransport`).
 - Limitações conhecidas: o convidado sente o atraso da rede entre apertar e ver o personagem mexer (sem previsão no cliente); sem reconexão; sem pausa online; o convidado é sempre o Yang; ainda não há botão de "jogar online" na tela inicial, só a URL.
