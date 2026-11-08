@@ -248,3 +248,46 @@ test("quando a vida acaba o jogador morre e o jogo vai para a tela de game over"
   await page.waitForFunction(`${scene}.players[0].isDead() && ${scene}.players[1].isDead()`, null, { timeout: 3000 });
   await page.waitForFunction(() => window.__game.scene.isActive("gameOver"), null, { timeout: 10_000 });
 });
+
+// ---------- máquina de estados dos inimigos ----------
+
+for (const [name, list] of [
+  ["slime", "slimes"],
+  ["esqueleto", "skeletons"],
+  ["demônio", "demons"],
+]) {
+  test(`${name} ferido fica vermelho e volta ao estado livre`, async ({ page }) => {
+    await page.evaluate(`${scene}.${list}[0].hurt()`);
+    expect(await page.evaluate(`${scene}.${list}[0].state`)).toBe("hurt");
+    await page.waitForFunction(`${scene}.${list}[0].state === "free"`, null, { timeout: 5000 });
+    expect(await page.evaluate(`${scene}.${list}[0].sprite.isTinted`)).toBe(false);
+  });
+}
+
+for (const [name, list] of [
+  ["slime", "slimes"],
+  ["esqueleto", "skeletons"],
+]) {
+  test(`${name} sem vida morre e desaparece do jogo`, async ({ page }) => {
+    await page.evaluate(`${scene}.${list}[0].health = 0`);
+    await page.waitForFunction(`${scene}.${list}[0].state === "die"`, null, { timeout: 3000 });
+    await page.waitForFunction(`${scene}.${list}[0].sprite.active === false`, null, { timeout: 5000 });
+  });
+}
+
+test("cada demônio derrotado conta como um chefe, e dois abrem a porta da cela", async ({ page }) => {
+  await page.evaluate(`${scene}.demons[0].health = 0`);
+  await page.waitForFunction(`${scene}.state.bossesDefeated === 1`, null, { timeout: 5000 });
+  await page.evaluate(`${scene}.demons[1].health = 0`);
+  await page.waitForFunction(`${scene}.state.bossesDefeated === 2`, null, { timeout: 5000 });
+  // não conta de novo nos frames seguintes
+  await page.waitForTimeout(500);
+  expect(await page.evaluate(`${scene}.state.bossesDefeated`)).toBe(2);
+});
+
+test("atacar um inimigo morrendo não reinicia a animação de morte", async ({ page }) => {
+  await page.evaluate(`${scene}.slimes[0].health = 0`);
+  await page.waitForFunction(`${scene}.slimes[0].state === "die"`, null, { timeout: 3000 });
+  await page.evaluate(`${scene}.slimes[0].hurt()`);
+  expect(await page.evaluate(`${scene}.slimes[0].state`)).toBe("die");
+});

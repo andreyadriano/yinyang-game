@@ -1,4 +1,4 @@
-import { Enemy } from "./Enemy.js";
+import { Enemy, ENEMY_STATE } from "./Enemy.js";
 export { Slime };
 
 const ANIM_KEYS = {
@@ -44,174 +44,103 @@ function createAnimations(anims) {
 }
 
 class Slime extends Enemy {
-    // Creates the slime class
-
     constructor(scene, x, y, point, { gameState, audio, group } = {}){
-        super(scene, { gameState, audio, animKeys: ANIM_KEYS, health: 20 });
-        this.slimepoint = point;
-        this.slimeposition = "left";
-        this.slimedying = 0;
+        super(scene, { gameState, audio, animKeys: ANIM_KEYS, health: 20, facing: "left", deathSoundKey: "slimeDie" });
+        this.patrolPoint = point;
 
-        //          SLIME ANIMATIONS
         createAnimations(scene.anims);
 
-  this.sprite = scene.physics.add.sprite( x, y, "slime0");
-  this.sprite.setSize(20,20, true).setOffset(5,4);
-  this.sprite.setBounce(0);
-  this.sprite.setCollideWorldBounds(true);
-  this.sprite.setVelocityX(-100);
+        this.sprite = scene.physics.add.sprite(x, y, "slime0");
+        this.sprite.setSize(20, 20, true).setOffset(5, 4);
+        this.sprite.setBounce(0);
+        this.sprite.setCollideWorldBounds(true);
+        this.sprite.setVelocityX(-100);
 
-
-
-  group.add(this.sprite);
-  this.sprite.setData("owner", this);
-
-// END OF CONSTRUCTOR
+        group.add(this.sprite);
+        this.sprite.setData("owner", this);
     }
 
+    // Attacks or chases the nearest player in range, otherwise patrols around its start point.
+    updateFree() {
+        if (this.reactToPlayers()) return;
 
-  update() {
-
-    // VARIABLES
-
-        this.slimeX = this.sprite.body.position.x;
-        this.slimeY = this.sprite.body.position.y;
-        this.slimeguard = this.slimeX - this.slimepoint;
-
-        if(this.isPlayingAnim("die") && this.animProgress("die") === 1){
-          this.sprite.disableBody(true, true);
-        }
-        else if(this.isPlayingAnim("die") && this.animProgress("die") < 1){
-          this.sprite.setVelocity(0, 0);
-          if(!this.audio.get("slimeDie").isPlaying && this.slimedying === 0){
-            this.audio.get("slimeDie").play();
-            this.slimedying = 1;
-          }
-        }
-        else if(this.health <= 0){
-          this.sprite.anims.play(this.animKeys.die);
-        }
-        else if (
-          this.isPlayingAnim("hurt") &&
-          this.animProgress("hurt") < 1 && this.slimeposition === "right"
-        ) {
-          this.sprite.setSize(20, 20, true).setOffset(0, 4);
-          this.sprite.setTint(0xff0000);
-        } else if (
-          this.isPlayingAnim("hurt") &&
-          this.animProgress("hurt") < 1 && this.slimeposition === "left"
-        ) {
-          this.sprite.setSize(20, 20, true).setOffset(0, 4);
-          this.sprite.setTint(0xff0000);
-        } else if (
-          this.isPlayingAnim("hurt") &&
-          this.animProgress("hurt") === 1
-        ) {
-          this.sprite.setVelocityX(0);
-          this.sprite.setSize(20, 20, true).setOffset(0, 4);
-          this.sprite.clearTint();
-          this.sprite.anims.play(this.animKeys.idle, true);
-
-        } else if (this.isPlayingAnim("attack")
-        && this.animProgress("attack") < 1 && this.slimeposition === 'left'){
-            this.sprite.setSize(30,20).setOffset(-8,4);
-
-        } else if (this.isPlayingAnim("attack")
-        && this.animProgress("attack") === 1 && this.slimeposition==="left"){
-            this.sprite.anims.play(this.animKeys.idle, true);
-            this.sprite.setSize(20,20).setOffset(0,4);
-
-        } else if (this.isPlayingAnim("attack")
-        && this.animProgress("attack") < 1 && this.slimeposition === 'right'){
-            this.sprite.setSize(30,20).setOffset(8,4);
-
-        } else if (this.isPlayingAnim("attack")
-        && this.animProgress("attack") === 1 && this.slimeposition==="right"){
-            this.sprite.anims.play(this.animKeys.idle, true);
-            this.sprite.setSize(20,20).setOffset(0,4);
-
-        //      BEHAVIOR/ANIMATION CONDITIONS FOR THE NEAREST PLAYER
-
-        } else if (this.reactToPlayers()){
-            // a player is close: the slime attacked or chased (handled in reactToPlayers)
-        }
-
-        else if (this.slimeguard > 45){
+        const distanceFromPoint = this.x - this.patrolPoint;
+        if (distanceFromPoint > 45) {
             this.sprite.setVelocityX(-100);
             this.sprite.setFlipX(false);
             this.sprite.anims.play(this.animKeys.move, true);
-        }
-        else if (this.slimeguard < -45){
+        } else if (distanceFromPoint < -45) {
             this.sprite.setVelocityX(100);
             this.sprite.setFlipX(true);
             this.sprite.anims.play(this.animKeys.move, true);
         }
-
-    // END OF UPDATE
     }
 
-    // Attacks or chases the nearest player in range. Returns true when it did something.
+    // Returns true when a player is close enough to attack or chase.
     reactToPlayers() {
-      for (const player of this.playersNearestFirst()) {
-        const dx = this.slimeX - player.sprite.body.position.x;
+        for (const player of this.playersNearestFirst()) {
+            const dx = this.x - player.sprite.body.position.x;
 
-        if (dx < 15 && dx > 0){
-            this.sprite.setVelocityX(0);
-            this.sprite.setFlipX(false);
-            this.sprite.anims.play(this.animKeys.attack, true);
-            this.slimeposition = 'left';
-            return true;
-        } else if (dx > -20 && dx < 0){
-            this.sprite.setVelocityX(0);
-            this.sprite.setFlipX(true);
-            this.sprite.anims.play(this.animKeys.attack, true);
-            this.slimeposition = 'right';
-            return true;
-        } else if (dx < 75 && dx > 0){
-            this.sprite.setVelocityX(-110);
-            this.sprite.setSize(20,20, true).setOffset(7,4);
-            this.sprite.setFlipX(false);
-            this.sprite.anims.play(this.animKeys.move, true);
-            this.slimeposition = 'left';
-            return true;
-        } else if (dx > -75 && dx < 0){
-            this.sprite.setVelocityX(110);
-            this.sprite.setSize(20,20, true).setOffset(7,4);
-            this.sprite.setFlipX(true);
-            this.sprite.anims.play(this.animKeys.move, true);
-            this.slimeposition = 'right';
-            return true;
+            if (dx < 15 && dx > 0) {
+                this.faceAndAttack("left");
+                return true;
+            } else if (dx > -20 && dx < 0) {
+                this.faceAndAttack("right");
+                return true;
+            } else if (dx < 75 && dx > 0) {
+                this.chase("left");
+                return true;
+            } else if (dx > -75 && dx < 0) {
+                this.chase("right");
+                return true;
+            }
         }
-      }
-      return false;
+        return false;
     }
 
-    // DEFINES WHAT HAPPENS WHEN THE PLAYER AND THE SLIME COLLIDE
+    faceAndAttack(facing) {
+        this.sprite.setVelocityX(0);
+        this.sprite.setFlipX(facing === "right");
+        this.startAttack(facing);
+    }
 
+    chase(facing) {
+        this.sprite.setVelocityX(facing === "left" ? -110 : 110);
+        this.sprite.setSize(20, 20, true).setOffset(7, 4);
+        this.sprite.setFlipX(facing === "right");
+        this.sprite.anims.play(this.animKeys.move, true);
+        this.facing = facing;
+    }
+
+    onHurtFrame() {
+        this.sprite.setSize(20, 20, true).setOffset(0, 4);
+    }
+
+    onHurtFinished() {
+        this.sprite.setSize(20, 20, true).setOffset(0, 4);
+    }
+
+    onAttackFrame() {
+        this.sprite.setSize(30, 20).setOffset(this.facing === "left" ? -8 : 8, 4);
+    }
+
+    onAttackFinished() {
+        this.sprite.setSize(20, 20).setOffset(0, 4);
+    }
+
+    // What happens when a player and the slime overlap.
     handlePlayerHit(player) {
-      if (player.isDead()) {
-        return;
-      }
+        if (player.isDead()) return;
 
-      // if the player attacks the slime, the slime gets knocked back a bit.
-      if (player.isAttacking()) {
-        this.sprite.setVelocityX(player.facing === "right" ? 150 : -150);
-        this.sprite.setVelocityY(-100);
-        player.sprite.setVelocityX(0);
-        this.sprite.anims.play(this.animKeys.hurt, true);
-        this.health -= 1;
-      }
-      // if the slime attacks the player, the player gets pushed back
-      else if (this.isPlayingAnim("attack") && this.slimeposition === "left" && this.animProgress("attack") === 1) {
-        player.takeHit(-125, -100);
-        this.audio.get("slimeAttack").play({volume: 0.3});
-        this.gameState.soulCount -= 5;
-      } else if (this.isPlayingAnim("attack") && this.slimeposition === "right" && this.animProgress("attack") === 1) {
-        player.takeHit(125, -100);
-        this.audio.get("slimeAttack").play({volume: 0.3});
-        this.gameState.soulCount -= 5;
-      }
+        // if the player attacks the slime, the slime gets knocked back a bit.
+        if (player.isAttacking()) {
+            this.takePlayerAttack(player, -100);
+        }
+        // the slime hurts the player on the last frame of its attack, and pushes the player back
+        else if (this.state === ENEMY_STATE.ATTACK && this.animProgress("attack") === 1) {
+            player.takeHit(this.facing === "left" ? -125 : 125, -100);
+            this.audio.get("slimeAttack").play({volume: 0.3});
+            this.gameState.soulCount -= 5;
+        }
     }
-
-// END OF THE CLASS
 }
