@@ -47,13 +47,13 @@ export default class Jumper {
         return getSpriteState(this.sprite);
     }
 
-    setState(state) {
-        applySpriteState(this.sprite, state);
+    setState(state, options) {
+        applySpriteState(this.sprite, state, options);
     }
 
     update(){
         for (const player of this.scene.players) {
-            this.bounce(player.sprite);
+            if (player.sprite.active) this.bounce(player.sprite);
         }
     }
 

@@ -60,6 +60,14 @@ export function generateRoomCode(random = Math.random) {
   return code;
 }
 
+// A short fingerprint of the entity ids of a level. The two players compare it in "hello": if the
+// level data differs (different versions of the game) the ids would not match and the game stops.
+export function hashIds(ids) {
+  let hash = 5381;
+  for (const char of ids.join(",")) hash = ((hash << 5) + hash + char.charCodeAt(0)) >>> 0;
+  return hash.toString(36);
+}
+
 // An intent ({ left, right, up, down, attack }) travels as one small number.
 const INTENT_BITS = { left: 1, right: 2, up: 4, down: 8, attack: 16 };
 

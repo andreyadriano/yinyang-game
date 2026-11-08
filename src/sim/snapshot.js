@@ -17,11 +17,11 @@ export function takeSnapshot(scene) {
 }
 
 // Puts the game back as it was in the snapshot.
-export function applySnapshot(scene, snapshot) {
+export function applySnapshot(scene, snapshot, options) {
   if (snapshot.version !== SNAPSHOT_VERSION) {
     throw new Error(`Unsupported snapshot version: ${snapshot.version}`);
   }
   scene.state.restore(snapshot.game);
-  scene.entities.setStates(snapshot.entities);
+  scene.entities.setStates(snapshot.entities, options);
   scene.stepper.tick = snapshot.tick;
 }

@@ -12,9 +12,11 @@ export class TouchControlsScene extends Phaser.Scene {
     super(SCENE_KEYS.TOUCH_CONTROLS);
   }
 
-  init({ gameScene, touchInput }) {
+  // allowPause is false online: pausing the host would freeze the other player's game.
+  init({ gameScene, touchInput, allowPause = true }) {
     this.gameScene = gameScene;
     this.touchInput = touchInput;
+    this.allowPause = allowPause;
     this.buttons = {}; // name -> { x, y, radius }, also used by the tests
     this.isPaused = false;
   }
@@ -78,11 +80,13 @@ export class TouchControlsScene extends Phaser.Scene {
 
   addSystemButtons() {
     // Pause: two bars. Fullscreen: a square outline (hidden where the browser has no fullscreen).
-    const pause = this.add.rectangle(760, 40, 40, 40, 0xffffff, IDLE_ALPHA).setStrokeStyle(2, 0xffffff, 0.5);
-    this.add.rectangle(752, 40, 6, 18, ICON_COLOR, 0.85);
-    this.add.rectangle(768, 40, 6, 18, ICON_COLOR, 0.85);
-    pause.setInteractive().on("pointerup", () => this.togglePause());
-    this.buttons.pause = { x: 760, y: 40, radius: 20 };
+    if (this.allowPause) {
+      const pause = this.add.rectangle(760, 40, 40, 40, 0xffffff, IDLE_ALPHA).setStrokeStyle(2, 0xffffff, 0.5);
+      this.add.rectangle(752, 40, 6, 18, ICON_COLOR, 0.85);
+      this.add.rectangle(768, 40, 6, 18, ICON_COLOR, 0.85);
+      pause.setInteractive().on("pointerup", () => this.togglePause());
+      this.buttons.pause = { x: 760, y: 40, radius: 20 };
+    }
 
     if (this.scale.fullscreen.available) {
       const fullscreen = this.add.rectangle(708, 40, 40, 40, 0xffffff, IDLE_ALPHA).setStrokeStyle(2, 0xffffff, 0.5);

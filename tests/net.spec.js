@@ -6,6 +6,9 @@ import { LoopbackTransport } from "../src/net/Transport.js";
 import { NetworkInput } from "../src/input/NetworkInput.js";
 import { applyDelta, diffSnapshot, quantizeSnapshot } from "../src/net/snapshotDelta.js";
 import { RoomCore, RoomRegistry } from "../src/net/RoomCore.js";
+import { getRelayUrl, LOCAL_RELAY_URL } from "../src/net/config.js";
+import { resolveGameMode } from "../src/core/gameMode.js";
+import { hashIds } from "../src/net/protocol.js";
 
 // Testes da base de rede: rodam no Node, sem navegador e sem servidor.
 
@@ -173,6 +176,15 @@ test.describe("snapshotDelta", () => {
     expect(delta.game).toBeUndefined();
   });
 
+  test("o ponto da animação só vai quando a animação troca (senão mudaria a cada quadro)", () => {
+    const before = fakeSnapshot(1);
+    const sameAnim = fakeSnapshot(4, { "slime-0": { progress: 0.5, x: 401 } });
+    expect(diffSnapshot(before, sameAnim).entities).toEqual({ "slime-0": { x: 401 } });
+
+    const newAnim = fakeSnapshot(7, { "slime-0": { anim: "slime-attack", progress: 0.2 } });
+    expect(diffSnapshot(before, newAnim).entities).toEqual({ "slime-0": { anim: "slime-attack", progress: 0.2 } });
+  });
+
   test("o estado do jogo só vai quando muda", () => {
     const before = fakeSnapshot(1);
     const after = fakeSnapshot(2);
@@ -194,7 +206,13 @@ test.describe("snapshotDelta", () => {
       if (step === 20) next.game.soulCount = 150;
       const delta = JSON.parse(JSON.stringify(diffSnapshot(sent, next))); // passa pela rede
       receiver = applyDelta(receiver, delta);
-      expect(receiver).toEqual(next);
+      // Tudo igual, exceto o ponto da animação, que de propósito só acompanha quando a animação troca.
+      const withoutProgress = (snapshot) =>
+        Object.fromEntries(
+          Object.entries(snapshot.entities).map(([id, { progress, ...rest }]) => [id, rest])
+        );
+      expect(withoutProgress(receiver)).toEqual(withoutProgress(next));
+      expect(receiver.game).toEqual(next.game);
       sent = next;
       base = next;
     }
@@ -332,5 +350,57 @@ test.describe("salas", () => {
     expect(registry.rooms.size).toBe(1);
     registry.leave(first.room, a);
     expect(registry.rooms.size).toBe(0);
+  });
+});
+
+test.describe("modos de jogo online", () => {
+  test("?online=host cria uma sala e joga de Yin; o código se mantém ao reiniciar", () => {
+    const first = resolveGameMode("?online=host", false, "localhost");
+    const again = resolveGameMode("?online=host", false, "localhost");
+    expect(first).toMatchObject({
+      name: "online",
+      camera: "single",
+      localCharacter: "yin",
+      characters: ["yin", "yang"],
+      online: { role: "host", relayUrl: LOCAL_RELAY_URL },
+    });
+    expect(first.online.room).toMatch(ROOM_CODE_PATTERN);
+    expect(again.online.room).toBe(first.online.room);
+  });
+
+  test("?room= escolhe o código (em maiúsculas) e ?online=join joga de Yang", () => {
+    const host = resolveGameMode("?online=host&room=wxyz", false, "localhost");
+    const guest = resolveGameMode("?online=join&room=wxyz", false, "localhost");
+    expect(host.online.room).toBe("WXYZ");
+    expect(guest).toMatchObject({ localCharacter: "yang", online: { role: "guest", room: "WXYZ" } });
+  });
+
+  test("entrar sem código de sala deixa o código vazio (a conexão acusa o erro)", () => {
+    expect(resolveGameMode("?online=join", false, "localhost").online.room).toBe("");
+  });
+
+  test("o toque continua valendo online, para os botões na tela", () => {
+    expect(resolveGameMode("?online=join&room=ABCD", true, "localhost").touch).toBe(true);
+    expect(resolveGameMode("?online=join&room=ABCD", false, "localhost").touch).toBe(false);
+  });
+
+  test("sem ?online, os modos de antes não mudam", () => {
+    expect(resolveGameMode("", false, "localhost")).toMatchObject({ name: "local", characters: ["yin", "yang"], camera: "split" });
+    expect(resolveGameMode("", true, "localhost")).toMatchObject({ name: "solo", characters: ["yin"], camera: "single" });
+    expect(resolveGameMode("?online=outro", false, "localhost").name).toBe("local");
+  });
+
+  test("o servidor de repasse: local em localhost, configurável por ?relay=, e ausente se não houver", () => {
+    expect(getRelayUrl("", "localhost")).toBe(LOCAL_RELAY_URL);
+    expect(getRelayUrl("", "127.0.0.1")).toBe(LOCAL_RELAY_URL);
+    expect(getRelayUrl("?relay=wss://exemplo.dev", "meujogo.com")).toBe("wss://exemplo.dev");
+    expect(getRelayUrl("", "meujogo.com")).toBeNull(); // ainda não há servidor de produção
+  });
+
+  test("a impressão digital dos ids muda quando os ids mudam", () => {
+    const ids = ["slime-0", "slime-1", "player-yin"];
+    expect(hashIds(ids)).toBe(hashIds([...ids]));
+    expect(hashIds(ids)).not.toBe(hashIds(["slime-0", "slime-1"]));
+    expect(hashIds(ids)).not.toBe(hashIds(["slime-1", "slime-0", "player-yin"]));
   });
 });

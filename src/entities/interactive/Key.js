@@ -49,8 +49,8 @@ export class Key {
     return getSpriteState(this.sprite);
   }
 
-  setState(state) {
-    applySpriteState(this.sprite, state);
+  setState(state, options) {
+    applySpriteState(this.sprite, state, options);
   }
 
   collect() {

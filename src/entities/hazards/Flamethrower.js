@@ -134,8 +134,8 @@ export default class Flamethrower {
         return getSpriteState(this.sprite);
     }
 
-    setState(state) {
-        applySpriteState(this.sprite, state);
+    setState(state, options) {
+        applySpriteState(this.sprite, state, options);
     }
 
     // START OF THE DAMAGE FUNCTIONS

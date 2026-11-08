@@ -56,8 +56,8 @@ export class Barrier {
     return { ...getSpriteState(this.sprite), isOpening: this.isOpening, isOpen: this.isOpen };
   }
 
-  setState(state) {
-    applySpriteState(this.sprite, state);
+  setState(state, options) {
+    applySpriteState(this.sprite, state, options);
     this.isOpening = state.isOpening;
     this.isOpen = state.isOpen;
   }

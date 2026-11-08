@@ -40,9 +40,10 @@ export class EntityRegistry {
   }
 
   // Restores the entities listed in `states`; ids that are not registered are ignored.
-  setStates(states) {
+  // `options` go to each setState (see applySpriteState).
+  setStates(states, options) {
     for (const [id, state] of Object.entries(states)) {
-      this.byId.get(id)?.setState?.(state);
+      this.byId.get(id)?.setState?.(state, options);
     }
   }
 }

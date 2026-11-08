@@ -30,6 +30,9 @@ export function quantizeSnapshot(snapshot) {
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+// `progress` (how far an animation is) changes on every frame for every animated entity, and the
+// guest lets animations run on their own, so it is only worth sending when the animation changes.
+
 export function diffSnapshot(previous, next) {
   if (!previous) {
     return { full: true, tick: next.tick, game: next.game, entities: next.entities };
@@ -48,6 +51,7 @@ export function diffSnapshot(previous, next) {
     for (const [key, value] of Object.entries(state)) {
       if (!same(before[key], value)) changed[key] = value;
     }
+    if (changed.progress !== undefined && changed.anim === undefined) delete changed.progress;
     if (Object.keys(changed).length > 0) delta.entities[id] = changed;
   }
   return delta;

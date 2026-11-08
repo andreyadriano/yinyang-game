@@ -132,8 +132,8 @@ export class Enemy {
     };
   }
 
-  setState(state) {
-    applySpriteState(this.sprite, state);
+  setState(state, options) {
+    applySpriteState(this.sprite, state, options);
     this.health = state.health;
     this.state = state.state;
     this.facing = state.facing;
@@ -154,17 +154,23 @@ export class Enemy {
 
   // ---- helpers ----
 
+  // The players that are in the game now (online, the other player is hidden until they connect).
+  activePlayers() {
+    return this.scene.players.filter((player) => player.sprite.active);
+  }
+
   // Players ordered by horizontal distance to this enemy, nearest first.
   playersNearestFirst() {
     const x = this.sprite.body.position.x;
-    return [...this.scene.players].sort(
+    return this.activePlayers().sort(
       (a, b) => Math.abs(x - a.sprite.body.position.x) - Math.abs(x - b.sprite.body.position.x)
     );
   }
 
-  // The player closest to this enemy (Arcade physics distance).
+  // The player closest to this enemy (Arcade physics distance), or null when nobody is in the game.
   closestPlayer() {
-    const sprites = this.scene.players.map((player) => player.sprite);
+    const sprites = this.activePlayers().map((player) => player.sprite);
+    if (sprites.length === 0) return null;
     return this.scene.physics.closest(this.sprite, sprites).getData("owner");
   }
 

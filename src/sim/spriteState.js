@@ -18,24 +18,32 @@ export function getSpriteState(sprite) {
   };
 }
 
-export function applySpriteState(sprite, state) {
+// Options: `position: false` leaves the sprite where it is (the guest moves it smoothly toward the
+// target), and `progress: false` only syncs the animation frame when the animation changes (so a
+// looping animation keeps playing on its own between snapshots).
+export function applySpriteState(sprite, state, { position = true, progress = true } = {}) {
   sprite.setActive(state.active).setVisible(state.visible);
 
   sprite.body.enable = state.bodyEnabled;
-  if (state.bodyEnabled) {
-    sprite.body.reset(state.x, state.y);
-    sprite.setVelocity(state.vx, state.vy);
-  } else {
-    sprite.setPosition(state.x, state.y);
+  if (position) {
+    if (state.bodyEnabled) {
+      sprite.body.reset(state.x, state.y);
+      sprite.setVelocity(state.vx, state.vy);
+    } else {
+      sprite.setPosition(state.x, state.y);
+    }
   }
 
   sprite.setFlipX(state.flipX);
 
   if (state.anim) {
-    if (sprite.anims.getName() !== state.anim) {
+    const changed = sprite.anims.getName() !== state.anim;
+    if (changed) {
       sprite.anims.play(state.anim);
     }
-    sprite.anims.setProgress(state.progress);
+    if (changed || progress) {
+      sprite.anims.setProgress(state.progress);
+    }
   } else {
     sprite.anims.stop();
   }

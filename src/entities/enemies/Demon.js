@@ -67,6 +67,7 @@ class Demon extends Enemy {
     // Attacks or chases the closest player, if in range and not far above.
     updateFree() {
         const target = this.closestPlayer();
+        if (!target) return;
         const dx = this.x - target.sprite.body.position.x;
         const dy = target.sprite.body.position.y - this.y;
 

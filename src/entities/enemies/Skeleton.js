@@ -122,8 +122,8 @@ class Skeleton extends Enemy {
         return { ...super.getState(), hurtSoundPlayed: this.hurtSoundPlayed };
     }
 
-    setState(state) {
-        super.setState(state);
+    setState(state, options) {
+        super.setState(state, options);
         this.hurtSoundPlayed = state.hurtSoundPlayed;
     }
 

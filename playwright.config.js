@@ -10,9 +10,17 @@ export default defineConfig({
     headless: true,
     launchOptions: { args: ["--autoplay-policy=no-user-gesture-required"] },
   },
-  webServer: {
-    command: "npx serve . -l 3000",
-    url: "http://localhost:3000",
-    reuseExistingServer: true,
-  },
+  webServer: [
+    {
+      command: "npx serve . -l 3000",
+      url: "http://localhost:3000",
+      reuseExistingServer: true,
+    },
+    {
+      // O servidor de repasse do modo online (tests/online.spec.js).
+      command: "node server/relay.js",
+      url: "http://localhost:8787/health",
+      reuseExistingServer: true,
+    },
+  ],
 });

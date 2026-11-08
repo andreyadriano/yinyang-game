@@ -17,6 +17,11 @@ import { Barrier } from "../entities/interactive/Barrier.js";
 import { JailDoor } from "../entities/interactive/JailDoor.js";
 import { createKeyboardInputs } from "../input/KeyboardInput.js";
 import { TouchInput } from "../input/TouchInput.js";
+import { NetworkInput } from "../input/NetworkInput.js";
+import { connectOnline } from "../net/connectOnline.js";
+import { HostSession } from "../net/HostSession.js";
+import { GuestSession } from "../net/GuestSession.js";
+import { OnlineStatus } from "../ui/OnlineStatus.js";
 import { bindFullscreenKey } from "../input/fullscreen.js";
 import { Hud } from "../ui/Hud.js";
 
@@ -30,6 +35,8 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     this.mode = resolveGameMode();
+    this.isGuest = this.mode.online?.role === "guest"; // the guest does not run the game: it draws what the host sends
+    this.leftScene = false;
     this.state = new GameState();
     this.entities = new EntityRegistry(); // stable ids, saved and restored by src/sim/snapshot.js
     this.stepper = new FixedStepper(); // the game logic runs in fixed steps of 1/60 s
@@ -47,6 +54,11 @@ export class GameScene extends Phaser.Scene {
 
     // Players, health display, enemies and hazards
     this.players = this.createPlayers(level.groundLayers);
+    // The player of this device (the camera follows it) and, online, the one on the other device.
+    this.localPlayer = this.players.find(
+      (player) => player.character === (this.mode.localCharacter ?? this.players[0].character)
+    );
+    this.remotePlayer = this.mode.online ? this.players.find((player) => player !== this.localPlayer) : null;
     this.hud = new Hud(this);
     const groups = createEntityGroups(this, { players: this.players, groundLayers: level.groundLayers });
     const spawned = spawnLevel(this, groups, { gameState: this.state, audio: this.audio, registry: this.entities });
@@ -66,13 +78,57 @@ export class GameScene extends Phaser.Scene {
     if (this.mode.camera === "split") {
       setupSplitScreenCameras(this, this.players);
     } else {
-      setupSingleCamera(this, this.players[0]);
+      setupSingleCamera(this, this.localPlayer);
     }
     bindFullscreenKey(this);
 
     if (this.touchInput) {
-      this.scene.launch(SCENE_KEYS.TOUCH_CONTROLS, { gameScene: this, touchInput: this.touchInput });
+      this.scene.launch(SCENE_KEYS.TOUCH_CONTROLS, {
+        gameScene: this,
+        touchInput: this.touchInput,
+        allowPause: !this.mode.online
+      });
       this.events.once("shutdown", () => this.scene.stop(SCENE_KEYS.TOUCH_CONTROLS));
+    }
+
+    if (this.mode.online) this.startOnline();
+  }
+
+  // Online co-op: connect to the relay, then run a host or a guest session (see src/net).
+  startOnline() {
+    const { role, room, relayUrl } = this.mode.online;
+    this.onlineStatus = new OnlineStatus(this, { role, room });
+
+    if (role === "host") {
+      this.setRemotePlayerPresent(false); // until the friend connects
+    } else {
+      this.physics.pause(); // the guest never simulates
+    }
+
+    this.events.once("shutdown", () => {
+      this.leftScene = true;
+      this.session?.stop();
+    });
+
+    connectOnline({ role, room, relayUrl })
+      .then((transport) => {
+        if (this.leftScene) {
+          transport.close();
+          return;
+        }
+        this.session = role === "host" ? new HostSession(this, transport) : new GuestSession(this, transport);
+        this.onlineStatus.setConnected();
+      })
+      .catch((error) => this.onlineStatus.showError(error.message));
+  }
+
+  // Online, shows or hides the player on the other device (hidden until they connect, and when they leave).
+  setRemotePlayerPresent(present) {
+    if (!this.remotePlayer) return;
+    if (present) {
+      this.remotePlayer.appearAt(this.localPlayer.sprite.x, this.localPlayer.sprite.y);
+    } else {
+      this.remotePlayer.disappear();
     }
   }
 
@@ -87,10 +143,21 @@ export class GameScene extends Phaser.Scene {
   // the touch buttons on phones, otherwise one keyboard scheme per player.
   createPlayers(groundLayers) {
     this.touchInput = this.mode.touch ? new TouchInput() : null;
-    const inputs = this.touchInput ? [this.touchInput] : createKeyboardInputs(this);
+    const localInputs = this.touchInput ? [this.touchInput] : createKeyboardInputs(this);
     const spawns = LEVEL_SPAWNS.players.filter(({ character }) => this.mode.characters.includes(character));
+
     return spawns.map(({ character, x, y }, index) => {
-      const input = inputs[index];
+      // local and solo: inputs in order. Online: the local character uses this device's input and
+      // the other one is played from the network (see HostSession).
+      let input = localInputs[index];
+      if (this.mode.localCharacter) {
+        if (character === this.mode.localCharacter) {
+          input = localInputs[0];
+          this.localInput = input;
+        } else {
+          input = this.remoteInput = new NetworkInput();
+        }
+      }
       const player = new Player(this, {
         character,
         x,
@@ -106,7 +173,11 @@ export class GameScene extends Phaser.Scene {
 
   // Runs every frame: the game logic advances in fixed steps, then the screen is updated.
   update(time, delta) {
-    this.stepper.advance(delta, (stepMs) => this.simulate(time, stepMs));
+    if (this.isGuest) {
+      this.session?.update(delta);
+    } else {
+      this.stepper.advance(delta, (stepMs) => this.simulate(time, stepMs));
+    }
     this.hud.update(this.state.soulCount);
   }
 
@@ -128,7 +199,7 @@ export class GameScene extends Phaser.Scene {
 
     if (this.state.isGameOver) {
       this.audio.get("music").stop();
-      this.players.forEach((player) => player.forceDeath());
+      this.players.forEach((player) => player.sprite.active && player.forceDeath());
     }
     if (this.state.isEndgame) {
       this.isLeaving = true;
@@ -142,6 +213,7 @@ export class GameScene extends Phaser.Scene {
       this.state.gameOver();
     }
 
-    this.players.forEach((player) => player.update(time, stepMs));
+    this.players.forEach((player) => player.sprite.active && player.update(time, stepMs));
+    this.session?.afterStep(this.stepper.tick);
   }
 }

@@ -105,13 +105,26 @@ export class Player {
     };
   }
 
-  setState(state) {
-    applySpriteState(this.sprite, state);
+  setState(state, options) {
+    applySpriteState(this.sprite, state, options);
     this.facing = state.facing;
     this.state = state.state;
     this.attackCombo = state.attackCombo;
     this.isJumping = state.isJumping;
     this.jumpBufferMs = state.jumpBufferMs;
+  }
+
+  // Online, the other player is hidden until they connect (and when they leave).
+  appearAt(x, y) {
+    this.sprite.enableBody(true, x, y, true, true);
+    this.sprite.clearTint();
+    this.state = STATE.FREE;
+    this.attackCombo = 0;
+    this.sprite.anims.play(this.anim("idle"), true);
+  }
+
+  disappear() {
+    this.sprite.disableBody(true, true);
   }
 
   forceDeath() {
