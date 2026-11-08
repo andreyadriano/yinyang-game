@@ -18,7 +18,8 @@ npm run format     # Prettier
 ```
 src/
   main.js                  config do Phaser; expõe window.__game para os testes
-  core/                    GameState, AudioManager, loadAssets (carrega um manifesto), gameMode (quem joga neste aparelho)
+  core/                    GameState (estado em JSON + eventos), gameEvents, EventBus, AudioManager,
+                           loadAssets (carrega um manifesto), gameMode (quem joga neste aparelho)
   data/
     assets.js              manifesto: todo asset do jogo (imagens, spritesheets, mapa, áudio) e GAME_SOUNDS
     levelSpawns.js         jogadores, espinhos, barreiras, chaves, porta e inimigos da fase
@@ -32,10 +33,12 @@ src/
     enemies/               Enemy (base com máquina de estados), Slime, Skeleton, Demon
     hazards/               Flamethrower, Spikes
     interactive/           Portal, Jumper, Key, Barrier, JailDoor
+  sim/                     base do online: EntityRegistry (ids estáveis), snapshot (foto do jogo em JSON),
+                           spriteState, FixedStepper (lógica em passos de 1/60 s)
   input/                   fontes de entrada (KeyboardInput, TouchInput) que devolvem { left, right, up, down, attack }; fullscreen
   ui/                      Hud
 assets/                    sprites, tilesets, mapa (Tiled JSON) e áudio
-tests/                     smoke, gameplay, mobile (celular emulado, toque real) e assets (Playwright)
+tests/                     smoke, gameplay, groups, mobile (celular emulado, toque real), simulation, unit e assets (Playwright)
 ```
 
 ## Convenções
@@ -79,7 +82,7 @@ Se for um som que a fase usa, acrescente também em `GAME_SOUNDS` (nome usado no
 3. Implemente `updateFree()` (patrulha e perseguição, usando `playersNearestFirst()` ou `closestPlayer()`), `handlePlayerHit(player)` e os ganchos que precisar (`onHurtFrame`, `onHurtFinished`, `onAttackFrame`, `onAttackFinished`, `onDeathFinished`).
 4. Em `src/level/EntityGroups.js`, crie o grupo de física do inimigo e inclua-o na lista de inimigos que andam no chão e machucam jogadores.
 5. Em `src/level/spawnLevel.js`, crie as instâncias a partir de uma nova lista em `src/data/levelSpawns.js`, e devolva o array.
-6. Em `GameScene`, guarde o array (`this.novos = spawned.novos`) e inclua-o na lista `updatables`.
+6. Em `GameScene`, guarde o array (`this.novos = spawned.novos`) e inclua-o na lista `updatables`. O `spawnLevel` já registra o inimigo no `EntityRegistry` (id `novo-0`, `novo-1`, ...) e o `Enemy` já sabe se salvar e restaurar; só acrescente em `getState()`/`setState()` o que for específico dele.
 7. Acrescente um teste em `tests/gameplay.spec.js` (ferido volta ao estado livre, morte, dano ao jogador).
 
 ## Como adicionar uma fase
@@ -117,3 +120,15 @@ Regras para não quebrar o celular:
 - Áudio: no celular ele só destrava no primeiro toque; use `audio.playWhenUnlocked()` para música.
 - Testes de celular: `tests/mobile.spec.js` usa a emulação "Pixel 7 landscape" e toques reais via CDP (`Fingers`), inclusive com dois dedos.
 - Limitação conhecida: o jogo é 4:3 e deixa barras pretas nas laterais de celulares compridos (Etapa 7).
+
+## Simulação: a base do co-op online
+
+O online vai funcionar assim: o host simula tudo e manda uma foto do jogo; o convidado só desenha a foto. Para isso:
+
+- **O estado do jogo muda só por métodos** de `GameState` (`loseSoul`, `collectKey`, `useKey`, `defeatBoss`, `gameOver`, `endGame`), que avisam o que aconteceu em `state.events` (lista e dados em `src/core/gameEvents.js`). Nunca escreva `state.soulCount -= n` direto. Quem quiser reagir (som, HUD, rede) escuta o evento, sem o código que o causa saber de nada.
+- **Toda entidade com estado tem id estável** (`slime-3`, `key-1`, `player-yin`), dado por `scene.entities.add(tipo, entidade)` pela ordem em `src/data/levelSpawns.js`. Não reordene essas listas sem necessidade: dois aparelhos precisam da mesma versão do jogo para terem os mesmos ids.
+- **Quem tem estado implementa `getState()` e `setState(estado)`** com JSON puro (números, textos, booleanos; nada de sprites ou funções). Use `getSpriteState`/`applySpriteState` (`src/sim/spriteState.js`) para a parte comum.
+- **`takeSnapshot(scene)` e `applySnapshot(scene, snapshot)`** (`src/sim/snapshot.js`) tiram e devolvem a foto. Uma fase inteira tem ~17 KB.
+- **A lógica roda em passos fixos de 1/60 s** (`GameScene.simulate()` via `FixedStepper`), não a cada quadro. Código de jogo vai no `update()` das entidades; o que é só de tela (HUD, câmera) fica fora do `simulate()`. Com a máquina lenta ele roda até 5 passos por quadro e descarta o resto.
+- **Armadilha do Phaser (tempo):** nos primeiros 120 quadros depois de iniciar (e sempre que a janela perde o foco) o Phaser limita o `delta` a 1/60 s, então o jogo anda em câmera lenta se a tela estiver abaixo de 60 quadros. Depois disso entrega o tempo real. Em testes que medem tempo, espere `window.__game.loop.frame > 220` antes.
+- **Armadilha do Phaser (grupos):** `group.add(sprite)` reaplica os padrões do grupo e **zera velocidade, `collideWorldBounds` e `immovable`**. Adicione o sprite ao grupo **antes** de configurá-lo (isso já causou inimigos parados e lança-chamas empurráveis).

@@ -104,14 +104,23 @@ Decisão tomada: **uma pessoa por aparelho**. No celular o jogo tem um único jo
 
 **Pronto quando:** o jogo roda no Chrome e no Safari de um celular, em paisagem, com controles de toque. *(Verificado só em emulação do Chrome com toques reais, 12 testes em `tests/mobile.spec.js`. Falta testar em aparelho de verdade, principalmente no Safari do iPhone.)*
 
-### Etapa 5: preparar a simulação para a rede
+### Etapa 5: preparar a simulação para a rede (concluída)
 
-- [ ] Dar um `id` estável a cada entidade (inimigo, chave, barreira), para dizer "o slime 7 morreu".
-- [ ] Separar o estado do jogo (serializável) da renderização.
-- [ ] Transformar dano, coleta e abertura de porta em eventos explícitos, não efeitos colaterais dentro de callbacks de colisão.
-- [ ] Passo de simulação com tempo fixo, independente da taxa de quadros.
+- [x] Dar um `id` estável a cada entidade (inimigos, chaves, barreiras, porta, lança-chamas, jumpers e jogadores): `EntityRegistry`, ids como `slime-3` e `player-yin`, iguais em dois carregamentos do jogo (testado).
+- [x] Separar o estado do jogo (serializável) da renderização: `GameState` em JSON e `getState()`/`setState()` nas entidades; `takeSnapshot`/`applySnapshot` em `src/sim/snapshot.js`.
+- [x] Transformar dano, coleta e abertura de porta em eventos explícitos: `GameState` ganhou métodos (`loseSoul`, `collectKey`, `defeatBoss`, ...) que avisam em `state.events` (10 eventos, ver `src/core/gameEvents.js`). Nada mais muda o estado direto.
+- [x] Passo de simulação com tempo fixo: `FixedStepper`, 60 passos por segundo, com no máximo 5 por quadro.
 
-**Pronto quando:** é possível tirar uma foto do estado do jogo como JSON e restaurá-la.
+**Pronto quando:** é possível tirar uma foto do estado do jogo como JSON e restaurá-la. *(Feito e testado: bagunçar o mundo e restaurar devolve cada entidade exatamente ao estado da foto, inclusive um inimigo que já tinha morrido.)*
+
+**O que ainda falta para a Etapa 6** (de propósito, não é desta etapa):
+
+- A foto é completa: ~17 KB. A 20 envios por segundo seriam ~340 KB/s, pesado para rede de celular. O envio deve mandar só o que mudou e só as entidades perto dos jogadores.
+- Os sons ainda são tocados direto pelas entidades. Para o convidado ouvi-los, é preciso ligar os eventos de `gameEvents.js` aos sons (ou repassar as chamadas de áudio do host).
+- A animação é restaurada pelo nome e pelo progresso, e continua guiada pelo relógio do Phaser, não pelo passo da simulação.
+- O convidado ainda não tem o modo de cena "cliente" em que as entidades são só sprites.
+
+**Bug antigo achado e corrigido nesta etapa:** desde a consolidação dos colliders em grupos de física, `group.add(sprite)` zerava a velocidade, os limites do mundo e o `immovable` que as classes definiam antes. Resultado: **nenhum inimigo patrulhava** (só se mexiam quando um jogador chegava perto) e lança-chamas, jumpers e portais deixaram de ser imóveis. Voltou ao comportamento original (31 inimigos andando desde o início), com testes em `tests/groups.spec.js`.
 
 ### Etapa 6: co-op online
 
