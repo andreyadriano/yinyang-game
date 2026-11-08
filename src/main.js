@@ -3,7 +3,7 @@ import { StartScene } from "./scenes/StartScene.js";
 import { GameOverScene } from "./scenes/GameOverScene.js";
 import { CreditsScene } from "./scenes/CreditsScene.js";
 
-var config = {
+const config = {
   type: Phaser.AUTO,
   physics: {
     default: "arcade",
@@ -24,4 +24,7 @@ var config = {
   scene: [StartScene, GameScene, GameOverScene, CreditsScene]
 };
 
-var game = new Phaser.Game(config);
+const game = new Phaser.Game(config);
+
+// Exposto para os testes automatizados (tests/smoke.spec.js).
+window.__game = game;

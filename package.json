@@ -1,24 +1,26 @@
 {
-  "name": "static",
+  "name": "yinyang-game",
   "version": "1.0.0",
-  "description": "This is a static template with no bundling",
-  "main": "index.html",
+  "private": true,
+  "description": "Yin Yang: jogo 2D de ação e plataforma em Phaser 3",
+  "type": "module",
   "scripts": {
-    "build": "echo \"no build required\""
+    "start": "serve . -l 3000",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "playwright test",
+    "prepare": "husky"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/codesandbox-app/static-template.git"
-  },
-  "keywords": [
-    "static",
-    "template",
-    "codesandbox"
-  ],
-  "author": "Ives van Hoorne",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/codesandbox-app/static-template/issues"
-  },
-  "homepage": "https://github.com/codesandbox-app/static-template#readme"
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "@playwright/test": "^1.49.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.3.0",
+    "serve": "^14.2.0"
+  }
 }
