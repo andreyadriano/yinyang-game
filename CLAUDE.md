@@ -19,10 +19,11 @@ npm run format     # Prettier
 src/
   main.js              config do Phaser; expõe window.__game para os testes
   core/                GameState (estado compartilhado), AudioManager
+  input/               fontes de entrada (KeyboardInput); devolvem a intenção { left, right, up, down, attack }
   scenes/              StartScene, GameScene, GameOverScene, CreditsScene, sceneKeys.js
   entities/
     player/            Player (id, character, facing; tag sprite.setData("owner"))
-    enemies/           Enemy (base), Slime, Skeleton, Demon
+    enemies/           Enemy (base com máquina de estados), Slime, Skeleton, Demon
     hazards/           Flamethrower, Spikes
     interactive/       Portal, Jumper, Key, Barrier, JailDoor
   data/levelSpawns.js  jogadores, espinhos, barreiras, chaves, porta e inimigos da fase
@@ -37,7 +38,9 @@ tests/                 testes Playwright
 - Posições e configuração de fase vão em **dados** (`levelSpawns.js`), não espalhadas em `create()`.
 - Nada de variáveis globais nem `export` de variáveis mutáveis entre módulos.
 - Nunca assumir dois jogadores: use `scene.players` (array de `Player`). Inimigos escolhem o jogador mais próximo (`playersNearestFirst()`, `closestPlayer()` em `Enemy`). Objetos que reagem a jogadores expõem `bindPlayers(players)`.
-- O `Player` não deve ler teclado diretamente a longo prazo: ele deve receber uma intenção de entrada (Etapa 2).
+- O `Player` nunca lê teclado: recebe uma fonte de entrada (`input.read()` devolve a intenção do frame). Toque e rede devem implementar o mesmo `read()`.
+- `Player` e `Enemy` são máquinas de estados (`free`, `attack`, `hurt`, `die`). O fim de uma animação é conferido no `update()` com `isAnimFinished()`, não com o evento `animationcomplete`: o evento muda o tempo do dano (ver `docs/ROADMAP.md`, Etapa 2).
+- Para criar um inimigo novo, estenda `Enemy` e implemente `updateFree()` e os ganchos `onHurtFrame`, `onHurtFinished`, `onAttackFrame`, `onAttackFinished`, `onDeathFinished`.
 - Mudanças pequenas, um commit por passo, com `npm test` e `npm run lint` passando.
 - **Commits seguem Conventional Commits**, em inglês: `<tipo>(escopo opcional): descrição`, com tipo `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `perf`, `style`, `build`, `ci` ou `revert`. Um hook do Husky (`commit-msg` + commitlint) rejeita mensagens fora do padrão; não use `--no-verify`.
 

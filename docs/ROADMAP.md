@@ -63,15 +63,15 @@ Sem isso, cada refatoração depende de você jogar o jogo inteiro na mão.
 
 **Pronto quando:** não há nenhuma referência a "player2" ou "P2" fora de configuração, e o jogo se comporta como antes.
 
-### Etapa 2: camada de entrada e máquina de estados
+### Etapa 2: camada de entrada e máquina de estados (concluída)
 
 Esta é a etapa mais importante: mobile e online dependem dela.
 
-- [ ] `Player` passa a receber um objeto de intenção e deixa de ler `controls` diretamente.
-- [ ] `KeyboardInput` produz a intenção a partir das teclas (setas e Enter para um jogador; WASD e espaço para o outro).
-- [ ] A cadeia de `else if` do `Player.update()` vira uma máquina de estados: `idle`, `run`, `jump`, `fall`, `crouch`, `attack` (combo de 3), `hurt`, `die`.
-- [ ] Usar o evento `animationcomplete` do Phaser em vez de conferir `getProgress() === 1` a cada frame.
-- [ ] Aplicar o mesmo padrão aos inimigos (`Slime`, `Skeleton`, `Demon`): uma máquina de estados pequena por inimigo.
+- [x] `Player` passa a receber um objeto de intenção e deixa de ler `controls` diretamente.
+- [x] `KeyboardInput` produz a intenção a partir das teclas (setas e Enter para um jogador; WASD e espaço para o outro).
+- [x] A cadeia de `else if` do `Player.update()` vira uma máquina de estados: `idle`, `run`, `jump`, `fall`, `crouch`, `attack` (combo de 3), `hurt`, `die`.
+- [x] Fim de animação: a ideia original era usar o evento `animationcomplete`, mas ele muda o tempo do jogo (o Phaser avança a animação, roda a física e só depois o `update()`, então o último frame deixava de ser visto pela física exatamente uma vez). Ficou a verificação no `update()`, com uma proteção nova: uma animação parada também conta como terminada, para um frame pulado em aparelho lento não travar o estado.
+- [x] Aplicar o mesmo padrão aos inimigos (`Slime`, `Skeleton`, `Demon`): uma máquina de estados pequena por inimigo.
 
 **Pronto quando:** o `Player` não menciona teclado em nenhum lugar e o combo, o pulo duplo e o agachar se comportam exatamente como antes.
 
