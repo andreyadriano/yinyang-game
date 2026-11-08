@@ -4,8 +4,11 @@ Um **único Worker** da Cloudflare serve o jogo (o site) **e** as salas do co-op
 (por exemplo `https://jogo.seudominio.com`). Tudo no plano gratuito, sem cartão. Tempo: uns 20 minutos, mais a
 espera do DNS se você ainda não usa a Cloudflare no seu domínio.
 
-Comandos que começam com `!` são para você digitar no prompt do Claude Code (eles rodam na sua sessão).
-Fora dele, é só tirar o `!` e rodar no terminal, dentro da pasta do projeto.
+O caminho principal é **pelo Git**: você liga o Worker ao repositório do GitHub e, depois disso, cada `git push` publica
+o jogo. Quem preferir o terminal tem a alternativa no fim do passo a passo.
+
+Os comandos `git ...` abaixo são para o terminal, dentro da pasta do projeto. (Comandos que começam com `!` rodam
+na sessão do Claude Code; fora dela é só tirar o `!`.)
 
 ## Antes de começar
 
@@ -30,122 +33,167 @@ Fora dele, é só tirar o `!` e rodar no terminal, dentro da pasta do projeto.
 | O quê | Secreta? | Onde fica | Como colocar |
 | --- | --- | --- | --- |
 | **Site Key** do Turnstile (começa com `0x4...`) | Não, é pública | `src/net/config.js`, em `TURNSTILE_SITE_KEY` | Editar o arquivo (vai para o git, tudo bem) |
-| **Secret Key** do Turnstile | **Sim** | No Cloudflare, como *secret* do Worker chamado `TURNSTILE_SECRET` | `npx wrangler secret put TURNSTILE_SECRET --config worker/wrangler.jsonc` (cola quando pedir) |
-| O seu endereço (`jogo.seudominio.com`) | Não | `worker/wrangler.jsonc`, em `routes` | Editar o arquivo |
+| **Secret Key** do Turnstile | **Sim** | No Cloudflare, como *secret* do Worker chamado `TURNSTILE_SECRET` | No painel: Worker, Settings, Variables and Secrets, tipo **Secret** (ou `npx wrangler secret put TURNSTILE_SECRET`) |
+| O seu endereço (`jogo.seudominio.com`) | Não | `wrangler.jsonc`, em `routes` | Editar o arquivo |
 | Servidor das salas | — | **Nada a configurar:** por padrão é o mesmo endereço da página | `PRODUCTION_RELAY_URL` só se o servidor ficar em outro lugar |
-| Páginas permitidas | Não | `worker/wrangler.jsonc`, em `ALLOWED_ORIGINS` (já vem `"self"`: só a própria página) | Só se quiser liberar outras |
-| Chaves de **teste** do Turnstile (só para rodar no seu computador) | Não | `worker/.dev.vars` (ignorado pelo git) | Ver "Testar no computador" abaixo |
+| Páginas permitidas | Não | `wrangler.jsonc`, em `ALLOWED_ORIGINS` (já vem `"self"`: só a própria página) | Só se quiser liberar outras |
+| Chaves de **teste** do Turnstile (só para rodar no seu computador) | Não | `.dev.vars` (ignorado pelo git) | Ver "Testar no computador" abaixo |
 
 Regras de ouro:
 
-- A **Secret Key** nunca vai em arquivo do projeto, nem no `wrangler.jsonc`, nem no git, nem no chat. Só pelo
-  comando `wrangler secret put`, que a guarda cifrada na Cloudflare.
+- A **Secret Key** nunca vai em arquivo do projeto, nem no `wrangler.jsonc`, nem no git, nem no chat. Só no painel
+  (tipo **Secret**) ou pelo comando `wrangler secret put`, que a guardam cifrada na Cloudflare.
 - A **Site Key** é feita para ficar à mostra no código do jogo; sozinha ela não serve para nada.
-- Você **não precisa** criar nenhum "API token": o `wrangler login` usa o navegador. (API token só é preciso
-  para publicar por um robô, como o GitHub Actions.)
+- Você **não precisa** criar nenhum "API token": ao ligar o Git, a Cloudflare gera o dela sozinha, e o
+  `wrangler login` (caminho do terminal) usa o navegador.
 
-## Passo a passo
+## Passo a passo (pelo Git: a Cloudflare publica sozinha a cada push)
 
-### 1. Entrar na Cloudflare
+O caminho abaixo liga o Worker ao repositório do GitHub: depois de pronto, **cada `git push` na branch de produção
+publica o jogo**. Você não precisa instalar nem logar nada no seu computador (só se quiser usar o terminal, no
+fim). São 3 fases, e dá para parar depois de cada uma, com tudo funcionando:
+
+- **Fase A:** o jogo e o servidor online no ar em `https://yinyang.SEU-SUBDOMINIO.workers.dev` (sem domínio próprio).
+- **Fase B:** o mesmo, no seu endereço (`jogo.seudominio.com`).
+- **Fase C:** o Turnstile (a verificação "você é uma pessoa") ligado.
+
+### Fase A: colocar no ar
+
+**A1. Enviar o código ao GitHub.** A Cloudflare só enxerga o que está no GitHub, e a `develop` local tem commits que o
+`origin` ainda não tem. No terminal, na pasta do projeto:
 
 ```bash
-! npx wrangler login
+git push origin develop
 ```
 
-Abre o navegador; clique em "Allow". Para conferir: `npx wrangler whoami`.
+(É um push normal, sem `--force`.)
 
-### 2. Escolher o endereço do jogo
+**A2. Criar o Worker ligado ao repositório.** Em dash.cloudflare.com, no menu **Workers & Pages**, clique em
+**Create application** e escolha **Import a repository** (conectar ao Git). Autorize a Cloudflare no GitHub e
+escolha o repositório `yinyang-game`. Na tela de configuração, preencha **exatamente** assim:
 
-Em `worker/wrangler.jsonc`, tire os `//` da linha `routes` e ponha o seu endereço:
+| Campo | Valor |
+| --- | --- |
+| Project name (o nome do Worker) | `yinyang` (**tem de ser igual** ao `name` do `wrangler.jsonc`) |
+| Production branch | `develop` (ou `master`, depois que você juntar nela: veja a nota abaixo) |
+| Build command | `npm run build:site` |
+| Deploy command | `npx wrangler deploy` (é o padrão: deixe assim) |
+| Root directory | `/` (o padrão) |
+| Build variables (em "Advanced settings") | nome `HUSKY`, valor `0` |
+
+Em seguida **Save and Deploy**. A Cloudflare instala as dependências, roda o build command (que monta a pasta
+`dist/` com o site) e o deploy command. Leva uns minutos; acompanhe em **Builds**.
+
+Se for a primeira vez que você usa Workers, o painel pede para escolher o seu **subdomínio `workers.dev`** (por
+exemplo `meunome`): escolha um.
+
+**A3. Conferir.** Quando o build ficar verde, o painel mostra o endereço do Worker, algo como
+`https://yinyang.meunome.workers.dev`. Abra no navegador (deve abrir o jogo) e abra
+`https://yinyang.meunome.workers.dev/health` (deve mostrar `ok`).
+
+**A4. Testar o online.** Abra `https://yinyang.meunome.workers.dev/?online=host`, toque no texto do topo para copiar
+o link de convite e abra em outro aparelho (ou aba anônima). O amigo deve aparecer e o jogo andar nos dois.
+
+Neste ponto já funciona. Sem o Turnstile (Fase C) qualquer pessoa com o link consegue abrir salas, então não divulgue
+o endereço ainda.
+
+> **Nota sobre a branch de produção:** o trabalho novo está na `develop`; a `master` ainda não o tem. Ou você deixa a
+> produção na `develop`, ou junta a `develop` na `master` e muda **Settings, Build, Branch control** para `master`.
+> **Deixe "Enable Preview Builds" desmarcado:** a documentação diz que Workers com Durable Objects não geram URLs de
+> versão, então as prévias de outras branches não ajudariam e só gastariam minutos de build.
+
+### Fase B: usar o seu endereço
+
+**B1. Pôr o domínio na Cloudflare** (leia "Antes de começar" acima: precisa ser o DNS do domínio). Painel,
+**Add a domain**, plano **Free**; troque os nameservers no site onde registrou o domínio pelos dois que ela mostrar;
+espere ficar **Active**. Confira os registros importados (principalmente e-mail, os MX).
+
+**B2. Apontar o Worker para o endereço.** Edite o `wrangler.jsonc` (na raiz): tire os `//` da linha `routes` e ponha o
+seu endereço:
 
 ```jsonc
 "routes": [{ "pattern": "jogo.seudominio.com", "custom_domain": true }],
 ```
 
-No próximo deploy a Cloudflare cria sozinha o registro DNS e o certificado HTTPS, apontando para o Worker.
-Atenção: o endereço **não pode já ter um registro CNAME** no DNS da Cloudflare (apague-o antes, se houver), e vale só
-para esse endereço exato, sem curingas.
-
-### 3. Criar o widget do Turnstile
-
-No painel da Cloudflare (dash.cloudflare.com): menu **Turnstile**, **Add widget**.
-
-- **Nome do widget:** `yinyang` (qualquer um).
-- **Hostnames:** o seu endereço, **sem** `https://`, sem porta e sem caminho: `jogo.seudominio.com`. (Adicionar um
-  nome libera também os subdomínios dele.)
-- **Widget Mode:** `Managed` (recomendado).
-- Crie e **copie as duas chaves**: **Site Key** e **Secret Key**.
-
-No plano gratuito são até 20 widgets, 10 hostnames por widget e desafios ilimitados. Não precisa pôr `localhost`:
-para testar no computador use as chaves de teste.
-
-### 4. Publicar
+O endereço **não pode já ter um registro CNAME** no DNS da Cloudflare (apague-o antes, se houver). Faça o commit e o
+push; o build publica e a Cloudflare cria sozinha o registro DNS e o certificado HTTPS (pode levar alguns minutos):
 
 ```bash
-! npm run deploy
+git add wrangler.jsonc && git commit -m "chore: serve the game on its own domain" && git push
 ```
 
-Isso monta o site (`npm run build:site`, que junta a página, o código e os arquivos do jogo na pasta `dist/`) e
-publica o Worker junto com o site. No fim ele mostra o endereço. Se for a primeira vez e você não usa
-domínio próprio, ele pergunta o nome do seu subdomínio `workers.dev`; escolha um.
+**B3. Conferir:** `https://jogo.seudominio.com/health` deve mostrar `ok`, e o jogo deve abrir.
 
-Confira que o servidor responde (deve mostrar `ok`) e que o jogo abre no navegador:
+Se você ainda não tem domínio na Cloudflare, pule esta fase: o endereço `workers.dev` da Fase A continua valendo.
 
-```bash
-curl https://jogo.seudominio.com/health
-```
+### Fase C: ligar o Turnstile
 
-Com domínio próprio, o certificado pode levar alguns minutos para valer na primeira vez.
+**C1. Criar o widget.** No painel: menu **Turnstile**, **Add widget**.
 
-Neste ponto o Turnstile ainda está desligado (falta a Secret Key). Não divulgue o endereço ainda e siga para o passo 5.
+- **Nome:** `yinyang` (qualquer um).
+- **Hostnames:** o endereço onde o jogo roda, **sem** `https://`, sem porta e sem caminho: `jogo.seudominio.com` (ou, sem
+  domínio próprio, `yinyang.meunome.workers.dev`; a documentação que li não diz se `workers.dev` é aceito, e se o
+  painel recusar é preciso um domínio). Adicionar um nome libera também os subdomínios dele.
+- **Widget Mode:** `Managed`.
+- Crie e **copie as duas chaves**: **Site Key** (pública) e **Secret Key** (secreta).
 
-### 5. Guardar a Secret Key no Worker
+**C2. Guardar a Secret Key no Worker.** No painel: **Workers & Pages**, o Worker `yinyang`, **Settings**,
+**Variables and Secrets**, **Add**:
 
-```bash
-! npx wrangler secret put TURNSTILE_SECRET --config worker/wrangler.jsonc
-```
+- **Type:** `Secret` (**não** use "Text": texto fica visível no painel)
+- **Variable name:** `TURNSTILE_SECRET`
+- **Value:** cole a Secret Key e salve.
 
-Cole a **Secret Key** quando ele pedir (não aparece na tela) e dê Enter. Isso já ativa o Turnstile no servidor: a
-partir de agora, toda conexão precisa de um token válido.
+Isso liga o Turnstile no servidor: a partir de agora toda conexão exige um token válido. (Não use as "Build variables"
+para isto: elas só existem durante o build e **não chegam** ao Worker em execução.)
 
-Conferir (mostra só o nome, nunca o valor):
+Alternativa pelo terminal (precisa de `npx wrangler login` uma vez):
+`npx wrangler secret put TURNSTILE_SECRET`
 
-```bash
-npx wrangler secret list --config worker/wrangler.jsonc
-```
-
-### 6. Dar a Site Key ao jogo
-
-Edite `src/net/config.js`:
+**C3. Dar a Site Key ao jogo.** Edite `src/net/config.js`:
 
 ```js
-export const TURNSTILE_SITE_KEY = "0x4AAAAAAA..."; // a Site Key (pública)
+export const TURNSTILE_SITE_KEY = "0x4AAAAAAA...";   // a Site Key (pública)
 ```
 
-(`PRODUCTION_RELAY_URL` fica `null`: o jogo usa o mesmo endereço da página.) Como o site vai junto com o Worker,
-publique de novo e faça o commit:
+e faça o commit e o push (o build publica):
 
 ```bash
-! npm run deploy
-git add src/net/config.js && git commit -m "chore: configure the Turnstile site key"
+git add src/net/config.js && git commit -m "chore: configure the Turnstile site key" && git push
 ```
 
-### 7. Testar de verdade
+**C4. Conferir.** Repita o teste do A4. O jogo agora pede o desafio (invisível, quase sempre sem você ver) antes de
+conectar. Depois do primeiro build automático depois do C2, confirme que o secret continua lá: em
+**Variables and Secrets** deve aparecer `TURNSTILE_SECRET`. (A documentação que li não diz se um deploy automático
+preserva secrets; na prática costuma preservar.)
 
-Abra o jogo no seu endereço com `?online=host`, toque no texto do topo para copiar o link de convite e abra o link
-em outro aparelho (ou aba anônima). O amigo deve aparecer e o jogo andar nos dois.
+### Pronto. E agora?
 
-Se algo não funcionar, veja "Se algo der errado" no fim.
+- Para **atualizar o jogo**, é só `git push`: a Cloudflare monta o site e publica.
+- Limites do plano gratuito dos builds: 3.000 minutos por mês, 1 build por vez, 20 minutos por build; este leva poucos.
+- Se algo falhar, veja "Se algo der errado" no fim e o log em **Builds** no painel.
+
+## Alternativa: publicar pelo terminal (sem ligar o Git)
+
+```bash
+npx wrangler login      # abre o navegador, uma vez
+npm run deploy          # monta o site e publica o Worker
+npx wrangler secret put TURNSTILE_SECRET   # cola a Secret Key
+```
+
+O nome do Worker é o `name` do `wrangler.jsonc` (`yinyang`). Se você publicou assim e depois ligou o Git, use o mesmo
+nome na tela de conexão para continuar no mesmo Worker.
 
 ## Atualizar o jogo depois
 
-Qualquer mudança em `src/`, `assets/`, `index.html` ou `main.css` só chega às pessoas depois de:
+Qualquer mudança em `src/`, `assets/`, `index.html` ou `main.css` só chega às pessoas depois de publicar. Com o Git
+ligado, é só enviar:
 
 ```bash
-! npm run deploy
+git push
 ```
 
-(O site é servido pelo Worker, então publicar o Worker é o que publica o jogo.)
+(Sem o Git ligado: `npm run deploy`. O site é servido pelo Worker, então publicar o Worker é o que publica o jogo.)
 
 ## Testar no computador antes de publicar (sem conta)
 
@@ -174,22 +222,22 @@ Para testar o Turnstile no computador, a Cloudflare dá chaves de **teste** que 
 | Secret Key | `2x0000000000000000000000000000000AA` | recusa sempre |
 
 ```bash
-printf 'TURNSTILE_SECRET=1x0000000000000000000000000000000AA\n' > worker/.dev.vars   # ignorado pelo git
+printf 'TURNSTILE_SECRET=1x0000000000000000000000000000000AA\n' > .dev.vars   # ignorado pelo git
 npm run worker:dev
 # abra: http://localhost:8788/?online=host&relay=same&turnstileKey=1x00000000000000000000BB
 ```
 
 Sem o `turnstileKey=...` o Worker local recusa com "Verificação de segurança necessária", que é o esperado.
-Para voltar ao normal, apague `worker/.dev.vars`. Os testes automáticos fazem tudo isso sozinhos: `npm run test:worker`.
+Para voltar ao normal, apague `.dev.vars`. Os testes automáticos fazem tudo isso sozinhos: `npm run test:worker`.
 
 ## Em emergência
 
-- **Alguém está abusando agora:** em `worker/wrangler.jsonc` ponha `"ONLINE_ENABLED": "false"` e publique
-  (`npm run deploy`). O servidor recusa tudo com 503 na hora (o site continua abrindo). Volte para `"true"` depois.
+- **Alguém está abusando agora:** em `wrangler.jsonc` ponha `"ONLINE_ENABLED": "false"`, faça o commit e o `git push`
+  (ou `npm run deploy`). O servidor recusa tudo com 503 na hora (o site continua abrindo). Volte para `"true"` depois.
 - **Trocar a Secret Key** (por exemplo, se ela vazou): no painel do Turnstile, no seu widget, gere uma nova
-  secret key e rode de novo o passo 5.
-- **Desligar só o Turnstile:** `npx wrangler secret delete TURNSTILE_SECRET --config worker/wrangler.jsonc`
-  (e deixe `TURNSTILE_SITE_KEY` como `null` no jogo, e publique). O jogo volta a funcionar sem o desafio, e fica sem essa proteção.
+  secret key e troque o valor de `TURNSTILE_SECRET` (passo C2).
+- **Desligar só o Turnstile:** apague o secret `TURNSTILE_SECRET` no painel (ou `npx wrangler secret delete TURNSTILE_SECRET`)
+  e deixe `TURNSTILE_SITE_KEY` como `null` no jogo (e faça o `git push`). O jogo volta a funcionar sem o desafio, e fica sem essa proteção.
 
 ## O que cada proteção faz (e o que não faz)
 
@@ -229,8 +277,8 @@ endereço, dá para copiar o arquivo para o site; não é necessário para funci
 | --- | --- |
 | "O modo online ainda não está disponível neste endereço" | `PRODUCTION_RELAY_URL` está preenchido com algo errado, ou a página não é a servida pelo Worker |
 | "Não foi possível conectar ao servidor online" | Worker fora do ar, endereço errado, ou limite de tentativas por endereço (espere 1 minuto) |
-| "Verificação de segurança necessária" | o servidor exige o Turnstile e o jogo não tem a Site Key (passo 6) |
-| "Não foi possível confirmar que você é uma pessoa" | a Secret Key não é a do mesmo widget da Site Key, ou o hostname da página não está no widget (passo 3) |
+| "Verificação de segurança necessária" | o servidor exige o Turnstile e o jogo não tem a Site Key (passo C3) |
+| "Não foi possível confirmar que você é uma pessoa" | a Secret Key não é a do mesmo widget da Site Key, ou o hostname da página não está no widget (passo C1) |
 | "A verificação de segurança não carregou" | um bloqueador de anúncios, ou rede bloqueando `challenges.cloudflare.com` |
 | "Essa sala não existe" | o link é de uma sala que já fechou; peça um novo |
 | "A sala expirou" | o anfitrião esperou mais de 10 min sozinho (ou a sala passou de 3 h) |
@@ -239,4 +287,4 @@ endereço, dá para copiar o arquivo para o site; não é necessário para funci
 Se a página abre mas conexões são recusadas com 403: a página que abriu o jogo não é a mesma do Worker (por
 exemplo, o jogo hospedado em outro lugar). Ponha o endereço dessa página em `ALLOWED_ORIGINS`.
 
-Para ver o que o Worker está fazendo ao vivo: `npx wrangler tail --config worker/wrangler.jsonc`.
+Para ver o que o Worker está fazendo ao vivo: `npx wrangler tail`.

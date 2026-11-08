@@ -174,7 +174,7 @@ fica fora do ar até as 00:00 UTC. As defesas, da mais barata para a mais cara, 
 `src/net/RoomCore.js`; a tabela do que cada uma cobre está em `worker/DEPLOY.md`. Regras para quem mexer:
 
 - **Segredos nunca vão para o git:** a Secret Key do Turnstile só existe como `wrangler secret` (e, para testes locais, em
-  `worker/.dev.vars`, que o git ignora). A Site Key é pública e fica em `src/net/config.js`.
+  `.dev.vars`, que o git ignora). A Site Key é pública e fica em `src/net/config.js`.
 - Recuse o mais cedo e o mais barato possível; a verificação do Turnstile (chamada de rede) é sempre a última.
 - Entrar numa sala nunca cria sala: o cliente pede o papel (`?role=`), e o servidor confere.
 - Quem é expulso (`RoomCore.expel`) sai da sala **na hora**; não dependa de o servidor conseguir fechar a conexão.
