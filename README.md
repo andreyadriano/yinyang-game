@@ -1,6 +1,6 @@
 # Yin Yang
 
-Jogo 2D de ação e plataforma feito com [Phaser 3](https://phaser.io/).
+Jogo 2D de ação e plataforma feito com [Phaser 4](https://phaser.io/).
 
 Este foi meu primeiro projeto de programação, desenvolvido ao longo de 4 meses no último semestre do curso técnico em Telecomunicações do IFSC.
 

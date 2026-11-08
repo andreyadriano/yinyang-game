@@ -1,6 +1,6 @@
 # Yin Yang: guia para trabalhar no código
 
-Jogo 2D de ação e plataforma em **Phaser 3.21.0** (carregado por CDN no `index.html`), módulos ES6, sem build.
+Jogo 2D de ação e plataforma em **Phaser 4.2.1** (carregado por CDN, versão fixa no `index.html`), módulos ES6, sem build.
 O plano de refatoração e as próximas etapas estão em [`docs/ROADMAP.md`](docs/ROADMAP.md): leia antes de mexer na estrutura.
 
 ## Como rodar
@@ -89,3 +89,13 @@ Hoje existe só a fase 1 (`level1`). Para uma segunda fase:
 2. Ajuste `src/level/LevelMap.js` (listas de camadas e tilesets) para os nomes do novo mapa. Hoje essas listas descrevem a fase 1; o ideal é recebê-las por fase.
 3. Crie as posições da fase em `src/data/` no formato de `levelSpawns.js` (hoje `LEVEL_SPAWNS` é único) e faça a `GameScene` escolher os dados pela fase.
 4. Crie o caminho que leva da fase 1 à 2 (hoje a porta da cela leva aos créditos) e um teste para ele.
+
+## Phaser 4: o que mudou em relação ao que se encontra em tutoriais antigos
+
+O projeto foi migrado da 3.21 para a 4.2.1. Muito material na internet ainda mostra a API antiga. Já pegamos:
+
+- `anims.getCurrentKey()` agora é `anims.getName()` (devolve `""`, não `undefined`, quando não há animação).
+- `map.createStaticLayer()` e `createDynamicLayer()` viraram `map.createLayer()`.
+- O guia oficial de migração está no pacote npm (`phaser/changelog/v4/4.0/MIGRATION-GUIDE.md`): lá constam também tint (`setTintFill` virou `setTintMode`), `Geom.Point` (agora `Vector2`), `Math.TAU` (agora PI * 2) e o `roundPixels` (agora `false` por padrão).
+
+Ao atualizar a versão do Phaser: troque o número em `index.html` e aqui, rode `npm test` e compare capturas de tela antes e depois, porque o renderizador pode mudar a aparência sem quebrar nenhum teste.

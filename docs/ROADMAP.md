@@ -50,7 +50,7 @@ Sem isso, cada refatoração depende de você jogar o jogo inteiro na mão.
 - [x] Apagar o `indexbackup.html`.
 - [x] Remover o `console.log` de debug (tecla P) e código morto.
 
-**Pronto quando:** `npm test` abre o jogo e passa sem erros no console. *(Feito. Versão do Phaser confirmada: 3.21.0.)*
+**Pronto quando:** `npm test` abre o jogo e passa sem erros no console. *(Feito. A versão do Phaser era a 3.21.0; foi atualizada depois, ver Etapa 4.)*
 
 ### Etapa 1: remover o "2 jogadores fixos" (concluída)
 
@@ -91,7 +91,7 @@ Com a base pronta, o mobile entra primeiro por ser mais simples e por obrigar o 
 
 ### Etapa 4: mobile básico (single player)
 
-- [ ] Atualizar o Phaser para 3.50 ou superior, que tem suporte a toque e escala melhores (ver decisões em aberto).
+- [x] Atualizar o Phaser: feito, 3.21.0 → **4.2.1** (a mais recente). Mudanças no código: `createStaticLayer` → `createLayer` e `getCurrentKey` → `getName`. Os 31 testes passam e capturas de tela de 6 pontos do mapa ficaram visualmente idênticas às da 3.21.
 - [ ] `TouchInput`: D-pad virtual e botões de pulo e ataque, com multitouch, produzindo a mesma intenção do teclado.
 - [ ] Modo de câmera única: a cena escolhe entre **split-screen local** (desktop) e **câmera única** (mobile e online).
 - [ ] Escala e orientação: forçar paisagem, aceitar proporções variadas de tela e esconder a barra do navegador.
@@ -133,7 +133,7 @@ Com a base pronta, o mobile entra primeiro por ser mais simples e por obrigar o 
 Quatro decisões precisam ser tomadas antes ou durante as etapas; as duas primeiras mudam o escopo do mobile.
 
 - [ ] **Quem joga no celular?** Se o mobile for sempre single player ou online, a câmera dividida existe só no desktop. Dois jogadores no mesmo celular mudariam muito o layout, e não é recomendado. *Decidir antes da Etapa 4.*
-- [ ] **Versão do Phaser.** O código usa `createStaticLayer`, removido na 3.50. É preciso confirmar qual versão o `index.html` carrega e planejar a atualização (a recomendação é depois da Etapa 3 e antes da Etapa 4). *Verificar na Etapa 0.*
+- [x] **Versão do Phaser.** *(Resolvido: atualizado para a 4.2.1.)* O código usa `createStaticLayer`, removido na 3.50. É preciso confirmar qual versão o `index.html` carrega e planejar a atualização (a recomendação é depois da Etapa 3 e antes da Etapa 4). *Verificar na Etapa 0.*
 - [ ] **Transporte do online.** WebRTC direto (sem servidor, mas com problemas de NAT) ou servidor Node pequeno (custo de hospedagem, mais confiável). *Decidir antes da Etapa 6.*
 - [ ] **Build com Vite?** Hoje não há build. Um bundler ajuda a PWA e o carregamento no celular, mas acrescenta complexidade. *Decidir na Etapa 4.*
 
