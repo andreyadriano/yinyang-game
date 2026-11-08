@@ -18,6 +18,12 @@ const STATE = { FREE: "free", ATTACK: "attack", HURT: "hurt", DIE: "die" };
 
 const ATTACK_ANIMS = ["attack1", "attack2", "attack3"];
 
+// Why the end of an animation is polled in update() instead of using the animationcomplete event:
+// the Phaser step advances animations, then runs physics (where enemies see the player attacking),
+// then runs the scene update. Polling keeps the last frame visible to physics exactly once,
+// which the original gameplay timing relies on. A stopped animation also counts as finished,
+// so a skipped last frame at a low frame rate cannot lock the player in a state.
+
 export class Player {
   // `character` is both the texture key and the animation prefix ("yin" or "yang").
   // `input` is an input source (see KeyboardInput): it returns the intent for each frame.
@@ -39,7 +45,6 @@ export class Player {
     this.sprite.setBounce(0);
     this.sprite.setCollideWorldBounds(true);
     this.sprite.setData("owner", this);
-    this.sprite.on("animationcomplete", (animation) => this.onAnimationComplete(animation.key));
 
     groundLayers.forEach((layer) => {
       scene.physics.add.collider(this.sprite, layer);
@@ -52,6 +57,11 @@ export class Player {
 
   isPlayingAnim(name) {
     return this.sprite.anims.getCurrentKey() === this.anim(name);
+  }
+
+  isAnimFinished() {
+    const anims = this.sprite.anims;
+    return anims.getProgress() === 1 || !anims.isPlaying;
   }
 
   isAttacking() {
@@ -96,31 +106,44 @@ export class Player {
 
     switch (this.state) {
       case STATE.DIE:
-        this.sprite.setVelocity(0, 0);
+        this.updateDying();
         break;
       case STATE.HURT:
-        this.sprite.setTint(0xff0000);
+        this.updateHurt();
         break;
       case STATE.ATTACK:
-        this.setHitbox(this.facing === "right" ? HITBOX.attackRight : HITBOX.attackLeft);
+        this.updateAttack();
         break;
       default:
         this.updateFree(intent);
     }
   }
 
-  // Animations that end a locked state (they do not repeat, so animationcomplete fires).
-  onAnimationComplete(key) {
-    if (this.state === STATE.ATTACK && ATTACK_ANIMS.some((name) => key === this.anim(name))) {
-      this.state = STATE.FREE;
-      this.sprite.anims.play(this.anim("idle"), true);
-    } else if (this.state === STATE.HURT && key === this.anim("hurt")) {
+  updateDying() {
+    if (this.isAnimFinished()) {
+      this.scene.physics.pause();
+      this.scene.scene.start(SCENE_KEYS.GAME_OVER);
+    } else {
+      this.sprite.setVelocity(0, 0);
+    }
+  }
+
+  updateHurt() {
+    if (this.isAnimFinished()) {
       this.sprite.clearTint();
       this.state = STATE.FREE;
       this.sprite.anims.play(this.anim("idle"), true);
-    } else if (this.state === STATE.DIE && key === this.anim("die")) {
-      this.scene.physics.pause();
-      this.scene.scene.start(SCENE_KEYS.GAME_OVER);
+    } else {
+      this.sprite.setTint(0xff0000);
+    }
+  }
+
+  updateAttack() {
+    if (this.isAnimFinished()) {
+      this.state = STATE.FREE;
+      this.sprite.anims.play(this.anim("idle"), true);
+    } else {
+      this.setHitbox(this.facing === "right" ? HITBOX.attackRight : HITBOX.attackLeft);
     }
   }
 
