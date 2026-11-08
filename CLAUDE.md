@@ -14,7 +14,7 @@ npm run relay      # servidor de repasse do modo online em Node (ws://localhost:
 npm run worker:dev # o mesmo servidor como Cloudflare Worker, local (ws://localhost:8788)
 npm run test:worker        # o contrato do servidor contra o Worker
 npm run test:online-worker # o jogo online inteiro passando pelo Worker
-npm run worker:deploy      # publica o Worker (ver worker/README.md)
+npm run worker:deploy      # publica o Worker (passo a passo e chaves em worker/DEPLOY.md)
 npm run format     # Prettier
 ```
 
@@ -45,10 +45,10 @@ src/
   input/                   fontes de entrada (KeyboardInput, TouchInput, NetworkInput) que devolvem { left, right, up, down, attack }; fullscreen
   ui/                      Hud, OnlineStatus (sala e quem está conectado)
 server/                    relay.js: servidor de repasse em Node (usa net/RoomCore.js)
-worker/                    o mesmo servidor como Cloudflare Worker + Durable Object (README.md tem o passo a passo do deploy)
+worker/                    o mesmo servidor como Cloudflare Worker + Durable Object (DEPLOY.md: como publicar; README.md: como funciona)
 assets/                    sprites, tilesets, mapa (Tiled JSON) e áudio
 tests/                     smoke, gameplay, groups, mobile (celular emulado, toque real), simulation, unit, audio,
-                           net, relay, relay-worker, online (duas páginas jogando juntas) e assets (Playwright)
+                           net, security, turnstile, relay, relay-worker*, online (duas páginas jogando juntas), online-turnstile e assets (Playwright)
 ```
 
 ## Convenções
@@ -146,7 +146,7 @@ O online vai funcionar assim: o host simula tudo e manda uma foto do jogo; o con
 
 ## Co-op online
 
-Dois aparelhos, um servidor de repasse no meio. O **anfitrião** (`?online=host`) roda o jogo inteiro e joga de Yin; o **convidado** (`?online=join&room=ABCD`) não roda nada: manda o que está apertando e desenha o que o anfitrião manda, jogando de Yang. O anfitrião abre a sala, toca no texto no topo para compartilhar o link, e o amigo entra pelo link. O código da sala (4 letras, sem I, L, O) se mantém enquanto a página estiver aberta.
+Dois aparelhos, um servidor de repasse no meio. O **anfitrião** (`?online=host`) roda o jogo inteiro e joga de Yin; o **convidado** (`?online=join&room=ABCD`) não roda nada: manda o que está apertando e desenha o que o anfitrião manda, jogando de Yang. O anfitrião abre a sala, toca no texto no topo para compartilhar o link, e o amigo entra pelo link. O código da sala (6 caracteres, letras e dígitos sem I, L, O, 0, 1, gerado com `crypto.getRandomValues`) se mantém enquanto a página estiver aberta.
 
 Como funciona (`src/net`):
 
@@ -154,7 +154,7 @@ Como funciona (`src/net`):
 - `GuestSession`: aplica os snapshots com `setState(estado, { position: false, progress: false })` e faz as entidades deslizarem até a posição nova (`glide`), então o movimento fica suave. A física do convidado fica pausada; `GameScene.update` só chama `session.update`.
 - `RoomCore` (`src/net/RoomCore.js`) são as regras da sala (primeiro é anfitrião, segundo é convidado, terceiro é recusado, o que é repassado). É usada pelo `server/relay.js` (Node) e pelo Durable Object da Cloudflare (`worker/src/Room.js`). As duas implementações passam pelo **mesmo contrato de testes** (`tests/helpers/relayContract.js`); ao mudar uma regra da sala, rode `npm test` (que roda os dois).
 - Para saber se os dois têm a mesma versão, cada lado manda `hello` com uma impressão digital dos ids das entidades (`hashIds`). Diferentes: o jogo avisa e para.
-- Servidor: `src/net/config.js`. Em localhost é `ws://localhost:8787` (`npm run relay`); `PRODUCTION_RELAY_URL` fica vazio até publicar o Worker (passo a passo em `worker/README.md`); `?relay=ws://...` troca na URL.
+- Servidor e Turnstile: `src/net/config.js`. Em localhost o servidor é `ws://localhost:8787` (`npm run relay`); `PRODUCTION_RELAY_URL` e `TURNSTILE_SITE_KEY` ficam vazios até publicar (passo a passo em `worker/DEPLOY.md`); `?relay=ws://...` e `?turnstileKey=...` trocam na URL.
 
 Regras:
 
@@ -164,3 +164,19 @@ Regras:
 - O Durable Object **hiberna** quando a sala fica em silêncio (o anfitrião esperando o amigo): a memória some e o `RoomCore` é reconstruído a partir dos sockets (cada um guarda papel e sala em `serializeAttachment`). Não guarde estado da sala só em variáveis do objeto.
 - Não confie em o servidor fechar a conexão de **outro** socket (no `wrangler dev` ela fica pela metade): o cliente se desconecta sozinho ao receber `peer-left` sendo convidado (`WebSocketTransport`).
 - Limitações conhecidas: o convidado sente o atraso da rede entre apertar e ver o personagem mexer (sem previsão no cliente); sem reconexão; sem pausa online; o convidado é sempre o Yang; ainda não há botão de "jogar online" na tela inicial, só a URL.
+
+### Segurança do servidor online (não afrouxe sem entender)
+
+O plano gratuito da Cloudflare tem limites diários (100 mil requisições, 13 mil GB-s de duração); ao estourar, o online
+fica fora do ar até as 00:00 UTC. As defesas, da mais barata para a mais cara, estão em `worker/src/guards.js` e
+`src/net/RoomCore.js`; a tabela do que cada uma cobre está em `worker/DEPLOY.md`. Regras para quem mexer:
+
+- **Segredos nunca vão para o git:** a Secret Key do Turnstile só existe como `wrangler secret` (e, para testes locais, em
+  `worker/.dev.vars`, que o git ignora). A Site Key é pública e fica em `src/net/config.js`.
+- Recuse o mais cedo e o mais barato possível; a verificação do Turnstile (chamada de rede) é sempre a última.
+- Entrar numa sala nunca cria sala: o cliente pede o papel (`?role=`), e o servidor confere.
+- Quem é expulso (`RoomCore.expel`) sai da sala **na hora**; não dependa de o servidor conseguir fechar a conexão.
+- O que muda o comportamento do servidor tem de passar pelo contrato de testes (`tests/helpers/relayContract.js`) nos dois
+  servidores, e as recusas novas ganham teste em `tests/security.spec.js` (puro) ou `tests/relay-worker-strict.spec.js`.
+- As chaves **de teste** do Turnstile (`1x00000000000000000000BB` e as secretas `1x…AA` / `2x…AA`) são as únicas que entram no
+  repositório; elas funcionam em qualquer domínio e a secreta `1x…AA` aprova **qualquer** token.
