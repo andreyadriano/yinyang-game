@@ -74,12 +74,16 @@ escolha o repositório `yinyang-game`. Na tela de configuração, preencha **exa
 
 | Campo | Valor |
 | --- | --- |
-| Project name (o nome do Worker) | `yinyang` (**tem de ser igual** ao `name` do `wrangler.jsonc`) |
+| Project name (o nome do **Worker**, não do repositório) | `yinyang` (**tem de ser igual** ao `name` do `wrangler.jsonc`) |
 | Production branch | `develop` (ou `master`, depois que você juntar nela: veja a nota abaixo) |
 | Build command | `npm run build:site` |
 | Deploy command | `npx wrangler deploy` (é o padrão: deixe assim) |
 | Root directory | `/` (o padrão) |
 | Build variables (em "Advanced settings") | nome `HUSKY`, valor `0` |
+
+Atenção aos dois nomes: o **repositório** é `yinyang-game` e o **Worker** é `yinyang`. A tela pode sugerir o nome do
+repositório no "Project name"; troque para `yinyang`. (Se você já criou o Worker com outro nome, em vez de recriar basta
+mudar o `name` em `wrangler.jsonc` para o mesmo nome e ajustar `tests/config.spec.js`.)
 
 Em seguida **Save and Deploy**. A Cloudflare instala as dependências, roda o build command (que monta a pasta
 `dist/` com o site) e o deploy command. Leva uns minutos; acompanhe em **Builds**.
