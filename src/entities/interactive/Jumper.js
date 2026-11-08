@@ -30,15 +30,13 @@ export default class Jumper {
         createAnimations(scene.anims);
 
         // CREATE THE JUMPER
-        this.sprite = scene.physics.add.sprite( x, y, "jumper").setScale(0.64, 1.25)
-        .setSize(45, 12).setOffset(2,20);
+        this.sprite = scene.physics.add.sprite( x, y, "jumper").setScale(0.64, 1.25);
+        // Add to the group first: adding resets velocity, world bounds and immovable to the group's defaults.
+        group.add(this.sprite);
+        this.sprite.setSize(45, 12).setOffset(2,20);
         this.sprite.setBounce(0);
         this.sprite.setCollideWorldBounds(true);
         this.sprite.setImmovable(true);
-        
-
-        // SET UP COLLISION BETWEEN PLAYERS AND THE JUMPER
-        group.add(this.sprite);
 
     // END OF CONSTRUCTOR
     }

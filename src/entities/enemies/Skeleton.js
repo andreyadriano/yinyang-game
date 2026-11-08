@@ -56,13 +56,13 @@ class Skeleton extends Enemy {
         createAnimations(scene.anims);
 
         this.sprite = scene.physics.add.sprite(x, y, "skeleton-idle");
+        // Add to the group first: adding resets velocity, world bounds and immovable to the group's defaults.
+        group.add(this.sprite);
+        this.sprite.setData("owner", this);
         this.sprite.setSize(27, 27, true).setOffset(0, 6);
         this.sprite.setBounce(0);
         this.sprite.setCollideWorldBounds(true);
         this.sprite.setVelocityX(-100);
-
-        group.add(this.sprite);
-        this.sprite.setData("owner", this);
     }
 
     // Attacks or chases the nearest player in range, otherwise patrols around its start point.

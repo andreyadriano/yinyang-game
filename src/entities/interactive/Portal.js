@@ -48,13 +48,12 @@ export default class Portal {
         this.sprite = scene.physics.add.sprite( x, y, "neutralPortal");
         this.sprite.setSize(20, 30);
         }
+        // Add to the group first: adding resets velocity, world bounds and immovable to the group's defaults.
+        group.add(this.sprite);
+        this.sprite.setData("owner", this);
         this.sprite.setBounce(0);
         this.sprite.setCollideWorldBounds(true);
         this.sprite.setImmovable(true);
-
-        // SET UP THE PORTAL'S COLLISION
-        group.add(this.sprite);
-        this.sprite.setData("owner", this);
 
         // END OF CONSTRUCTOR
     }

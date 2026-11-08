@@ -54,14 +54,14 @@ class Demon extends Enemy {
         createAnimations(scene.anims);
 
         this.sprite = scene.physics.add.sprite(x, y, "demon-idle1");
+        // Add to the group first: adding resets velocity, world bounds and immovable to the group's defaults.
+        group.add(this.sprite);
+        this.sprite.setData("owner", this);
         this.sprite.setScale(0.5);
         this.sprite.setSize(70, 100).setOffset(30, 35);
         this.sprite.setBounce(0);
         this.sprite.setCollideWorldBounds(true);
         this.sprite.setVelocityX(-100);
-
-        group.add(this.sprite);
-        this.sprite.setData("owner", this);
     }
 
     // Attacks or chases the closest player, if in range and not far above.

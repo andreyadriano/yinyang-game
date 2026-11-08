@@ -51,7 +51,11 @@ export default class Flamethrower {
         createAnimations(scene.anims);
 
         this.sprite = scene.physics.add.sprite( x, y, "flamethrower").setScale(0.9,1);
+        // Add to the group first: adding resets velocity, world bounds and immovable to the group's defaults.
+        group.add(this.sprite);
+        this.sprite.setData("owner", this);
         this.sprite.setSize(16,14).setOffset(1, 66).setImmovable(true);
+
         // creates a delay between flamethrowers
 
         scene.time.addEvent({
@@ -61,8 +65,6 @@ export default class Flamethrower {
             },
             repeat: 0
         });
-        group.add(this.sprite);
-        this.sprite.setData("owner", this);
 
         // END OF CONSTRUCTOR
     }
