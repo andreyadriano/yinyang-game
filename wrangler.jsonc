@@ -1,15 +1,15 @@
 {
   // One Worker that serves the whole game: the website (the files in dist/, built by `npm run build:site`)
   // and the relay for online co-op (/room/ABC234). Deploy with: npm run deploy
-  "$schema": "../node_modules/wrangler/config-schema.json",
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "yinyang",
-  "main": "src/index.js",
+  "main": "worker/src/index.js",
   "compatibility_date": "2026-04-07",
 
   // The website. A request that matches a file in dist/ is answered with that file without running the
   // Worker (static files are free and unlimited); anything else (/room/..., /health) reaches the Worker.
   "assets": {
-    "directory": "../dist"
+    "directory": "./dist"
   },
 
   // Your own address, instead of yinyang.<subdomain>.workers.dev. The domain must be active on

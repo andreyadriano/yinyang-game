@@ -27,14 +27,14 @@ export default defineConfig({
   webServer: [
     {
       command:
-        "npx wrangler dev --config worker/wrangler.jsonc --port 8788 --var ALLOWED_ORIGINS:* --var CONNECT_BURST:5000 --var CONNECT_PER_MINUTE:6000",
+        "npx wrangler dev --port 8788 --var ALLOWED_ORIGINS:* --var CONNECT_BURST:5000 --var CONNECT_PER_MINUTE:6000",
       url: "http://localhost:8788/health",
       reuseExistingServer: true,
       timeout: 120_000,
     },
     {
       command:
-        "npx wrangler dev --config worker/wrangler.jsonc --port 8789 --inspector-port 9230 --persist-to .wrangler/state-strict " +
+        "npx wrangler dev --port 8789 --inspector-port 9230 --persist-to .wrangler/state-strict " +
         "--var ALLOWED_ORIGINS:* --var CLIENT_ID_HEADER:x-client-id --var CONNECT_BURST:3 --var CONNECT_PER_MINUTE:1 " +
         "--var ROOM_WAITING_MS:3000 --var ROOM_MAX_MS:7000 --var ROOM_CHECK_MS:1000",
       url: "http://localhost:8789/health",
@@ -43,7 +43,7 @@ export default defineConfig({
     },
     {
       command:
-        "npx wrangler dev --config worker/wrangler.jsonc --port 8790 --inspector-port 9231 --persist-to .wrangler/state-turnstile " +
+        "npx wrangler dev --port 8790 --inspector-port 9231 --persist-to .wrangler/state-turnstile " +
         "--var ALLOWED_ORIGINS:* --var TURNSTILE_SECRET:1x0000000000000000000000000000000AA --var CONNECT_BURST:5000 --var CONNECT_PER_MINUTE:6000",
       url: "http://localhost:8790/health",
       reuseExistingServer: true,
@@ -51,7 +51,7 @@ export default defineConfig({
     },
     {
       command:
-        "npx wrangler dev --config worker/wrangler.jsonc --port 8791 --inspector-port 9232 --persist-to .wrangler/state-turnstile-fail " +
+        "npx wrangler dev --port 8791 --inspector-port 9232 --persist-to .wrangler/state-turnstile-fail " +
         "--var ALLOWED_ORIGINS:* --var TURNSTILE_SECRET:2x0000000000000000000000000000000AA --var CONNECT_BURST:5000 --var CONNECT_PER_MINUTE:6000",
       url: "http://localhost:8791/health",
       reuseExistingServer: true,
@@ -59,7 +59,7 @@ export default defineConfig({
     },
     {
       // Sem --var de ALLOWED_ORIGINS: vale o "self" do wrangler.jsonc, como em produção.
-      command: "npx wrangler dev --config worker/wrangler.jsonc --port 8792 --inspector-port 9233 --persist-to .wrangler/state-site --var CONNECT_BURST:5000 --var CONNECT_PER_MINUTE:6000",
+      command: "npx wrangler dev --port 8792 --inspector-port 9233 --persist-to .wrangler/state-site --var CONNECT_BURST:5000 --var CONNECT_PER_MINUTE:6000",
       url: "http://localhost:8792/health",
       reuseExistingServer: true,
       timeout: 120_000,
