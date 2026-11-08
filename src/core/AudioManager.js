@@ -9,6 +9,11 @@ export class AudioManager {
     return this.sounds[key];
   }
 
+  // Adds many sounds at once from { name: assetKey }.
+  addAll(soundMap) {
+    Object.entries(soundMap).forEach(([key, assetKey]) => this.add(key, assetKey));
+  }
+
   get(key) {
     return this.sounds[key];
   }

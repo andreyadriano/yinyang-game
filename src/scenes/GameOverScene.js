@@ -6,12 +6,6 @@ class GameOverScene extends Phaser.Scene {
     super(SCENE_KEYS.GAME_OVER);
   }
 
-  preload() {
-    this.load.audio("youlose", "assets/sounds/sfx/you_lose.ogg");
-
-    this.load.image("gameover", "assets/interface/gameover.png");
-  }
-
   create() {
     this.add.image(400, 300, "gameover");
 

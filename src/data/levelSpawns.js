@@ -1,4 +1,11 @@
 // Level spawn points (Level 1). Coordinates in map pixels.
+//
+// Useful teleport coordinates:
+//   Hidden room -> easter egg: 1744, 2573
+//   Easter egg, portals, keys and one of the bosses -> default position: 1312, 1440
+//   Portals -> boss 1: 96, 3616 | boss 2: 4000, 3616
+//   First neutral portal: 3770, 1666 | second neutral portal: 2330, 1924
+//   Neutral portal -> default position: 1307, 1443
 export const LEVEL_SPAWNS = {
   // Players start next to each other; `character` is the texture key and animation prefix.
   players: [

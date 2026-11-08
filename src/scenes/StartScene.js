@@ -6,12 +6,6 @@ class StartScene extends Phaser.Scene {
     super(SCENE_KEYS.START);
   }
 
-  preload() {
-    this.load.audio("starttheme", ["assets/sounds/bgm/MenuMusic.mp3"]);
-
-    this.load.image("Start", "assets/interface/start.png");
-  }
-
   create() {
     this.add.image(400, 300, "Start");
 

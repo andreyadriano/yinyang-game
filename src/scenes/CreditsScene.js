@@ -6,11 +6,6 @@ class CreditsScene extends Phaser.Scene {
     super(SCENE_KEYS.CREDITS);
   }
 
-  preload() {
-    this.load.image("creditsimage", "assets/interface/TelaFinal.png");
-    this.load.audio("fim", "assets/sounds/bgm/ebunny_-_Life.mp3");
-  }
-
   create() {
     this.add.image(400, 300, "creditsimage");
     this.fim = this.sound.add("fim");

@@ -1,3 +1,4 @@
+import { PreloadScene } from "./scenes/PreloadScene.js";
 import { GameScene } from "./scenes/GameScene.js";
 import { StartScene } from "./scenes/StartScene.js";
 import { GameOverScene } from "./scenes/GameOverScene.js";
@@ -21,7 +22,7 @@ const config = {
     height: 600
   },
   // Scenes, in sequence
-  scene: [StartScene, GameScene, GameOverScene, CreditsScene]
+  scene: [PreloadScene, StartScene, GameScene, GameOverScene, CreditsScene]
 };
 
 const game = new Phaser.Game(config);

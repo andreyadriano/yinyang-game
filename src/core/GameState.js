@@ -1,6 +1,8 @@
+export const MAX_SOUL_COUNT = 190;
+
 export class GameState {
   constructor() {
-    this.soulCount = 190;
+    this.soulCount = MAX_SOUL_COUNT;
     this.bossesDefeated = 0;
     this.hasYellowKey = false;
     this.hasBlueKey = false;
