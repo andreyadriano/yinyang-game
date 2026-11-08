@@ -34,8 +34,8 @@ test("a cena tem dois jogadores com id e personagem", async ({ page }) => {
     window.__game.scene.getScene("game").players.map((p) => ({ id: p.id, character: p.character }))
   );
   expect(players).toEqual([
-    { id: 1, character: "yin" },
-    { id: 2, character: "yang" },
+    { id: "player-yin", character: "yin" },
+    { id: "player-yang", character: "yang" },
   ]);
 });
 
@@ -44,17 +44,14 @@ test("as setas movem o Yin e WASD move o Yang, cada um no seu controle", async (
   const before = await xs();
 
   await page.keyboard.down("ArrowRight");
-  await page.waitForTimeout(500);
+  await page.waitForFunction(`${scene}.players[0].sprite.x > ${before[0] + 50}`, null, { timeout: 8000 });
   await page.keyboard.up("ArrowRight");
   const afterYin = await xs();
-  expect(afterYin[0]).toBeGreaterThan(before[0] + 50);
   expect(Math.abs(afterYin[1] - before[1])).toBeLessThan(5);
 
   await page.keyboard.down("d");
-  await page.waitForTimeout(500);
+  await page.waitForFunction(`${scene}.players[1].sprite.x > ${afterYin[1] + 50}`, null, { timeout: 8000 });
   await page.keyboard.up("d");
-  const afterYang = await xs();
-  expect(afterYang[1]).toBeGreaterThan(afterYin[1] + 50);
 });
 
 test("espinhos machucam qualquer um dos jogadores", async ({ page }) => {
@@ -96,14 +93,14 @@ test("atacar derruba o slime", async ({ page }) => {
 
 test("pegar a chave amarela e encostar na barreira 1 a abre", async ({ page }) => {
   await place(page, 0, 3700, 1500);
-  await page.waitForFunction(`${scene}.state.hasYellowKey === true`, null, { timeout: 5000 });
+  await page.waitForFunction(`${scene}.state.keys.yellow === true`, null, { timeout: 5000 });
   expect(await page.evaluate(`${scene}.keys[0].sprite.active`)).toBe(false);
 
   await place(page, 0, 2695, 1880);
   await page.keyboard.down("ArrowRight");
   await page.waitForFunction(`${scene}.barriers[0].isOpen === true`, null, { timeout: 8000 });
   await page.keyboard.up("ArrowRight");
-  expect(await page.evaluate(`${scene}.state.hasYellowKey`)).toBe(false);
+  expect(await page.evaluate(`${scene}.state.keys.yellow`)).toBe(false);
 });
 
 test("a barreira 2 só abre com a chave azul", async ({ page }) => {
@@ -114,7 +111,7 @@ test("a barreira 2 só abre com a chave azul", async ({ page }) => {
   await page.keyboard.up("d");
 
   await place(page, 1, 3830, 1480);
-  await page.waitForFunction(`${scene}.state.hasBlueKey === true`, null, { timeout: 5000 });
+  await page.waitForFunction(`${scene}.state.keys.blue === true`, null, { timeout: 5000 });
   await place(page, 1, 2695, 2085);
   await page.keyboard.down("d");
   await page.waitForFunction(`${scene}.barriers[1].isOpen === true`, null, { timeout: 8000 });

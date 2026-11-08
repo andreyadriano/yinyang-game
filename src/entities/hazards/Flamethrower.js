@@ -1,3 +1,5 @@
+import { applySpriteState, getSpriteState } from "../../sim/spriteState.js";
+
 let animationsCreated = false;
 function createAnimations(anims) {
   if (animationsCreated) return;
@@ -127,6 +129,15 @@ export default class Flamethrower {
         // END OF UPDATE
     }
 
+    // The state that changes while playing, as JSON (see src/sim/snapshot.js).
+    getState() {
+        return getSpriteState(this.sprite);
+    }
+
+    setState(state) {
+        applySpriteState(this.sprite, state);
+    }
+
     // START OF THE DAMAGE FUNCTIONS
 
     handlePlayerHit(player) {
@@ -134,7 +145,7 @@ export default class Flamethrower {
             const pushX = this.sprite.body.touching.right ? 100 : -100;
 
             player.takeHit(pushX, -75);
-            this.gameState.soulCount -= 3;
+            this.gameState.loseSoul(3, this.id);
         }
     // END OF THE FUNCTION
     }

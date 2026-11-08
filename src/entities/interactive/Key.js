@@ -1,6 +1,8 @@
+import { applySpriteState, getSpriteState } from "../../sim/spriteState.js";
+
 const KEY_TYPES = {
-  yellow: { texture: "yellowKey", animKey: "yellowKeySpin", lastFrame: 6, frameRate: 7, stateFlag: "hasYellowKey" },
-  blue: { texture: "blueKey", animKey: "blueKeySpin", lastFrame: 9, frameRate: 9, stateFlag: "hasBlueKey" }
+  yellow: { texture: "yellowKey", animKey: "yellowKeySpin", lastFrame: 6, frameRate: 7 },
+  blue: { texture: "blueKey", animKey: "blueKeySpin", lastFrame: 9, frameRate: 9 }
 };
 
 function createAnimations(anims) {
@@ -20,6 +22,7 @@ export class Key {
     this.scene = scene;
     this.gameState = gameState;
     this.audio = audio;
+    this.color = type; // "yellow" or "blue"
     this.type = KEY_TYPES[type];
 
     createAnimations(scene.anims);
@@ -41,8 +44,17 @@ export class Key {
     });
   }
 
+  // The state that changes while playing, as JSON (see src/sim/snapshot.js).
+  getState() {
+    return getSpriteState(this.sprite);
+  }
+
+  setState(state) {
+    applySpriteState(this.sprite, state);
+  }
+
   collect() {
-    this.gameState[this.type.stateFlag] = true;
+    this.gameState.collectKey(this.color);
     this.audio.get("keyPickup").play();
     this.sprite.disableBody(true, true);
   }

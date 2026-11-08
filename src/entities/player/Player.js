@@ -1,4 +1,6 @@
 import { SCENE_KEYS } from "../../scenes/sceneKeys.js";
+import { GAME_EVENT } from "../../core/gameEvents.js";
+import { applySpriteState, getSpriteState } from "../../sim/spriteState.js";
 
 const JUMP_BUFFER_MS = 333; // ~20 frames at 60fps, kept as a time-based buffer instead of a frame count
 const JUMP_VELOCITY = -350;
@@ -25,14 +27,17 @@ const ATTACK_ANIMS = ["attack1", "attack2", "attack3"];
 // so a skipped last frame at a low frame rate cannot lock the player in a state.
 
 export class Player {
-  // `character` is both the texture key and the animation prefix ("yin" or "yang").
+  // `character` is both the texture key and the animation prefix ("yin" or "yang"); the id is
+  // "player-yin" or "player-yang", the same on every device.
   // `input` is an input source (see KeyboardInput): it returns the intent for each frame.
-  constructor(scene, { id, character, x, y, input, groundLayers, audio } = {}) {
+  // `events` is the game event bus (gameState.events).
+  constructor(scene, { character, x, y, input, groundLayers, audio, events } = {}) {
     this.scene = scene;
-    this.id = id;
+    this.id = `player-${character}`;
     this.character = character;
     this.input = input;
     this.audio = audio;
+    this.events = events;
 
     this.facing = "right";
     this.state = STATE.FREE;
@@ -78,6 +83,7 @@ export class Player {
     this.sprite.setVelocityX(velocityX);
     this.sprite.setVelocityY(velocityY);
     this.hurt();
+    this.events?.emit(GAME_EVENT.PLAYER_HIT, { id: this.id });
   }
 
   // Enters the hurt state. With `restart`, the animation starts over even if it is already playing.
@@ -85,6 +91,27 @@ export class Player {
     if (this.isDead()) return;
     this.state = STATE.HURT;
     this.sprite.anims.play(this.anim("hurt"), !restart);
+  }
+
+  // The state that changes while playing, as JSON (see src/sim/snapshot.js).
+  getState() {
+    return {
+      ...getSpriteState(this.sprite),
+      facing: this.facing,
+      state: this.state,
+      attackCombo: this.attackCombo,
+      isJumping: this.isJumping,
+      jumpBufferMs: this.jumpBufferMs
+    };
+  }
+
+  setState(state) {
+    applySpriteState(this.sprite, state);
+    this.facing = state.facing;
+    this.state = state.state;
+    this.attackCombo = state.attackCombo;
+    this.isJumping = state.isJumping;
+    this.jumpBufferMs = state.jumpBufferMs;
   }
 
   forceDeath() {

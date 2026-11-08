@@ -1,6 +1,9 @@
+import { GAME_EVENT } from "../../core/gameEvents.js";
+import { applySpriteState, getSpriteState } from "../../sim/spriteState.js";
+
 const BARRIER_TYPES = {
-  1: { idleKey: "barrier1Idle", openKey: "barrier1Open", requiredKey: "hasYellowKey" },
-  2: { idleKey: "barrier2Idle", openKey: "barrier2Open", requiredKey: "hasBlueKey" }
+  1: { idleKey: "barrier1Idle", openKey: "barrier1Open", requiredKey: "yellow" },
+  2: { idleKey: "barrier2Idle", openKey: "barrier2Open", requiredKey: "blue" }
 };
 
 function createAnimations(anims) {
@@ -48,11 +51,23 @@ export class Barrier {
     });
   }
 
+  // The state that changes while playing, as JSON (see src/sim/snapshot.js).
+  getState() {
+    return { ...getSpriteState(this.sprite), isOpening: this.isOpening, isOpen: this.isOpen };
+  }
+
+  setState(state) {
+    applySpriteState(this.sprite, state);
+    this.isOpening = state.isOpening;
+    this.isOpen = state.isOpen;
+  }
+
   tryOpen() {
-    if (!this.isOpening && this.gameState[this.type.requiredKey]) {
+    if (!this.isOpening && this.gameState.hasKey(this.type.requiredKey)) {
       this.isOpening = true;
-      this.gameState[this.type.requiredKey] = false;
+      this.gameState.useKey(this.type.requiredKey);
       this.sprite.anims.play(this.type.openKey);
+      this.gameState.events.emit(GAME_EVENT.BARRIER_OPENED, { id: this.id });
     }
   }
 

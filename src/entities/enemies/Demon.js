@@ -123,7 +123,7 @@ class Demon extends Enemy {
 
     // Counts this boss as defeated (two bosses open the jail door).
     onDeathFinished() {
-        this.gameState.bossesDefeated += 1;
+        this.gameState.defeatBoss(this.id);
         this.sprite.disableBody();
         this.sprite.anims.stop();
     }
@@ -134,7 +134,7 @@ class Demon extends Enemy {
         if (this.state === ENEMY_STATE.ATTACK && this.animProgress("attack") === ATTACK_DAMAGE_PROGRESS) {
             this.audio.get("bossAttack").play({ volume: 0.3 });
             player.takeHit(this.facing === "left" ? -125 : 125, -100);
-            this.gameState.soulCount -= 2;
+            this.gameState.loseSoul(2, this.id);
         }
         // if the player attacks the demon, the demon gets knocked back a bit.
         else if (player.isAttacking()) {

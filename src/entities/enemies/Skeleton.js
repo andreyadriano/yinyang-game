@@ -118,6 +118,15 @@ class Skeleton extends Enemy {
         this.facing = facing;
     }
 
+    getState() {
+        return { ...super.getState(), hurtSoundPlayed: this.hurtSoundPlayed };
+    }
+
+    setState(state) {
+        super.setState(state);
+        this.hurtSoundPlayed = state.hurtSoundPlayed;
+    }
+
     onHurtFrame() {
         const sound = this.audio.get("skeletonHurt");
         if (!sound.isPlaying && !this.hurtSoundPlayed) {
@@ -150,7 +159,7 @@ class Skeleton extends Enemy {
         else if (this.state === ENEMY_STATE.ATTACK && this.animProgress("attack") === ATTACK_DAMAGE_PROGRESS) {
             this.audio.get("skeletonAttack").play();
             player.takeHit(this.facing === "left" ? -125 : 125, -100);
-            this.gameState.soulCount -= 5;
+            this.gameState.loseSoul(5, this.id);
         }
     }
 }

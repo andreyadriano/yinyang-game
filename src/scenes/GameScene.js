@@ -4,6 +4,8 @@ import { LEVEL_SPAWNS } from "../data/levelSpawns.js";
 import { GameState } from "../core/GameState.js";
 import { AudioManager } from "../core/AudioManager.js";
 import { resolveGameMode } from "../core/gameMode.js";
+import { EntityRegistry } from "../sim/EntityRegistry.js";
+import { FixedStepper } from "../sim/FixedStepper.js";
 import { LevelMap } from "../level/LevelMap.js";
 import { createEntityGroups } from "../level/EntityGroups.js";
 import { spawnLevel } from "../level/spawnLevel.js";
@@ -29,6 +31,9 @@ export class GameScene extends Phaser.Scene {
   create() {
     this.mode = resolveGameMode();
     this.state = new GameState();
+    this.entities = new EntityRegistry(); // stable ids, saved and restored by src/sim/snapshot.js
+    this.stepper = new FixedStepper(); // the game logic runs in fixed steps of 1/60 s
+    this.isLeaving = false;
     this.audio = new AudioManager(this);
     this.audio.addAll(GAME_SOUNDS);
     this.audio.playWhenUnlocked("music", { loop: true, volume: 0.1 });
@@ -44,7 +49,7 @@ export class GameScene extends Phaser.Scene {
     this.players = this.createPlayers(level.groundLayers);
     this.hud = new Hud(this);
     const groups = createEntityGroups(this, { players: this.players, groundLayers: level.groundLayers });
-    const spawned = spawnLevel(this, groups, { gameState: this.state, audio: this.audio });
+    const spawned = spawnLevel(this, groups, { gameState: this.state, audio: this.audio, registry: this.entities });
     this.portals = spawned.portals;
     this.flamethrowers = spawned.flamethrowers;
     this.jumpers = spawned.jumpers;
@@ -73,9 +78,9 @@ export class GameScene extends Phaser.Scene {
 
   createLevelObjects(groundLayers) {
     const deps = { gameState: this.state, audio: this.audio, groundLayers };
-    this.barriers = LEVEL_SPAWNS.barriers.map((data) => new Barrier(this, data, deps));
-    this.keys = LEVEL_SPAWNS.keys.map((data) => new Key(this, data, deps));
-    this.jailDoor = new JailDoor(this, LEVEL_SPAWNS.jailDoor, deps);
+    this.barriers = LEVEL_SPAWNS.barriers.map((data) => this.entities.add("barrier", new Barrier(this, data, deps)));
+    this.keys = LEVEL_SPAWNS.keys.map((data) => this.entities.add("key", new Key(this, data, deps)));
+    this.jailDoor = this.entities.add("jailDoor", new JailDoor(this, LEVEL_SPAWNS.jailDoor, deps));
   }
 
   // The players that play on this device (see the game mode), each with its own input source:
@@ -84,13 +89,31 @@ export class GameScene extends Phaser.Scene {
     this.touchInput = this.mode.touch ? new TouchInput() : null;
     const inputs = this.touchInput ? [this.touchInput] : createKeyboardInputs(this);
     const spawns = LEVEL_SPAWNS.players.filter(({ character }) => this.mode.characters.includes(character));
-    return spawns.map(
-      ({ character, x, y }, index) =>
-        new Player(this, { id: index + 1, character, x, y, input: inputs[index], groundLayers, audio: this.audio })
-    );
+    return spawns.map(({ character, x, y }, index) => {
+      const input = inputs[index];
+      const player = new Player(this, {
+        character,
+        x,
+        y,
+        input,
+        groundLayers,
+        audio: this.audio,
+        events: this.state.events
+      });
+      return this.entities.add("player", player);
+    });
   }
 
+  // Runs every frame: the game logic advances in fixed steps, then the screen is updated.
   update(time, delta) {
+    this.stepper.advance(delta, (stepMs) => this.simulate(time, stepMs));
+    this.hud.update(this.state.soulCount);
+  }
+
+  // One step of the game logic (1/60 s).
+  simulate(time, stepMs) {
+    if (this.isLeaving) return;
+
     const updatables = [
       this.jumpers,
       this.slimes,
@@ -108,16 +131,17 @@ export class GameScene extends Phaser.Scene {
       this.players.forEach((player) => player.forceDeath());
     }
     if (this.state.isEndgame) {
+      this.isLeaving = true;
       this.audio.get("music").stop();
       this.physics.pause();
       this.scene.start(SCENE_KEYS.CREDITS);
+      return;
     }
 
-    this.hud.update(this.state.soulCount);
     if (this.state.soulCount <= 0) {
-      this.state.isGameOver = true;
+      this.state.gameOver();
     }
 
-    this.players.forEach((player) => player.update(time, delta));
+    this.players.forEach((player) => player.update(time, stepMs));
   }
 }

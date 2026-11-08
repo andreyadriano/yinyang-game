@@ -1,3 +1,6 @@
+import { GAME_EVENT } from "../../core/gameEvents.js";
+import { applySpriteState, getSpriteState } from "../../sim/spriteState.js";
+
 const OPENING_ANIM = "JailDoor_Opening";
 
 export class JailDoor {
@@ -31,11 +34,21 @@ export class JailDoor {
     });
   }
 
+  // The state that changes while playing, as JSON (see src/sim/snapshot.js).
+  getState() {
+    return getSpriteState(this.sprite);
+  }
+
+  setState(state) {
+    applySpriteState(this.sprite, state);
+  }
+
   tryOpen() {
-    if (this.gameState.bossesDefeated !== 2) return;
+    if (!this.gameState.allBossesDefeated()) return;
 
     if (this.sprite.anims.getName() !== OPENING_ANIM) {
       this.sprite.anims.play(OPENING_ANIM, true);
+      this.gameState.events.emit(GAME_EVENT.JAIL_DOOR_OPENED, {});
     }
     const sound = this.audio.get("jailDoorOpening");
     if (!sound.isPlaying) {
@@ -45,7 +58,7 @@ export class JailDoor {
 
   update() {
     if (this.sprite.anims.getName() === OPENING_ANIM && this.sprite.anims.getProgress(OPENING_ANIM) === 1) {
-      this.gameState.isEndgame = true;
+      this.gameState.endGame();
       this.sprite.disableBody();
     }
   }

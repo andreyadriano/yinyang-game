@@ -140,7 +140,7 @@ class Slime extends Enemy {
         else if (this.state === ENEMY_STATE.ATTACK && this.animProgress("attack") === 1) {
             player.takeHit(this.facing === "left" ? -125 : 125, -100);
             this.audio.get("slimeAttack").play({volume: 0.3});
-            this.gameState.soulCount -= 5;
+            this.gameState.loseSoul(5, this.id);
         }
     }
 }

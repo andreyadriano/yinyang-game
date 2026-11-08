@@ -104,12 +104,10 @@ test.describe("no celular", () => {
     const before = await x();
 
     await fingers.press(1, "right");
-    await page.waitForTimeout(600);
-    const moved = await x();
-    expect(moved).toBeGreaterThan(before + 80);
+    await page.waitForFunction(`${scene}.players[0].sprite.x > ${before + 80}`, null, { timeout: 8000 });
 
     await fingers.up(1);
-    await page.waitForTimeout(300);
+    await page.waitForFunction(`Math.abs(${scene}.players[0].sprite.body.velocity.x) < 1`, null, { timeout: 5000 });
     const stopped = await x();
     await page.waitForTimeout(400);
     expect(Math.abs((await x()) - stopped)).toBeLessThan(3);
@@ -214,9 +212,8 @@ test.describe("modo solo no desktop", () => {
 
     const before = await page.evaluate(`${scene}.players[0].sprite.x`);
     await page.keyboard.down("ArrowRight");
-    await page.waitForTimeout(500);
+    await page.waitForFunction(`${scene}.players[0].sprite.x > ${before + 50}`, null, { timeout: 8000 });
     await page.keyboard.up("ArrowRight");
-    expect(await page.evaluate(`${scene}.players[0].sprite.x`)).toBeGreaterThan(before + 50);
   });
 
   test("sem parâmetros, o desktop continua com dois jogadores e tela dividida", async ({ page }) => {

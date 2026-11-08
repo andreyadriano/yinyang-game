@@ -27,7 +27,7 @@ export class Spikes {
     if (!player.isDead()) {
       player.hurt({ restart: true });
       player.sprite.setVelocityY(SPIKE_BOUNCE_VELOCITY);
-      this.gameState.soulCount -= SPIKE_DAMAGE;
+      this.gameState.loseSoul(SPIKE_DAMAGE, "spikes");
     }
   }
 }

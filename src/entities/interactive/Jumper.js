@@ -1,3 +1,4 @@
+import { applySpriteState, getSpriteState } from "../../sim/spriteState.js";
 export {Jumper};
 
 let animationsCreated = false;
@@ -39,6 +40,15 @@ export default class Jumper {
         this.sprite.setImmovable(true);
 
     // END OF CONSTRUCTOR
+    }
+
+    // The state that changes while playing, as JSON (see src/sim/snapshot.js).
+    getState() {
+        return getSpriteState(this.sprite);
+    }
+
+    setState(state) {
+        applySpriteState(this.sprite, state);
     }
 
     update(){

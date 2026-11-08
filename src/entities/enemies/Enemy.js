@@ -1,6 +1,9 @@
 // States: FREE (patrol and chase, decided by the subclass), ATTACK, HURT and DIE.
 // The checks run in the same order as before the refactor: dying first, then health, then the
 // current state. Animation ends are polled in update() (see Player.js for why).
+import { GAME_EVENT } from "../../core/gameEvents.js";
+import { applySpriteState, getSpriteState } from "../../sim/spriteState.js";
+
 export const ENEMY_STATE = { FREE: "free", ATTACK: "attack", HURT: "hurt", DIE: "die" };
 
 export class Enemy {
@@ -62,6 +65,9 @@ export class Enemy {
   // Called when a player hits the enemy. Hits do nothing visual to an enemy that is already dying.
   hurt() {
     if (this.state === ENEMY_STATE.DIE) return;
+    if (this.state !== ENEMY_STATE.HURT) {
+      this.gameState.events.emit(GAME_EVENT.ENEMY_HURT, { id: this.id, kind: this.kind });
+    }
     this.state = ENEMY_STATE.HURT;
     this.sprite.anims.play(this.animKeys.hurt, true);
   }
@@ -79,6 +85,7 @@ export class Enemy {
     if (this.isAnimFinished()) {
       this.deathHandled = true;
       this.onDeathFinished();
+      this.gameState.events.emit(GAME_EVENT.ENEMY_DEFEATED, { id: this.id, kind: this.kind });
       return;
     }
 
@@ -111,6 +118,28 @@ export class Enemy {
     } else {
       this.onAttackFrame();
     }
+  }
+
+  // ---- saving and restoring (see src/sim/snapshot.js) ----
+
+  getState() {
+    return {
+      ...getSpriteState(this.sprite),
+      health: this.health,
+      state: this.state,
+      facing: this.facing,
+      deathSoundPlayed: this.deathSoundPlayed,
+      deathHandled: this.deathHandled
+    };
+  }
+
+  setState(state) {
+    applySpriteState(this.sprite, state);
+    this.health = state.health;
+    this.state = state.state;
+    this.facing = state.facing;
+    this.deathSoundPlayed = state.deathSoundPlayed;
+    this.deathHandled = state.deathHandled;
   }
 
   // ---- hooks for subclasses ----
