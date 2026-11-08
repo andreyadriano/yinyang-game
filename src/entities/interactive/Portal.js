@@ -60,13 +60,13 @@ export default class Portal {
     }
 
     update(){
-      if(this.portalType === 1 && this.sprite.anims.getCurrentKey() != "portal1Spin"){
+      if(this.portalType === 1 && this.sprite.anims.getName() != "portal1Spin"){
         this.sprite.anims.play("portal1Spin", true);
       }
-      if(this.portalType === 2 && this.sprite.anims.getCurrentKey() != "portal2Spin"){
+      if(this.portalType === 2 && this.sprite.anims.getName() != "portal2Spin"){
         this.sprite.anims.play("portal2Spin", true);
       }
-      if(this.portalType === 3 && this.sprite.anims.getCurrentKey() != "neutralPortalSpin"){
+      if(this.portalType === 3 && this.sprite.anims.getName() != "neutralPortalSpin"){
         this.sprite.anims.play("neutralPortalSpin", true);
       }
     }

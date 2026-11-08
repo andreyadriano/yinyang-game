@@ -56,7 +56,7 @@ export class Player {
   }
 
   isPlayingAnim(name) {
-    return this.sprite.anims.getCurrentKey() === this.anim(name);
+    return this.sprite.anims.getName() === this.anim(name);
   }
 
   isAnimFinished() {

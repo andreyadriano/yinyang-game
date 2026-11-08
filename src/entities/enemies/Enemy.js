@@ -20,7 +20,7 @@ export class Enemy {
   }
 
   isPlayingAnim(key) {
-    return this.sprite.anims.getCurrentKey() === this.animKeys[key];
+    return this.sprite.anims.getName() === this.animKeys[key];
   }
 
   animProgress(key) {

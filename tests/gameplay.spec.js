@@ -198,7 +198,7 @@ test("o ataque trava o jogador até a animação acabar e então ele volta ao es
   await page.keyboard.up("Enter");
   expect(await page.evaluate(`${scene}.players[0].isAttacking()`)).toBe(true);
   await page.waitForFunction(`${scene}.players[0].state === "free"`, null, { timeout: 3000 });
-  expect(await page.evaluate(`${scene}.players[0].sprite.anims.getCurrentKey()`)).toBe("yin-idle");
+  expect(await page.evaluate(`${scene}.players[0].sprite.anims.getName()`)).toBe("yin-idle");
 });
 
 test("o combo de ataque encadeia attack1, attack2, attack3 e recomeça", async ({ page }) => {
@@ -208,7 +208,7 @@ test("o combo de ataque encadeia attack1, attack2, attack3 e recomeça", async (
     const original = player.startAttack.bind(player);
     player.startAttack = () => {
       original();
-      window.__attacks.push(player.sprite.anims.getCurrentKey());
+      window.__attacks.push(player.sprite.anims.getName());
     };
   });
   await page.keyboard.down("Enter");

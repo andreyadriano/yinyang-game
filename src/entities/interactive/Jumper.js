@@ -54,7 +54,7 @@ export default class Jumper {
         const standing = playerSprite.body.touching.down && this.sprite.body.touching.up;
         if (!standing) return;
 
-        const key = this.sprite.anims.getCurrentKey();
+        const key = this.sprite.anims.getName();
         if (key === "rising") {
             if (this.sprite.anims.getProgress("rising") === 1) {
                 playerSprite.setVelocityY(this.bounceVelocity);

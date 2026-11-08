@@ -61,7 +61,7 @@ export class LevelMap {
 
   createLayers(definitions) {
     return definitions.map(([layerName, tilesetName]) =>
-      this.map.createStaticLayer(layerName, [this.tilesets[tilesetName]], 0, 0)
+      this.map.createLayer(layerName, [this.tilesets[tilesetName]], 0, 0)
     );
   }
 }

@@ -69,56 +69,56 @@ export default class Flamethrower {
 
     update(){
 
-        if(this.sprite.anims.getCurrentKey() === "flamethrower-rise-high" && this.sprite.anims.getProgress("flamethrower-rise-high") === 1){
+        if(this.sprite.anims.getName() === "flamethrower-rise-high" && this.sprite.anims.getProgress("flamethrower-rise-high") === 1){
             this.sprite.anims.play("flamethrower-peak");
             this.sprite.setSize(16,50).setOffset(1,28);
         }
-        else if(this.sprite.anims.getCurrentKey() === "flamethrower-rise-high" && this.sprite.anims.getProgress("flamethrower-rise-high") < 1){
+        else if(this.sprite.anims.getName() === "flamethrower-rise-high" && this.sprite.anims.getProgress("flamethrower-rise-high") < 1){
             this.sprite.setSize(16,50).setOffset(1,28);
         }
 
 
-        if(this.sprite.anims.getCurrentKey() === "flamethrower-peak" && this.sprite.anims.getProgress("flamethrower-peak") === 1){
+        if(this.sprite.anims.getName() === "flamethrower-peak" && this.sprite.anims.getProgress("flamethrower-peak") === 1){
             this.sprite.anims.play("flamethrower-fall-high");
             this.sprite.setSize(16,80).setOffset(1,-2);
         }
-        else if(this.sprite.anims.getCurrentKey() === "flamethrower-peak" && this.sprite.anims.getProgress("flamethrower-peak") < 1){
+        else if(this.sprite.anims.getName() === "flamethrower-peak" && this.sprite.anims.getProgress("flamethrower-peak") < 1){
             this.sprite.setSize(16,80).setOffset(1,-2);
         }
 
 
-        if(this.sprite.anims.getCurrentKey() === "flamethrower-fall-high" && this.sprite.anims.getProgress("flamethrower-fall-high") === 1){
+        if(this.sprite.anims.getName() === "flamethrower-fall-high" && this.sprite.anims.getProgress("flamethrower-fall-high") === 1){
             this.sprite.anims.play("flamethrower-fall-low");
             this.sprite.setSize(16,50).setOffset(1,30);
         }
-        else if(this.sprite.anims.getCurrentKey() === "flamethrower-fall-high" && this.sprite.anims.getProgress("flamethrower-fall-high") < 1){
+        else if(this.sprite.anims.getName() === "flamethrower-fall-high" && this.sprite.anims.getProgress("flamethrower-fall-high") < 1){
             this.sprite.setSize(16,50).setOffset(1,30);
         }
 
 
-        if(this.sprite.anims.getCurrentKey() === "flamethrower-fall-low" && this.sprite.anims.getProgress("flamethrower-fall-low") === 1){
+        if(this.sprite.anims.getName() === "flamethrower-fall-low" && this.sprite.anims.getProgress("flamethrower-fall-low") === 1){
             this.sprite.anims.play("flamethrower-reload");
             this.sprite.setSize(16,30).setOffset(1,50);
         }
-        else if(this.sprite.anims.getCurrentKey() === "flamethrower-fall-low" && this.sprite.anims.getProgress("flamethrower-fall-low") < 1){
+        else if(this.sprite.anims.getName() === "flamethrower-fall-low" && this.sprite.anims.getProgress("flamethrower-fall-low") < 1){
             this.sprite.setSize(16,30).setOffset(1,50);
         }
 
 
-        if(this.sprite.anims.getCurrentKey() === "flamethrower-reload" && this.sprite.anims.getProgress("flamethrower-reload") === 1){
+        if(this.sprite.anims.getName() === "flamethrower-reload" && this.sprite.anims.getProgress("flamethrower-reload") === 1){
             this.sprite.anims.play("flamethrower-rise-low");
             this.sprite.setSize(16,14).setOffset(1, 66);
         }
-        else if(this.sprite.anims.getCurrentKey() === "flamethrower-reload" && this.sprite.anims.getProgress("flamethrower-reload") < 1){
+        else if(this.sprite.anims.getName() === "flamethrower-reload" && this.sprite.anims.getProgress("flamethrower-reload") < 1){
             this.sprite.setSize(16,14).setOffset(1, 66);
         }
 
 
-        if(this.sprite.anims.getCurrentKey() === "flamethrower-rise-low" && this.sprite.anims.getProgress("flamethrower-rise-low") === 1){
+        if(this.sprite.anims.getName() === "flamethrower-rise-low" && this.sprite.anims.getProgress("flamethrower-rise-low") === 1){
             this.sprite.anims.play("flamethrower-rise-high");
             this.sprite.setSize(16,30).setOffset(1,50);
         }
-        else if(this.sprite.anims.getCurrentKey() === "flamethrower-rise-low" && this.sprite.anims.getProgress("flamethrower-rise-low") < 1){
+        else if(this.sprite.anims.getName() === "flamethrower-rise-low" && this.sprite.anims.getProgress("flamethrower-rise-low") < 1){
             this.sprite.setSize(16,30).setOffset(1,50);
         }
 
@@ -128,7 +128,7 @@ export default class Flamethrower {
     // START OF THE DAMAGE FUNCTIONS
 
     handlePlayerHit(player) {
-        if(this.sprite.anims.getCurrentKey() != "flamethrower-reload"){
+        if(this.sprite.anims.getName() != "flamethrower-reload"){
             const pushX = this.sprite.body.touching.right ? 100 : -100;
 
             player.takeHit(pushX, -75);

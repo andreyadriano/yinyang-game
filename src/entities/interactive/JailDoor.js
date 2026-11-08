@@ -34,7 +34,7 @@ export class JailDoor {
   tryOpen() {
     if (this.gameState.bossesDefeated !== 2) return;
 
-    if (this.sprite.anims.getCurrentKey() !== OPENING_ANIM) {
+    if (this.sprite.anims.getName() !== OPENING_ANIM) {
       this.sprite.anims.play(OPENING_ANIM, true);
     }
     const sound = this.audio.get("jailDoorOpening");
@@ -44,7 +44,7 @@ export class JailDoor {
   }
 
   update() {
-    if (this.sprite.anims.getCurrentKey() === OPENING_ANIM && this.sprite.anims.getProgress(OPENING_ANIM) === 1) {
+    if (this.sprite.anims.getName() === OPENING_ANIM && this.sprite.anims.getProgress(OPENING_ANIM) === 1) {
       this.gameState.isEndgame = true;
       this.sprite.disableBody();
     }
