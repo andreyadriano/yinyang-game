@@ -11,10 +11,11 @@ npm start          # serve em http://localhost:3000 (precisa de servidor HTTP po
 npm test           # teste de fumaça (Playwright + Google Chrome do sistema)
 npm run lint       # ESLint
 npm run relay      # servidor de repasse do modo online em Node (ws://localhost:8787); os testes já o sobem sozinhos
-npm run worker:dev # o mesmo servidor como Cloudflare Worker, local (ws://localhost:8788)
+npm run build:site  # monta dist/ (o site que o Worker serve: página, src/ e assets/)
+npm run worker:dev # o Worker (site + salas), local, em http://localhost:8788/?online=host&relay=same
 npm run test:worker        # o contrato do servidor contra o Worker
 npm run test:online-worker # o jogo online inteiro passando pelo Worker
-npm run worker:deploy      # publica o Worker (passo a passo e chaves em worker/DEPLOY.md)
+npm run deploy             # monta o site e publica o Worker (que serve o site e as salas); passo a passo e chaves em worker/DEPLOY.md
 npm run format     # Prettier
 ```
 
@@ -45,10 +46,11 @@ src/
   input/                   fontes de entrada (KeyboardInput, TouchInput, NetworkInput) que devolvem { left, right, up, down, attack }; fullscreen
   ui/                      Hud, OnlineStatus (sala e quem está conectado)
 server/                    relay.js: servidor de repasse em Node (usa net/RoomCore.js)
+scripts/                   build-site.mjs: monta dist/ (gerada, fora do git) para o Worker servir
 worker/                    o mesmo servidor como Cloudflare Worker + Durable Object (DEPLOY.md: como publicar; README.md: como funciona)
 assets/                    sprites, tilesets, mapa (Tiled JSON) e áudio
 tests/                     smoke, gameplay, groups, mobile (celular emulado, toque real), simulation, unit, audio,
-                           net, security, turnstile, relay, relay-worker*, online (duas páginas jogando juntas), online-turnstile e assets (Playwright)
+                           net, security, turnstile, site, relay, relay-worker*, site-worker, online (duas páginas jogando juntas), online-turnstile, online-same-origin e assets (Playwright)
 ```
 
 ## Convenções
@@ -154,7 +156,7 @@ Como funciona (`src/net`):
 - `GuestSession`: aplica os snapshots com `setState(estado, { position: false, progress: false })` e faz as entidades deslizarem até a posição nova (`glide`), então o movimento fica suave. A física do convidado fica pausada; `GameScene.update` só chama `session.update`.
 - `RoomCore` (`src/net/RoomCore.js`) são as regras da sala (primeiro é anfitrião, segundo é convidado, terceiro é recusado, o que é repassado). É usada pelo `server/relay.js` (Node) e pelo Durable Object da Cloudflare (`worker/src/Room.js`). As duas implementações passam pelo **mesmo contrato de testes** (`tests/helpers/relayContract.js`); ao mudar uma regra da sala, rode `npm test` (que roda os dois).
 - Para saber se os dois têm a mesma versão, cada lado manda `hello` com uma impressão digital dos ids das entidades (`hashIds`). Diferentes: o jogo avisa e para.
-- Servidor e Turnstile: `src/net/config.js`. Em localhost o servidor é `ws://localhost:8787` (`npm run relay`); `PRODUCTION_RELAY_URL` e `TURNSTILE_SITE_KEY` ficam vazios até publicar (passo a passo em `worker/DEPLOY.md`); `?relay=ws://...` e `?turnstileKey=...` trocam na URL.
+- Servidor e Turnstile: `src/net/config.js`. Em localhost o servidor é `ws://localhost:8787` (`npm run relay`); em qualquer outro endereço é **o mesmo endereço da página** (o Worker serve o jogo e as salas juntos), então `PRODUCTION_RELAY_URL` fica `null`; `TURNSTILE_SITE_KEY` fica vazia até publicar (passo a passo em `worker/DEPLOY.md`). Na URL: `?relay=ws://...` troca o servidor, `?relay=same` usa o endereço da página, `?turnstileKey=...` troca a chave do Turnstile.
 
 Regras:
 
@@ -180,3 +182,15 @@ fica fora do ar até as 00:00 UTC. As defesas, da mais barata para a mais cara, 
   servidores, e as recusas novas ganham teste em `tests/security.spec.js` (puro) ou `tests/relay-worker-strict.spec.js`.
 - As chaves **de teste** do Turnstile (`1x00000000000000000000BB` e as secretas `1x…AA` / `2x…AA`) são as únicas que entram no
   repositório; elas funcionam em qualquer domínio e a secreta `1x…AA` aprova **qualquer** token.
+
+### O site e o servidor são um Worker só
+
+O mesmo Worker serve o jogo (`dist/`) e as salas. Consequências:
+
+- **Mudou algo em `src/`, `assets/`, `index.html` ou `main.css`? Só chega às pessoas com `npm run deploy`** (ele monta `dist/` e publica).
+- `dist/` é gerada e não vai para o git. `scripts/build-site.mjs` copia só a página, o estilo, `src/` e `assets/`, confere os limites do plano
+  gratuito (20 mil arquivos, 25 MiB cada) e `tests/site.spec.js` garante que nenhum import nem arquivo do manifesto de assets fique de fora.
+- Arquivo novo na raiz que o jogo precise (por exemplo uma fonte) tem de entrar na lista `INCLUDED` do script, senão não é publicado.
+- Arquivos estáticos que existem em `dist/` são servidos **sem rodar o Worker**; o que não é arquivo (`/room/...`, `/health`) vai ao Worker.
+  Por isso o Worker nunca deve depender de interceptar um caminho de arquivo.
+- `ALLOWED_ORIGINS` vale `"self"` por padrão (só a página do próprio Worker); instâncias de teste usam `--var ALLOWED_ORIGINS:*`.
