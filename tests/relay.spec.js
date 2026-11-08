@@ -12,7 +12,7 @@ test.afterAll(async () => {
   await relay.close();
 });
 
-const url = (room) => `ws://localhost:${relay.port}/room/${room}`;
+const url = (room, role) => `ws://localhost:${relay.port}/room/${room}${role ? `?role=${role}` : ""}`;
 
 defineRelayContract(url);
 
@@ -22,9 +22,9 @@ test("o endereço /health responde ok", async () => {
 });
 
 test("a sala some do registro quando todos saem", async () => {
-  const { host, guest } = await pairInRoom(url, "AAAR");
-  expect(relay.registry.rooms.has("AAAR")).toBe(true);
+  const { host, guest } = await pairInRoom(url, "XXAAAR");
+  expect(relay.registry.rooms.has("XXAAAR")).toBe(true);
   host.transport.close();
   await until(() => guest.closed.value);
-  await until(() => !relay.registry.rooms.has("AAAR"));
+  await until(() => !relay.registry.rooms.has("XXAAAR"));
 });

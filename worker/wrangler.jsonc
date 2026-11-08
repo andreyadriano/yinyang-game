@@ -8,7 +8,19 @@
   "vars": {
     // Pages allowed to open a room, comma separated, e.g. "https://yinyang.example.com".
     // Empty accepts any origin; set it once you know where the game is hosted.
-    "ALLOWED_ORIGINS": ""
+    "ALLOWED_ORIGINS": "",
+
+    // The off switch: "false" refuses every new connection (redeploy to flip it). Use it if someone
+    // is hammering the server and you want to protect the daily free limits.
+    "ONLINE_ENABLED": "true",
+
+    // Connection attempts allowed per address: a burst of CONNECT_BURST, then CONNECT_PER_MINUTE a minute.
+    "CONNECT_BURST": "20",
+    "CONNECT_PER_MINUTE": "20",
+
+    // How long a host may wait alone for a friend, and the most a room may live (milliseconds).
+    "ROOM_WAITING_MS": "600000",
+    "ROOM_MAX_MS": "10800000"
   },
 
   "durable_objects": {
@@ -17,4 +29,11 @@
 
   // The free plan only supports Durable Objects with SQLite storage (this one stores nothing).
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }]
+
+  // Optional extra layer: Cloudflare's own rate limiter. The Worker uses it automatically when this
+  // binding exists. Its availability on the free plan is not stated in the docs, so it is off by
+  // default; see worker/README.md. To try it, remove the comment markers:
+  // "ratelimits": [
+  //   { "name": "CONNECT_LIMITER", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } }
+  // ]
 }

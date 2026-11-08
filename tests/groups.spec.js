@@ -20,12 +20,12 @@ test.afterEach(async ({ page }) => {
 
 // ---------- o grupo de física não pode desfazer a configuração dos sprites ----------
 
-test("os inimigos patrulham sozinhos, sem nenhum jogador por perto", async ({ page }) => {
+test("os slimes e esqueletos patrulham sozinhos, sem nenhum jogador por perto", async ({ page }) => {
+  // (Os demônios não patrulham: só mantêm a velocidade inicial até baterem numa parede, então não entram aqui.)
   const sample = () =>
     page.evaluate(`[
       ...${scene}.slimes.slice(0, 4),
       ...${scene}.skeletons.slice(0, 4),
-      ...${scene}.demons,
     ].map((enemy) => enemy.sprite.x)`);
   const before = await sample();
   await page.waitForTimeout(2000);

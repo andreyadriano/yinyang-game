@@ -96,7 +96,7 @@ export class GameScene extends Phaser.Scene {
 
   // Online co-op: connect to the relay, then run a host or a guest session (see src/net).
   startOnline() {
-    const { role, room, relayUrl } = this.mode.online;
+    const { role, room, relayUrl, turnstileSiteKey } = this.mode.online;
     this.onlineStatus = new OnlineStatus(this, { role, room });
 
     if (role === "host") {
@@ -110,7 +110,7 @@ export class GameScene extends Phaser.Scene {
       this.session?.stop();
     });
 
-    connectOnline({ role, room, relayUrl })
+    connectOnline({ role, room, relayUrl, turnstileSiteKey })
       .then((transport) => {
         if (this.leftScene) {
           transport.close();

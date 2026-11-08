@@ -42,15 +42,15 @@ const statusText = (page) => page.evaluate(`${scene}.onlineStatus.text.text`);
 
 test.describe("conexão", () => {
   test("o anfitrião espera sozinho, e o amigo aparece quando entra", async ({ browser }) => {
-    const host = await open(browser, "online=host&room=WAAA");
+    const host = await open(browser, "online=host&room=XXWAAA");
     await host.waitForFunction(`${scene}.session !== undefined`, null, { timeout: 15_000 });
 
     // Sozinho: a sala existe, o outro personagem está escondido e não conta para os inimigos.
     expect(await host.evaluate(`${scene}.remotePlayer.sprite.active`)).toBe(false);
-    expect(await statusText(host)).toContain("Sala WAAA");
+    expect(await statusText(host)).toContain("Sala XXWAAA");
     expect(await statusText(host)).toContain("toque para enviar o link");
 
-    const guest = await open(browser, "online=join&room=WAAA");
+    const guest = await open(browser, "online=join&room=XXWAAA");
     await host.waitForFunction(`${scene}.session.peerReady === true`, null, { timeout: 15_000, polling: 100 });
     expect(await host.evaluate(`${scene}.remotePlayer.sprite.active`)).toBe(true);
     expect(await host.evaluate(`${scene}.remotePlayer.character`)).toBe("yang");
@@ -61,8 +61,23 @@ test.describe("conexão", () => {
     await closeAll(host, guest);
   });
 
+  test("o link de convite leva o código da sala e o servidor escolhido, e só ele", async ({ browser }) => {
+    const withRelay = await open(browser, "online=host&room=XXKM22&relay=ws://localhost:8787");
+    const link = new URL(await withRelay.evaluate(`${scene}.onlineStatus.inviteLink()`));
+    expect(link.searchParams.get("online")).toBe("join");
+    expect(link.searchParams.get("room")).toBe("XXKM22");
+    expect(link.searchParams.get("relay")).toBe("ws://localhost:8787");
+    await closeAll(withRelay);
+
+    // Sem ?relay= na página, o link não inventa um (o convidado usa o servidor padrão).
+    const plain = await open(browser, "online=host&room=XXKN22");
+    const plainLink = new URL(await plain.evaluate(`${scene}.onlineStatus.inviteLink()`));
+    expect([...plainLink.searchParams.keys()].sort()).toEqual(["online", "room"]);
+    await closeAll(plain);
+  });
+
   test("o anfitrião joga de Yin e o convidado de Yang", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAB");
+    const { host, guest } = await pair(browser, "XXWAAB");
     const roles = (page) => page.evaluate(`({ local: ${scene}.localPlayer.character, remote: ${scene}.remotePlayer.character, cameras: ${scene}.cameras.cameras.length })`);
     expect(await roles(host)).toEqual({ local: "yin", remote: "yang", cameras: 1 });
     expect(await roles(guest)).toEqual({ local: "yang", remote: "yin", cameras: 1 });
@@ -70,7 +85,7 @@ test.describe("conexão", () => {
   });
 
   test("entrar numa sala que não existe mostra o erro e volta para a tela inicial ao tocar", async ({ browser }) => {
-    const guest = await open(browser, "online=join&room=WZZZ");
+    const guest = await open(browser, "online=join&room=XXWZZZ");
     await guest.waitForFunction(`${scene}.onlineStatus.error === true`, null, { timeout: 15_000 });
     expect(await statusText(guest)).toContain("Essa sala não existe");
     expect(await guest.evaluate(`${scene}.session === undefined`)).toBe(true);
@@ -80,17 +95,17 @@ test.describe("conexão", () => {
   });
 
   test("criar uma sala que já existe é recusado", async ({ browser }) => {
-    const first = await open(browser, "online=host&room=WAAC");
+    const first = await open(browser, "online=host&room=XXWAAC");
     await first.waitForFunction(`${scene}.session !== undefined`, null, { timeout: 15_000 });
-    const second = await open(browser, "online=host&room=WAAC");
+    const second = await open(browser, "online=host&room=XXWAAC");
     await second.waitForFunction(`${scene}.onlineStatus.error === true`, null, { timeout: 15_000 });
     expect(await statusText(second)).toContain("já está em uso");
     await closeAll(first, second);
   });
 
   test("um terceiro jogador é recusado com a sala cheia", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAD");
-    const third = await open(browser, "online=join&room=WAAD");
+    const { host, guest } = await pair(browser, "XXWAAD");
+    const third = await open(browser, "online=join&room=XXWAAD");
     await third.waitForFunction(`${scene}.onlineStatus.error === true`, null, { timeout: 15_000 });
     expect(await statusText(third)).toContain("dois jogadores");
     // E a partida dos dois continua.
@@ -99,7 +114,7 @@ test.describe("conexão", () => {
   });
 
   test("sem servidor configurado, o modo online avisa em vez de travar", async ({ browser }) => {
-    const page = await open(browser, "online=host&room=WAAE&relay=ws://localhost:1");
+    const page = await open(browser, "online=host&room=XXWAAE&relay=ws://localhost:1");
     await page.waitForFunction(`${scene}.onlineStatus.error === true`, null, { timeout: 15_000 });
     expect(await statusText(page)).toContain("Não foi possível conectar");
     // O jogo local continua funcionando mesmo sem conexão.
@@ -113,7 +128,7 @@ test.describe("conexão", () => {
 
 test.describe("o jogo dos dois", () => {
   test("o mundo do convidado espelha o do anfitrião", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAF");
+    const { host, guest } = await pair(browser, "XXWAAF");
     await guest.waitForTimeout(1500);
 
     const read = (page) =>
@@ -134,7 +149,7 @@ test.describe("o jogo dos dois", () => {
   });
 
   test("o que o convidado aperta move o Yang nos dois lados", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAG");
+    const { host, guest } = await pair(browser, "XXWAAG");
     const yangX = (page) => page.evaluate(`${scene}.players.find((p) => p.character === "yang").sprite.x`);
     const before = await yangX(host);
 
@@ -154,7 +169,7 @@ test.describe("o jogo dos dois", () => {
   });
 
   test("o que o anfitrião faz aparece para o convidado: o Yin anda", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAH");
+    const { host, guest } = await pair(browser, "XXWAAH");
     const yinX = (page) => page.evaluate(`${scene}.players.find((p) => p.character === "yin").sprite.x`);
     const before = await yinX(guest);
 
@@ -168,7 +183,7 @@ test.describe("o jogo dos dois", () => {
   });
 
   test("os sons do anfitrião são tocados no convidado", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAJ");
+    const { host, guest } = await pair(browser, "XXWAAJ");
     await guest.evaluate(() => {
       const audio = window.__game.scene.getScene("game").audio;
       window.__heard = [];
@@ -186,7 +201,7 @@ test.describe("o jogo dos dois", () => {
   });
 
   test("pegar a chave no anfitrião: o convidado vê a chave sumir e a chave no estado", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAK");
+    const { host, guest } = await pair(browser, "XXWAAK");
     await host.evaluate(() => {
       const sprite = window.__game.scene.getScene("game").localPlayer.sprite;
       sprite.setPosition(3700, 1500);
@@ -198,21 +213,21 @@ test.describe("o jogo dos dois", () => {
   });
 
   test("um inimigo que morre no anfitrião some no convidado", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAW");
+    const { host, guest } = await pair(browser, "XXWAAW");
     await host.evaluate(`${scene}.slimes[1].health = 0`);
     await guest.waitForFunction(`${scene}.slimes[1].sprite.active === false`, null, { timeout: 15_000, polling: 100 });
     await closeAll(host, guest);
   });
 
   test("a vida (HUD) do convidado acompanha a do anfitrião", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAM");
+    const { host, guest } = await pair(browser, "XXWAAM");
     await host.evaluate(`${scene}.state.loseSoul(40, "teste")`);
     await guest.waitForFunction(`${scene}.state.soulCount === 150`, null, { timeout: 10_000, polling: 100 });
     await closeAll(host, guest);
   });
 
   test("os inimigos do anfitrião atacam o Yang do convidado", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAN");
+    const { host, guest } = await pair(browser, "XXWAAN");
     const slimeX = await host.evaluate(`${scene}.slimes[0].sprite.x`);
     // O convidado se teleporta (isso é feito no anfitrião, que manda na posição).
     await host.evaluate(
@@ -231,7 +246,7 @@ test.describe("o jogo dos dois", () => {
 
 test.describe("rede", () => {
   test("o fluxo de dados cabe numa rede de celular", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAP");
+    const { host, guest } = await pair(browser, "XXWAAP");
     await guest.evaluate(() => {
       const socket = window.__game.scene.getScene("game").session.transport.socket;
       window.__bytes = 0;
@@ -260,7 +275,7 @@ test.describe("rede", () => {
 
 test.describe("saídas", () => {
   test("quando o convidado sai, o Yang some do anfitrião e deixa de ser alvo", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAQ");
+    const { host, guest } = await pair(browser, "XXWAAQ");
     await guest.context().close();
     await host.waitForFunction(`${scene}.session.peerReady === false`, null, { timeout: 15_000, polling: 100 });
     expect(await host.evaluate(`${scene}.remotePlayer.sprite.active`)).toBe(false);
@@ -270,11 +285,11 @@ test.describe("saídas", () => {
   });
 
   test("um novo convidado pode entrar depois que o primeiro saiu", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAR");
+    const { host, guest } = await pair(browser, "XXWAAR");
     await guest.context().close();
     await host.waitForFunction(`${scene}.session.peerReady === false`, null, { timeout: 15_000, polling: 100 });
 
-    const next = await open(browser, "online=join&room=WAAR");
+    const next = await open(browser, "online=join&room=XXWAAR");
     await host.waitForFunction(`${scene}.session.peerReady === true`, null, { timeout: 15_000, polling: 100 });
     await next.waitForFunction(`${scene}.session?.base`, null, { timeout: 15_000, polling: 100 });
     expect(await host.evaluate(`${scene}.remotePlayer.sprite.active`)).toBe(true);
@@ -282,7 +297,7 @@ test.describe("saídas", () => {
   });
 
   test("quando o anfitrião sai, o convidado é avisado", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAS");
+    const { host, guest } = await pair(browser, "XXWAAS");
     await host.context().close();
     await guest.waitForFunction(`${scene}.onlineStatus.error === true`, null, { timeout: 15_000, polling: 100 });
     expect(await statusText(guest)).toMatch(/anfitrião saiu|conexão com o outro jogador caiu/);
@@ -290,14 +305,14 @@ test.describe("saídas", () => {
   });
 
   test("game over no anfitrião leva o convidado para a tela de game over", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAT");
+    const { host, guest } = await pair(browser, "XXWAAT");
     await host.evaluate(`${scene}.state.soulCount = 0`);
     await guest.waitForFunction(() => window.__game.scene.isActive("gameOver"), null, { timeout: 30_000, polling: 100 });
     await closeAll(host, guest);
   });
 
   test("fim de jogo no anfitrião leva o convidado aos créditos", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAU");
+    const { host, guest } = await pair(browser, "XXWAAU");
     await host.evaluate(`${scene}.state.bossesDefeated = 2`);
     const door = await host.evaluate(`({ x: ${scene}.jailDoor.sprite.x, y: ${scene}.jailDoor.sprite.y })`);
     await host.evaluate(
@@ -315,7 +330,7 @@ test.describe("saídas", () => {
   });
 
   test("versões diferentes do jogo são detectadas e o convidado é avisado", async ({ browser }) => {
-    const { host, guest } = await pair(browser, "WAAV");
+    const { host, guest } = await pair(browser, "XXWAAV");
     // Um "hello" com outra impressão digital dos ids, como se o convidado rodasse outra versão.
     await guest.evaluate(() => {
       window.__game.scene.getScene("game").session.transport.send({ t: "hello", protocol: 1, ids: "outra-versao" });

@@ -40,6 +40,12 @@ export class HostSession {
       case MSG.INTENT:
         if (this.peerReady) this.scene.remoteInput.set(unpackIntent(message.n));
         break;
+      case MSG.ERROR:
+        // The server ended the room (it expired, or this connection sent too much). The game goes on alone.
+        this.dropPeer();
+        this.scene.onlineStatus?.showError(message.code);
+        this.transport.close();
+        break;
     }
   }
 

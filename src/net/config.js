@@ -4,6 +4,14 @@
 export const LOCAL_RELAY_URL = "ws://localhost:8787";
 export const PRODUCTION_RELAY_URL = null;
 
+// The public "site key" of the Turnstile widget (the secret key never goes in the code: see
+// worker/DEPLOY.md). While it is null the game does not ask for the challenge, which is right for the
+// local relay and for the Worker until you turn Turnstile on. A ?turnstileKey=... in the URL overrides it.
+export const TURNSTILE_SITE_KEY = null;
+
+export function getTurnstileSiteKey(search) {
+  return new URLSearchParams(search).get("turnstileKey") || TURNSTILE_SITE_KEY;
+}
 export function getRelayUrl(search, hostname) {
   const override = new URLSearchParams(search).get("relay");
   if (override) return override;

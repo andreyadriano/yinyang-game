@@ -1,11 +1,12 @@
 import { test, expect } from "@playwright/test";
 import {
-  MAX_MESSAGE_CHARS, MSG, ROOM_CODE_PATTERN, decode, encode, generateRoomCode, isGameMessage, packIntent, unpackIntent,
+  MAX_MESSAGE_CHARS, MSG, ROOM_CODE_LENGTH, ROOM_CODE_PATTERN, decode, encode, generateRoomCode, isGameMessage, packIntent, secureRandomInt, unpackIntent,
 } from "../src/net/protocol.js";
 import { LoopbackTransport } from "../src/net/Transport.js";
 import { NetworkInput } from "../src/input/NetworkInput.js";
 import { applyDelta, diffSnapshot, quantizeSnapshot } from "../src/net/snapshotDelta.js";
 import { RoomCore, RoomRegistry } from "../src/net/RoomCore.js";
+import { KeyedRateLimiter, TokenBucket } from "../src/net/RateLimiter.js";
 import { getRelayUrl, LOCAL_RELAY_URL } from "../src/net/config.js";
 import { resolveGameMode } from "../src/core/gameMode.js";
 import { hashIds } from "../src/net/protocol.js";
@@ -39,11 +40,37 @@ test.describe("protocolo", () => {
     }
   });
 
-  test("códigos de sala têm 4 letras sem I, L, O, e o gerador só produz códigos válidos", () => {
+  test("códigos de sala têm 6 caracteres, sem I, L, O, 0, 1, e o gerador só produz códigos válidos", () => {
+    expect(ROOM_CODE_LENGTH).toBe(6);
     for (let i = 0; i < 500; i++) expect(generateRoomCode()).toMatch(ROOM_CODE_PATTERN);
-    expect("ABCD").toMatch(ROOM_CODE_PATTERN);
-    for (const bad of ["abcd", "ABC", "ABCDE", "AB1D", "ABIO", "ABCL", "", "A B "]) {
-      expect(bad).not.toMatch(ROOM_CODE_PATTERN);
+    expect("XXABCD").toMatch(ROOM_CODE_PATTERN);
+    expect("AB2349").toMatch(ROOM_CODE_PATTERN);
+    for (const bad of ["abcdef", "ABCDE", "ABCDEFG", "ABCD", "ABC1EF", "ABC0EF", "ABCIEF", "ABCLEF", "ABCOEF", "ABC EF", "ABC-EF", ""]) {
+      expect(bad, JSON.stringify(bad)).not.toMatch(ROOM_CODE_PATTERN);
+    }
+  });
+
+  test("o gerador usa todos os 31 símbolos, de forma uniforme (sem viés)", () => {
+    const counts = {};
+    const draws = 31_000 / ROOM_CODE_LENGTH;
+    for (let i = 0; i < draws; i++) for (const char of generateRoomCode()) counts[char] = (counts[char] ?? 0) + 1;
+    expect(Object.keys(counts)).toHaveLength(31);
+    // Esperado ~1000 de cada um (desvio padrão ~31): ±250 é mais de 8 desvios, não dá falso alarme.
+    for (const [char, count] of Object.entries(counts)) expect(Math.abs(count - 1000), char).toBeLessThan(250);
+  });
+
+  test("dois códigos gerados em seguida são diferentes", () => {
+    expect(generateRoomCode()).not.toBe(generateRoomCode());
+  });
+
+  test("o gerador aceita um sorteio de teste e usa o sorteio seguro do navegador por padrão", () => {
+    expect(generateRoomCode(() => 0)).toBe("AAAAAA");
+    expect(generateRoomCode((max) => max - 1)).toBe("999999");
+    for (let i = 0; i < 2000; i++) {
+      const n = secureRandomInt(31);
+      expect(n).toBeGreaterThanOrEqual(0);
+      expect(n).toBeLessThan(31);
+      expect(Number.isInteger(n)).toBe(true);
     }
   });
 });
@@ -251,17 +278,17 @@ test.describe("salas", () => {
   const types = (peer) => peer.sent.map((m) => m.t);
 
   test("o primeiro a entrar é o anfitrião, o segundo o convidado, e o anfitrião é avisado", () => {
-    const room = new RoomCore("ABCD");
+    const room = new RoomCore("XXABCD");
     const host = fakePeer("host");
     const guest = fakePeer("guest");
     expect(room.join(host)).toBe("host");
     expect(room.join(guest)).toBe("guest");
-    expect(host.sent).toEqual([{ t: "joined", role: "host", room: "ABCD" }, { t: "peer-joined" }]);
-    expect(guest.sent).toEqual([{ t: "joined", role: "guest", room: "ABCD" }]);
+    expect(host.sent).toEqual([{ t: "joined", role: "host", room: "XXABCD" }, { t: "peer-joined" }]);
+    expect(guest.sent).toEqual([{ t: "joined", role: "guest", room: "XXABCD" }]);
   });
 
   test("um terceiro é recusado e a sala não muda", () => {
-    const room = new RoomCore("ABCD");
+    const room = new RoomCore("XXABCD");
     const [host, guest, third] = ["a", "b", "c"].map(fakePeer);
     room.join(host);
     room.join(guest);
@@ -273,7 +300,7 @@ test.describe("salas", () => {
   });
 
   test("mensagens do jogo vão para o outro lado e nunca voltam para quem enviou", () => {
-    const room = new RoomCore("ABCD");
+    const room = new RoomCore("XXABCD");
     const [host, guest] = ["h", "g"].map(fakePeer);
     room.join(host);
     room.join(guest);
@@ -286,7 +313,7 @@ test.describe("salas", () => {
   });
 
   test("mensagens inválidas ou que não são do jogo não são repassadas", () => {
-    const room = new RoomCore("ABCD");
+    const room = new RoomCore("XXABCD");
     const [host, guest] = ["h", "g"].map(fakePeer);
     room.join(host);
     room.join(guest);
@@ -300,7 +327,7 @@ test.describe("salas", () => {
   });
 
   test("sem outro jogador na sala, as mensagens se perdem sem erro", () => {
-    const room = new RoomCore("ABCD");
+    const room = new RoomCore("XXABCD");
     const host = fakePeer("h");
     room.join(host);
     host.sent.length = 0;
@@ -309,7 +336,7 @@ test.describe("salas", () => {
   });
 
   test("quando o convidado sai o anfitrião é avisado e a vaga reabre", () => {
-    const room = new RoomCore("ABCD");
+    const room = new RoomCore("XXABCD");
     const [host, guest, next] = ["h", "g", "n"].map(fakePeer);
     room.join(host);
     room.join(guest);
@@ -320,7 +347,7 @@ test.describe("salas", () => {
   });
 
   test("quando o anfitrião sai o convidado é avisado e desconectado", () => {
-    const room = new RoomCore("ABCD");
+    const room = new RoomCore("XXABCD");
     const [host, guest] = ["h", "g"].map(fakePeer);
     room.join(host);
     room.join(guest);
@@ -340,8 +367,8 @@ test.describe("salas", () => {
     expect(a.sent).toEqual([{ t: "error", code: "bad-room" }]);
     expect(registry.rooms.size).toBe(0);
 
-    const first = registry.join("WXYZ", a);
-    const second = registry.join("WXYZ", b);
+    const first = registry.join("XXWXYZ", a);
+    const second = registry.join("XXWXYZ", b);
     expect(first.role).toBe("host");
     expect(second.role).toBe("guest");
     expect(second.room).toBe(first.room);
@@ -370,10 +397,10 @@ test.describe("modos de jogo online", () => {
   });
 
   test("?room= escolhe o código (em maiúsculas) e ?online=join joga de Yang", () => {
-    const host = resolveGameMode("?online=host&room=wxyz", false, "localhost");
-    const guest = resolveGameMode("?online=join&room=wxyz", false, "localhost");
-    expect(host.online.room).toBe("WXYZ");
-    expect(guest).toMatchObject({ localCharacter: "yang", online: { role: "guest", room: "WXYZ" } });
+    const host = resolveGameMode("?online=host&room=xxwxyz", false, "localhost");
+    const guest = resolveGameMode("?online=join&room=xxwxyz", false, "localhost");
+    expect(host.online.room).toBe("XXWXYZ");
+    expect(guest).toMatchObject({ localCharacter: "yang", online: { role: "guest", room: "XXWXYZ" } });
   });
 
   test("entrar sem código de sala deixa o código vazio (a conexão acusa o erro)", () => {
@@ -381,8 +408,8 @@ test.describe("modos de jogo online", () => {
   });
 
   test("o toque continua valendo online, para os botões na tela", () => {
-    expect(resolveGameMode("?online=join&room=ABCD", true, "localhost").touch).toBe(true);
-    expect(resolveGameMode("?online=join&room=ABCD", false, "localhost").touch).toBe(false);
+    expect(resolveGameMode("?online=join&room=XXABCD", true, "localhost").touch).toBe(true);
+    expect(resolveGameMode("?online=join&room=XXABCD", false, "localhost").touch).toBe(false);
   });
 
   test("sem ?online, os modos de antes não mudam", () => {
@@ -457,7 +484,7 @@ test.describe("WebSocketTransport", () => {
   test("guarda o que chega antes de alguém ouvir e entrega ao primeiro ouvinte", () => {
     const socket = fakeSocket();
     const transport = new WebSocketTransport(socket);
-    socket.receive({ t: "joined", role: "host", room: "ABCD" });
+    socket.receive({ t: "joined", role: "host", room: "XXABCD" });
     socket.receive({ t: "peer-joined" });
     const received = [];
     transport.onMessage((m) => received.push(m.t));
@@ -470,7 +497,7 @@ test.describe("WebSocketTransport", () => {
     const transport = new WebSocketTransport(socket);
     const received = [];
     transport.onMessage((m) => received.push(m.t));
-    socket.receive({ t: "joined", role: "guest", room: "ABCD" });
+    socket.receive({ t: "joined", role: "guest", room: "XXABCD" });
     socket.receive({ t: "peer-left" });
     expect(received).toEqual(["joined", "peer-left"]); // o jogo ainda recebe o aviso
     expect(socket.closed).toBe(true);
@@ -480,7 +507,7 @@ test.describe("WebSocketTransport", () => {
     const socket = fakeSocket();
     const transport = new WebSocketTransport(socket);
     transport.onMessage(() => {});
-    socket.receive({ t: "joined", role: "host", room: "ABCD" });
+    socket.receive({ t: "joined", role: "host", room: "XXABCD" });
     socket.receive({ t: "peer-left" });
     expect(socket.closed).toBe(false);
     transport.close();

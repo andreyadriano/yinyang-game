@@ -9,6 +9,12 @@ const MESSAGES = {
   "room-in-use": "Esse código de sala já está em uso",
   "version-mismatch": "Versões diferentes do jogo. Recarregue a página",
   "host-left": "O anfitrião saiu da partida",
+  "rate-limit": "Mensagens demais: a conexão foi encerrada",
+  "bad-message": "Mensagens inválidas: a conexão foi encerrada",
+  "room-timeout": "A sala expirou. Crie uma nova",
+  "challenge-required": "Verificação de segurança necessária. Recarregue a página",
+  "challenge-failed": "Não foi possível confirmar que você é uma pessoa. Recarregue e tente de novo",
+  "challenge-unavailable": "A verificação de segurança não carregou (um bloqueador de anúncios pode ser a causa)",
   "connection-lost": "A conexão com o outro jogador caiu"
 };
 
@@ -62,8 +68,10 @@ export class OnlineStatus {
   inviteLink() {
     const { origin, pathname, search } = window.location;
     const params = new URLSearchParams({ online: "join", room: this.room });
-    const relay = new URLSearchParams(search).get("relay");
-    if (relay) params.set("relay", relay);
+    const current = new URLSearchParams(search);
+    for (const name of ["relay", "turnstileKey"]) {
+      if (current.get(name)) params.set(name, current.get(name)); // keep the test servers and keys in the link
+    }
     return `${origin}${pathname}?${params}`;
   }
 

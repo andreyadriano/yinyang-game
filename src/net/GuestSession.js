@@ -46,6 +46,9 @@ export class GuestSession {
       case MSG.PEER_LEFT:
         this.fail("host-left");
         break;
+      case MSG.ERROR:
+        this.fail(message.code);
+        break;
     }
   }
 

@@ -1,4 +1,6 @@
+.dev.vars
 node_modules/
 playwright-report/
 test-results/
+worker/.dev.vars
 .wrangler/

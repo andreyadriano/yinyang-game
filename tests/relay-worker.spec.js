@@ -6,7 +6,7 @@ import { defineRelayContract, join, pairInRoom, until, wait } from "./helpers/re
 // se comportar igual. Rode com: npm run test:worker
 
 const base = process.env.WORKER_URL ?? "ws://localhost:8788";
-const url = (room) => `${base}/room/${room}`;
+const url = (room, role) => `${base}/room/${room}${role ? `?role=${role}` : ""}`;
 
 defineRelayContract(url);
 
@@ -18,11 +18,11 @@ test("o endereço /health responde ok", async () => {
 test("endereços que não são de sala dão 404, e sem WebSocket dão 426", async () => {
   const http = base.replace("ws", "http");
   expect((await fetch(`${http}/qualquer-coisa`)).status).toBe(404);
-  expect((await fetch(`${http}/room/ABCD`)).status).toBe(426);
+  expect((await fetch(`${http}/room/XXABCD`)).status).toBe(426);
 });
 
 test("o ping de manutenção é respondido com pong pelo próprio runtime", async () => {
-  const { host, guest } = await pairInRoom(url, "AAAS");
+  const { host, guest } = await pairInRoom(url, "XXAAAS");
   host.transport.socket.send('{"t":"ping"}');
   // O transporte esconde o pong; lemos direto do socket.
   const pong = await new Promise((resolve) => {
@@ -37,13 +37,13 @@ test("o ping de manutenção é respondido com pong pelo próprio runtime", asyn
 
 test("a sala continua certa depois que o objeto hiberna (anfitrião esperando sozinho)", async () => {
   test.setTimeout(90_000);
-  const host = await join(url, "AAAT");
+  const host = await join(url, "XXAAAT");
   await until(() => host.received.length >= 1);
 
   // Sem nenhuma mensagem, o Durable Object sai da memória; o socket do anfitrião continua aberto.
   await wait(25_000);
 
-  const guest = await join(url, "AAAT");
+  const guest = await join(url, "XXAAAT");
   await until(() => guest.received.length >= 1 && host.received.length >= 2);
   expect(guest.received[0]).toMatchObject({ t: "joined", role: "guest" }); // a sala lembrou do anfitrião
   expect(host.received[1]).toEqual({ t: "peer-joined" });

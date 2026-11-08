@@ -1,4 +1,4 @@
-import { getRelayUrl } from "../net/config.js";
+import { getRelayUrl, getTurnstileSiteKey } from "../net/config.js";
 import { generateRoomCode } from "../net/protocol.js";
 
 // A game mode says who plays on THIS device and how it is shown.
@@ -44,7 +44,7 @@ export function resolveGameMode(
       localCharacter: role === "host" ? "yin" : "yang",
       camera: "single",
       touch,
-      online: { role, room, relayUrl: getRelayUrl(search, hostname) }
+      online: { role, room, relayUrl: getRelayUrl(search, hostname), turnstileSiteKey: getTurnstileSiteKey(search) }
     };
   }
 

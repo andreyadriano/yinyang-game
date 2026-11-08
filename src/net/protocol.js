@@ -5,7 +5,8 @@
 //   { t: "joined", role: "host" | "guest", room }   you are in the room
 //   { t: "peer-joined" }                             the other player arrived
 //   { t: "peer-left" }                               the other player left
-//   { t: "error", code }                             "room-full", "bad-room", "bad-message"
+//   { t: "error", code }                             "room-full", "room-not-found", "room-in-use", "bad-room",
+//                                                    "bad-message", "rate-limit", "room-timeout"
 //   { t: "pong" }                                    the answer to a ping
 //
 // Client -> relay:
@@ -18,7 +19,8 @@
 //   { t: "sound", name, volume? }          host -> guest: play a sound effect
 //   { t: "end", result }                   host -> guest: the run is over ("gameOver" or "endgame")
 export const PROTOCOL_VERSION = 1;
-export const MAX_MESSAGE_CHARS = 64 * 1024;
+// A full snapshot of the level is ~13 KB; nothing the game sends comes close to this.
+export const MAX_MESSAGE_CHARS = 32 * 1024;
 
 export const MSG = {
   JOINED: "joined",
@@ -56,13 +58,26 @@ export function isGameMessage(message) {
   return GAME_MESSAGES.has(message.t);
 }
 
-// Room codes are four capital letters, without the ones that look alike (I, L, O).
-export const ROOM_CODE_PATTERN = /^[A-HJKMNP-Z]{4}$/;
-const ROOM_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ";
+// Room codes are six characters: capital letters and digits, without the ones that look alike
+// (I, L, O, 0, 1). 31 symbols in 6 places is about 887 million codes, so guessing one is not an option.
+export const ROOM_CODE_LENGTH = 6;
+export const ROOM_CODE_PATTERN = /^[A-HJKMNP-Z2-9]{6}$/;
+const ROOM_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
-export function generateRoomCode(random = Math.random) {
+// A random whole number from 0 to max - 1, from the browser's secure generator (Math.random can be
+// predicted). Numbers that would make some values likelier than others are thrown away.
+export function secureRandomInt(max) {
+  const range = 256 - (256 % max);
+  const bytes = new Uint8Array(1);
+  do {
+    globalThis.crypto.getRandomValues(bytes);
+  } while (bytes[0] >= range);
+  return bytes[0] % max;
+}
+
+export function generateRoomCode(randomInt = secureRandomInt) {
   let code = "";
-  for (let i = 0; i < 4; i++) code += ROOM_ALPHABET[Math.floor(random() * ROOM_ALPHABET.length)];
+  for (let i = 0; i < ROOM_CODE_LENGTH; i++) code += ROOM_ALPHABET[randomInt(ROOM_ALPHABET.length)];
   return code;
 }
 

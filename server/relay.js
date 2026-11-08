@@ -8,12 +8,13 @@ import { RoomRegistry } from "../src/net/RoomCore.js";
 // on Cloudflare (src/net/RoomCore.js), with Node connections around them.
 //
 //   node server/relay.js            listens on port 8787 (or PORT)
-//   ws://localhost:8787/room/ABCD   the first player in a room is the host, the second the guest
+//   ws://localhost:8787/room/ABC234          the first player in a room is the host, the second the guest
+//   ws://localhost:8787/room/ABC234?role=guest   (or role=host) asks for a role: a guest never creates a room
 //   http://localhost:8787/health    answers "ok"
 const HEARTBEAT_MS = 20_000;
 
-export function startRelay({ port = 8787 } = {}) {
-  const registry = new RoomRegistry();
+export function startRelay({ port = 8787, limits } = {}) {
+  const registry = new RoomRegistry(limits);
 
   const http = createServer((request, response) => {
     if (request.url === "/health") {
@@ -28,13 +29,20 @@ export function startRelay({ port = 8787 } = {}) {
   const wss = new WebSocketServer({ server: http, maxPayload: MAX_MESSAGE_CHARS * 4 });
 
   wss.on("connection", (socket, request) => {
-    const code = (request.url ?? "").match(/^\/room\/([^/?#]+)/)?.[1] ?? "";
+    const url = new URL(request.url ?? "/", "http://relay");
+    const code = url.pathname.match(/^\/room\/([^/]+)$/)?.[1] ?? "";
+    const wanted = ["host", "guest"].includes(url.searchParams.get("role")) ? url.searchParams.get("role") : undefined;
     const peer = {
       send: (text) => socket.readyState === socket.OPEN && socket.send(text),
-      close: (closeCode, reason) => socket.close(closeCode, reason)
+      close: (closeCode, reason) => socket.close(closeCode, reason),
+      // Cut off now: close, and if the other side does not answer, drop the connection a moment later.
+      closeNow: (closeCode, reason) => {
+        socket.close(closeCode, reason);
+        setTimeout(() => socket.terminate(), 1000).unref();
+      }
     };
 
-    const joined = registry.join(code, peer);
+    const joined = registry.join(code, peer, wanted);
     if (!joined) return;
 
     socket.isAlive = true;
