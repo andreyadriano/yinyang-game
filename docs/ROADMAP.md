@@ -122,16 +122,17 @@ Decisão tomada: **uma pessoa por aparelho**. No celular o jogo tem um único jo
 
 **Bug antigo achado e corrigido nesta etapa:** desde a consolidação dos colliders em grupos de física, `group.add(sprite)` zerava a velocidade, os limites do mundo e o `immovable` que as classes definiam antes. Resultado: **nenhum inimigo patrulhava** (só se mexiam quando um jogador chegava perto) e lança-chamas, jumpers e portais deixaram de ser imóveis. Voltou ao comportamento original (31 inimigos andando desde o início), com testes em `tests/groups.spec.js`.
 
-### Etapa 6: co-op online
+### Etapa 6: co-op online (em andamento)
 
-- [ ] Modelo **host-autoritativo**: um jogador roda a simulação (inimigos, física, vida); o outro envia apenas a intenção e recebe o estado.
-- [ ] `NetworkInput`: a mesma intenção das Etapas 2 e 4, vinda da rede.
-- [ ] Implementar o transporte WebSocket (Worker + Durable Object da Cloudflare, atrás de uma interface `Transport`), com sala, conexão e reconexão.
-- [ ] Interpolação do jogador remoto, para o movimento não ficar travado.
-- [ ] Uma câmera por aparelho (reaproveita o modo de câmera única da Etapa 4).
-- [ ] Lobby simples: criar sala, entrar por código, escolher Yin ou Yang.
+- [x] Modelo **host-autoritativo**: `HostSession` roda tudo e manda o estado; `GuestSession` só desenha e manda a intenção.
+- [x] `NetworkInput`: a mesma intenção das Etapas 2 e 4, vinda da rede (1 número por mensagem).
+- [~] Transporte: interface `Transport` + `LoopbackTransport` (testes) + `WebSocketTransport`, e um servidor de repasse local em Node (`npm run relay`) com as regras da sala em `RoomCore`. **Falta publicar** o Worker + Durable Object da Cloudflare que usa o mesmo `RoomCore` (precisa de `wrangler login`) e preencher `PRODUCTION_RELAY_URL`. **Falta** reconexão.
+- [x] Interpolação do jogador remoto (e de todas as entidades no convidado): elas deslizam até a posição do último snapshot.
+- [x] Uma câmera por aparelho (câmera única da Etapa 4).
+- [~] Lobby: por URL. O anfitrião abre `?online=host`, toca no texto do topo para compartilhar o link, o amigo entra por `?online=join&room=ABCD`. **Falta** um botão "jogar online" na tela inicial e a escolha entre Yin e Yang (hoje o anfitrião é Yin e o convidado é Yang).
+- [x] Snapshots pequenos: ~16 KB/s com a fase toda em movimento (de ~340 KB/s com snapshots completos). Os sons do anfitrião tocam no convidado.
 
-**Pronto quando:** dois aparelhos, desktop e celular, completam o jogo juntos.
+**Pronto quando:** dois aparelhos, desktop e celular, completam o jogo juntos. *(Testado de ponta a ponta com duas páginas do Chrome contra o servidor local, 21 testes em `tests/online.spec.js`, inclusive saídas, sala cheia, versões diferentes e fim de jogo. Falta testar entre dois aparelhos de verdade por uma rede de verdade, depois de publicar o servidor.)*
 
 **Desenho proposto** (como o modo `solo` da Etapa 4 se encaixa):
 

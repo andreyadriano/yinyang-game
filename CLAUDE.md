@@ -10,6 +10,7 @@ npm install
 npm start          # serve em http://localhost:3000 (precisa de servidor HTTP por causa dos módulos ES6)
 npm test           # teste de fumaça (Playwright + Google Chrome do sistema)
 npm run lint       # ESLint
+npm run relay      # servidor de repasse do modo online (ws://localhost:8787); os testes já o sobem sozinhos
 npm run format     # Prettier
 ```
 
@@ -33,12 +34,16 @@ src/
     enemies/               Enemy (base com máquina de estados), Slime, Skeleton, Demon
     hazards/               Flamethrower, Spikes
     interactive/           Portal, Jumper, Key, Barrier, JailDoor
+  net/                     co-op online: protocolo, Transport, WebSocketTransport, RoomCore (regras da sala),
+                           snapshotDelta (envios pequenos), HostSession, GuestSession, connectOnline, config
   sim/                     base do online: EntityRegistry (ids estáveis), snapshot (foto do jogo em JSON),
                            spriteState, FixedStepper (lógica em passos de 1/60 s)
-  input/                   fontes de entrada (KeyboardInput, TouchInput) que devolvem { left, right, up, down, attack }; fullscreen
-  ui/                      Hud
+  input/                   fontes de entrada (KeyboardInput, TouchInput, NetworkInput) que devolvem { left, right, up, down, attack }; fullscreen
+  ui/                      Hud, OnlineStatus (sala e quem está conectado)
+server/                    relay.js: servidor de repasse em Node (usa net/RoomCore.js)
 assets/                    sprites, tilesets, mapa (Tiled JSON) e áudio
-tests/                     smoke, gameplay, groups, mobile (celular emulado, toque real), simulation, unit e assets (Playwright)
+tests/                     smoke, gameplay, groups, mobile (celular emulado, toque real), simulation, unit, audio,
+                           net, relay, online (duas páginas jogando juntas) e assets (Playwright)
 ```
 
 ## Convenções
@@ -109,12 +114,13 @@ Ao atualizar a versão do Phaser: troque o número em `index.html` e aqui, rode 
 Quem joga neste aparelho é decidido por `resolveGameMode()` (`src/core/gameMode.js`):
 
 - `local`: dois jogadores no mesmo teclado, tela dividida (padrão no desktop).
-- `solo`: **um jogador por aparelho**, câmera única (padrão em aparelhos de toque; é também a base do co-op online, em que o outro jogador é remoto).
+- `solo`: **um jogador por aparelho**, câmera única (padrão em aparelhos de toque).
+- `online`: co-op em dois aparelhos (ver a seção abaixo). `?online=host` ou `?online=join&room=ABCD`.
 - Dá para forçar na URL: `?mode=solo`, `?mode=local`, e em solo `?character=yang`.
 
 Regras para não quebrar o celular:
 
-- `scene.players` só tem os jogadores **locais**: pode ter 1 ou 2. Nunca use `players[1]` fora do código da tela dividida.
+- `scene.players` tem os jogadores **em jogo neste aparelho**: 1 (solo), 2 (local) ou, online, o jogador local **mais** o remoto. Use `scene.localPlayer` para o jogador deste aparelho (a câmera o segue) e nunca `players[1]` fora do código da tela dividida. Um jogador pode estar escondido (`sprite.active === false`, o amigo ainda não conectou): filtre por isso (`Enemy.activePlayers()`).
 - Toda entrada nova (toque, rede) implementa `read()` e devolve a intenção; o `Player` não sabe de onde ela vem.
 - Botões na tela ficam na `TouchControlsScene` (cena própria, para não se mexerem com as câmeras do jogo). Cada botão novo entra em `this.buttons`, que os testes usam para achar a posição.
 - Áudio: no celular ele só destrava no primeiro toque; use `audio.playWhenUnlocked()` para música.
@@ -132,3 +138,22 @@ O online vai funcionar assim: o host simula tudo e manda uma foto do jogo; o con
 - **A lógica roda em passos fixos de 1/60 s** (`GameScene.simulate()` via `FixedStepper`), não a cada quadro. Código de jogo vai no `update()` das entidades; o que é só de tela (HUD, câmera) fica fora do `simulate()`. Com a máquina lenta ele roda até 5 passos por quadro e descarta o resto.
 - **Armadilha do Phaser (tempo):** nos primeiros 120 quadros depois de iniciar (e sempre que a janela perde o foco) o Phaser limita o `delta` a 1/60 s, então o jogo anda em câmera lenta se a tela estiver abaixo de 60 quadros. Depois disso entrega o tempo real. Em testes que medem tempo, espere `window.__game.loop.frame > 220` antes.
 - **Armadilha do Phaser (grupos):** `group.add(sprite)` reaplica os padrões do grupo e **zera velocidade, `collideWorldBounds` e `immovable`**. Adicione o sprite ao grupo **antes** de configurá-lo (isso já causou inimigos parados e lança-chamas empurráveis).
+
+## Co-op online
+
+Dois aparelhos, um servidor de repasse no meio. O **anfitrião** (`?online=host`) roda o jogo inteiro e joga de Yin; o **convidado** (`?online=join&room=ABCD`) não roda nada: manda o que está apertando e desenha o que o anfitrião manda, jogando de Yang. O anfitrião abre a sala, toca no texto no topo para compartilhar o link, e o amigo entra pelo link. O código da sala (4 letras, sem I, L, O) se mantém enquanto a página estiver aberta.
+
+Como funciona (`src/net`):
+
+- `HostSession`: o Yang é um `Player` com `NetworkInput`, movido pela intenção que o convidado manda (1 número por mensagem). A cada 3 passos (20 vezes por segundo) manda um snapshot **só com o que mudou** (`snapshotDelta`; o ponto da animação só vai quando a animação troca); um completo quando o amigo entra e a cada 5 s. Repassa os sons (`audio.events`). Ao sair, manda como a partida acabou (`end`).
+- `GuestSession`: aplica os snapshots com `setState(estado, { position: false, progress: false })` e faz as entidades deslizarem até a posição nova (`glide`), então o movimento fica suave. A física do convidado fica pausada; `GameScene.update` só chama `session.update`.
+- `RoomCore` (`src/net/RoomCore.js`) são as regras da sala (primeiro é anfitrião, segundo é convidado, terceiro é recusado, o que é repassado). É usada pelo `server/relay.js` e será usada pelo Durable Object da Cloudflare.
+- Para saber se os dois têm a mesma versão, cada lado manda `hello` com uma impressão digital dos ids das entidades (`hashIds`). Diferentes: o jogo avisa e para.
+- Servidor: `src/net/config.js`. Em localhost é `ws://localhost:8787` (`npm run relay`); `PRODUCTION_RELAY_URL` ainda está vazio até publicar o Worker; `?relay=ws://...` troca na URL.
+
+Regras:
+
+- Mensagens novas entram em `src/net/protocol.js` (documentadas no topo do arquivo) e, se o servidor deve repassá-las, na lista `GAME_MESSAGES`.
+- Qualquer coisa que o convidado precisa ver tem de estar em `getState()`; qualquer som que ele precisa ouvir tem de passar por `audio.play()` (não por `audio.get(...).play()`).
+- Testes online: `tests/online.spec.js` abre duas páginas (dois contextos do Chrome) contra o relay local. Use códigos de sala válidos nos testes e um diferente por teste.
+- Limitações conhecidas: o convidado sente o atraso da rede entre apertar e ver o personagem mexer (sem previsão no cliente); sem reconexão; sem pausa online; o convidado é sempre o Yang; ainda não há botão de "jogar online" na tela inicial, só a URL.
