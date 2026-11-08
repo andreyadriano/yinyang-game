@@ -1,5 +1,3 @@
-import { player } from "../../scenes/GameScene.js";
-
 let animationsCreated = false;
 function createAnimations(anims) {
   if (animationsCreated) return;
@@ -129,14 +127,11 @@ export default class Flamethrower {
 
     // START OF THE DAMAGE FUNCTIONS
 
-    handlePlayerHit(playerSprite) {
+    handlePlayerHit(player) {
         if(this.sprite.anims.getCurrentKey() != "flamethrower-reload"){
-            const hurtAnim = playerSprite === player ? "yin-hurt" : "yang-hurt";
             const pushX = this.sprite.body.touching.right ? 100 : -100;
 
-            playerSprite.anims.play(hurtAnim);
-            playerSprite.setVelocityX(pushX);
-            playerSprite.setVelocityY(-75);
+            player.takeHit(pushX, -75);
             this.gameState.soulCount -= 3;
         }
     // END OF THE FUNCTION

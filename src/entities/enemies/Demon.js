@@ -1,4 +1,3 @@
-import { player, player2, playerPosition, player2Position } from "../../scenes/GameScene.js";
 import { Enemy } from "./Enemy.js";
 
 export {Demon};
@@ -73,14 +72,6 @@ class Demon extends Enemy {
     update(){
         this.demonX = this.sprite.body.position.x;
         this.demonY = this.sprite.body.position.y;
-        this.playerX = player.body.position.x;
-        this.playerY = player.body.position.y;
-        this.player2X = player2.body.position.x;
-        this.player2Y = player2.body.position.y;
-        this.demon_P1 = this.demonX - this.playerX;
-        this.demon_P1_Y = this.playerY - this.demonY;
-        this.demon_P2 = this.demonX - this.player2X;
-        this.demon_P2_Y = this.player2Y - this.demonY;
 
         // THIS IS WHEN THE BOSS TAKES DAMAGE
 
@@ -152,98 +143,60 @@ class Demon extends Enemy {
             this.bossatkin = 0;
         }
 
-        // THIS IS THE BEHAVIOR RELATIVE TO PLAYER 1
+        // THIS IS THE BEHAVIOR RELATIVE TO THE CLOSEST PLAYER
 
-        else if(this.scene.physics.closest(this.sprite, [player, player2]) === player && ((this.demon_P1 > 0 && this.demon_P1 < 250) || (this.demon_P1 > -250 && this.demon_P1 < 0)) && this.demon_P1_Y > -75){
-            if (this.demon_P1 < 35 && this.demon_P1 > 0){
-                this.sprite.setVelocityX(0);
-                this.sprite.setFlipX(false);
-                this.sprite.anims.play(this.animKeys.attack, true);
-                this.demonposition = 'left';
-            }
-            else if (this.demon_P1 > -50 && this.demon_P1 < 0){
-                this.sprite.setVelocityX(0);
-                this.sprite.setFlipX(true);
-                this.sprite.anims.play(this.animKeys.attack, true);
-                this.demonposition = 'right';
-            }
-            else if (this.demon_P1 < 250 && this.demon_P1 > 0){
-                this.sprite.setVelocityX(-150);
-                this.sprite.setSize(70, 80).setOffset(30,55);
-                this.sprite.setFlipX(false);
-                this.sprite.anims.play(this.animKeys.move, true);
-                this.demonposition = 'left';
-            }
-            else if (this.demon_P1 > -250 && this.demon_P1 < 0){
-                this.sprite.setVelocityX(150);
-                this.sprite.setSize(70, 80).setOffset(55,55);
-                this.sprite.setFlipX(true);
-                this.sprite.anims.play(this.animKeys.move, true);
-                this.demonposition = 'right';
+        else {
+            const target = this.closestPlayer();
+            const dx = this.demonX - target.sprite.body.position.x;
+            const dy = target.sprite.body.position.y - this.demonY;
+
+            if (((dx > 0 && dx < 250) || (dx > -250 && dx < 0)) && dy > -75) {
+                if (dx < 35 && dx > 0){
+                    this.sprite.setVelocityX(0);
+                    this.sprite.setFlipX(false);
+                    this.sprite.anims.play(this.animKeys.attack, true);
+                    this.demonposition = 'left';
+                }
+                else if (dx > -50 && dx < 0){
+                    this.sprite.setVelocityX(0);
+                    this.sprite.setFlipX(true);
+                    this.sprite.anims.play(this.animKeys.attack, true);
+                    this.demonposition = 'right';
+                }
+                else if (dx < 250 && dx > 0){
+                    this.sprite.setVelocityX(-150);
+                    this.sprite.setSize(70, 80).setOffset(30,55);
+                    this.sprite.setFlipX(false);
+                    this.sprite.anims.play(this.animKeys.move, true);
+                    this.demonposition = 'left';
+                }
+                else if (dx > -250 && dx < 0){
+                    this.sprite.setVelocityX(150);
+                    this.sprite.setSize(70, 80).setOffset(55,55);
+                    this.sprite.setFlipX(true);
+                    this.sprite.anims.play(this.animKeys.move, true);
+                    this.demonposition = 'right';
+                }
             }
         }
-
-        // THIS IS THE BEHAVIOR RELATIVE TO PLAYER 2
-
-        else if(this.scene.physics.closest(this.sprite, [player, player2]) === player2 && ((this.demon_P2 > 0 && this.demon_P2 < 250 ) || (this.demon_P2 > -250 && this.demon_P2 < 0)) && this.demon_P2_Y > -75){
-            if (this.demon_P2 < 35 && this.demon_P2 > 0){
-                this.sprite.setVelocityX(0);
-                this.sprite.setFlipX(false);
-                this.sprite.anims.play(this.animKeys.attack, true);
-                this.demonposition = 'left';
-            }
-            else if (this.demon_P2 > -50 && this.demon_P2 < 0){
-                this.sprite.setVelocityX(0);
-                this.sprite.setFlipX(true);
-                this.sprite.anims.play(this.animKeys.attack, true);
-                this.demonposition = 'right';
-            }
-            else if (this.demon_P2 < 250 && this.demon_P2 > 0){
-                this.sprite.setVelocityX(-150);
-                this.sprite.setSize(70, 80).setOffset(30,55);
-                this.sprite.setFlipX(false);
-                this.sprite.anims.play(this.animKeys.move, true);
-                this.demonposition = 'left';
-            }
-            else if (this.demon_P2 > -250 && this.demon_P2 < 0){
-                this.sprite.setVelocityX(150);
-                this.sprite.setSize(70, 80).setOffset(30,55);
-                this.sprite.setFlipX(true);
-                this.sprite.anims.play(this.animKeys.move, true);
-                this.demonposition = 'right';
-            }
-        }
-
-
     }
 
-    handlePlayerHit(playerSprite) {
-        const isPlayer1 = playerSprite === player;
-        const facing = isPlayer1 ? playerPosition : player2Position;
-        const prefix = isPlayer1 ? "yin" : "yang";
-        const hurtAnim = `${prefix}-hurt`;
-        const currentAnim = playerSprite.anims.getCurrentKey();
-        const isAttacking = currentAnim === `${prefix}-attack1` || currentAnim === `${prefix}-attack2` || currentAnim === `${prefix}-attack3`;
-
+    handlePlayerHit(player) {
         // if the demon attacks the player, the player gets pushed back
         if(this.isPlayingAnim("attack") && this.demonposition === "left" && this.animProgress("attack") === 0.6000000000000001){
             this.audio.get("bossAttack").play({ volume: 0.3 });
-            playerSprite.setVelocityX(-125);
-            playerSprite.setVelocityY(-100);
-            playerSprite.anims.play(hurtAnim, true);
+            player.takeHit(-125, -100);
             this.gameState.soulCount -= 2;
         } else if(this.isPlayingAnim("attack") && this.demonposition === "right" && this.animProgress("attack") === 0.6000000000000001){
             this.audio.get("bossAttack").play({ volume: 0.3 });
-            playerSprite.setVelocityX(125);
-            playerSprite.setVelocityY(-100);
-            playerSprite.anims.play(hurtAnim, true);
+            player.takeHit(125, -100);
             this.gameState.soulCount -= 2;
         }
         // if the player attacks the demon, the demon gets knocked back a bit.
-        else if (isAttacking) {
-            this.sprite.setVelocityX(facing === "right" ? 150 : -150);
+        else if (player.isAttacking()) {
+            this.sprite.setVelocityX(player.facing === "right" ? 150 : -150);
             this.sprite.setVelocityY(-100);
-            playerSprite.setVelocityX(0);
+            player.sprite.setVelocityX(0);
             this.sprite.anims.play(this.animKeys.hurt, true);
             this.health -= 1;
         }

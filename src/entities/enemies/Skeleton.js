@@ -1,4 +1,3 @@
-import { player, player2, playerPosition, player2Position} from "../../scenes/GameScene.js";
 import { Enemy } from "./Enemy.js";
 export { Skeleton };
 
@@ -79,15 +78,6 @@ class Skeleton extends Enemy {
         this.skeletonX = this.sprite.body.position.x;
         this.skeletonY = this.sprite.body.position.y;
         this.skeletonguard = this.skeletonX - this.skeletonpoint;
-        this.playerX = player.body.position.x;
-        this.playerY = player.body.position.y;
-        this.player2X = player2.body.position.x;
-        this.player2Y = player2.body.position.y;
-        this.skeleton_P1 = this.skeletonX - this.playerX;
-        //this.skeleton_P1_Y = this.playerY - this.skeletonY;
-        this.skeleton_P2 = this.skeletonX - this.player2X;
-        //this.skeleton_P2_Y = this.player2Y - this.skeletonY;
-
 
 		if(this.isPlayingAnim("die") && this.animProgress("die") === 1){
           this.sprite.disableBody(true, true);
@@ -155,57 +145,11 @@ class Skeleton extends Enemy {
             this.sprite.anims.play(this.animKeys.idle, true);
             this.sprite.setSize(27,27, true).setOffset(0, 6);
 
-        //      BEHAVIOR/ANIMATION CONDITIONS FOR PLAYER 1
+        //      BEHAVIOR/ANIMATION CONDITIONS FOR THE NEAREST PLAYER
 
-        } else if (this.skeleton_P1 < 15 && this.skeleton_P1 > 0){
-            this.sprite.setVelocityX(0);
-            this.sprite.setFlipX(true);
-            this.sprite.anims.play(this.animKeys.attack, true);
-            this.skeletonposition = 'left';
-        } else if (this.skeleton_P1 > -15 && this.skeleton_P1 < 0){
-            this.sprite.setVelocityX(0);
-            this.sprite.setFlipX(false);
-            this.sprite.anims.play(this.animKeys.attack, true);
-            this.skeletonposition = 'right';
-        } else if (this.skeleton_P1 < 75 && this.skeleton_P1 > 0){
-            this.sprite.setVelocityX(-110);
-            this.sprite.setSize(27,27, true).setOffset(0, 6);
-            this.sprite.setFlipX(true);
-            this.sprite.anims.play(this.animKeys.walk, true);
-            this.skeletonposition = 'left';
-        } else if (this.skeleton_P1 > -75 && this.skeleton_P1 < 0){
-            this.sprite.setVelocityX(110);
-            this.sprite.setSize(27,27, true).setOffset(0, 6);
-            this.sprite.setFlipX(false);
-            this.sprite.anims.play(this.animKeys.walk, true);
-            this.skeletonposition = 'right';
+        } else if (this.reactToPlayers()){
+            // a player is close: the skeleton attacked or chased (handled in reactToPlayers)
         }
-
-        //      BEHAVIOR/ANIMATION CONDITIONS FOR PLAYER 2
-
-      else if (this.skeleton_P2 < 15 && this.skeleton_P2 > 0){
-        this.sprite.setVelocityX(0);
-        this.sprite.setFlipX(true);
-        this.sprite.anims.play(this.animKeys.attack, true);
-        this.skeletonposition = 'left';
-      } else if (this.skeleton_P2 > -15 && this.skeleton_P2 < 0){
-        this.sprite.setVelocityX(0);
-        this.sprite.setFlipX(false);
-        this.sprite.anims.play(this.animKeys.attack, true);
-        this.skeletonposition = 'right';
-      } else if (this.skeleton_P2 < 75 && this.skeleton_P2 > 0){
-        this.sprite.setVelocityX(-110);
-        this.sprite.setSize(27,27, true).setOffset(0, 6);
-        this.sprite.setFlipX(true);
-        this.sprite.anims.play(this.animKeys.walk, true);
-        this.skeletonposition = 'left';
-      } else if (this.skeleton_P2 > -75 && this.skeleton_P2 < 0){
-        this.sprite.setVelocityX(110);
-        this.sprite.setSize(27,27, true).setOffset(0, 6);
-        this.sprite.setFlipX(false);
-        this.sprite.anims.play(this.animKeys.walk, true);
-        this.skeletonposition = 'right';
-      }
 
         else if (this.skeletonguard > 45){
             this.sprite.setVelocityX(-100);
@@ -222,40 +166,64 @@ class Skeleton extends Enemy {
 
     }
 
-    // COMBAT FUNCTIONS
-    handlePlayerHit(playerSprite) {
-      const isPlayer1 = playerSprite === player;
-      const facing = isPlayer1 ? playerPosition : player2Position;
-      const prefix = isPlayer1 ? "yin" : "yang";
-      const deathAnim = `${prefix}-die`;
-      const hurtAnim = `${prefix}-hurt`;
-      const currentAnim = playerSprite.anims.getCurrentKey();
-      const isAttacking = currentAnim === `${prefix}-attack1` || currentAnim === `${prefix}-attack2` || currentAnim === `${prefix}-attack3`;
+    // Attacks or chases the nearest player in range. Returns true when it did something.
+    reactToPlayers() {
+      for (const player of this.playersNearestFirst()) {
+        const dx = this.skeletonX - player.sprite.body.position.x;
 
-      if (currentAnim === deathAnim) {
+        if (dx < 15 && dx > 0){
+            this.sprite.setVelocityX(0);
+            this.sprite.setFlipX(true);
+            this.sprite.anims.play(this.animKeys.attack, true);
+            this.skeletonposition = 'left';
+            return true;
+        } else if (dx > -15 && dx < 0){
+            this.sprite.setVelocityX(0);
+            this.sprite.setFlipX(false);
+            this.sprite.anims.play(this.animKeys.attack, true);
+            this.skeletonposition = 'right';
+            return true;
+        } else if (dx < 75 && dx > 0){
+            this.sprite.setVelocityX(-110);
+            this.sprite.setSize(27,27, true).setOffset(0, 6);
+            this.sprite.setFlipX(true);
+            this.sprite.anims.play(this.animKeys.walk, true);
+            this.skeletonposition = 'left';
+            return true;
+        } else if (dx > -75 && dx < 0){
+            this.sprite.setVelocityX(110);
+            this.sprite.setSize(27,27, true).setOffset(0, 6);
+            this.sprite.setFlipX(false);
+            this.sprite.anims.play(this.animKeys.walk, true);
+            this.skeletonposition = 'right';
+            return true;
+        }
+      }
+      return false;
+    }
+
+    // COMBAT FUNCTIONS
+    handlePlayerHit(player) {
+      if (player.isDead()) {
         return;
       }
 
       // if the player attacks the skeleton, the skeleton gets knocked back a bit.
-      if (isAttacking) {
-        this.sprite.setVelocityX(facing === "right" ? 150 : -150);
+      if (player.isAttacking()) {
+        this.sprite.setVelocityX(player.facing === "right" ? 150 : -150);
         this.sprite.setVelocityY(-75);
-        playerSprite.setVelocityX(0);
+        player.sprite.setVelocityX(0);
         this.sprite.anims.play(this.animKeys.hurt, true);
         this.health -= 1;
       }
       // if the skeleton attacks the player, the player gets pushed back
       else if (this.isPlayingAnim("attack") && this.skeletonposition === "left" && this.animProgress("attack") === 0.5294117647058824) {
         this.audio.get("skeletonAttack").play();
-        playerSprite.setVelocityX(-125);
-        playerSprite.setVelocityY(-100);
-        playerSprite.anims.play(hurtAnim, true);
+        player.takeHit(-125, -100);
         this.gameState.soulCount -= 5;
       } else if (this.isPlayingAnim("attack") && this.skeletonposition === "right" && this.animProgress("attack") === 0.5294117647058824) {
         this.audio.get("skeletonAttack").play();
-        playerSprite.setVelocityX(125);
-        playerSprite.setVelocityY(-100);
-        playerSprite.anims.play(hurtAnim, true);
+        player.takeHit(125, -100);
         this.gameState.soulCount -= 5;
       }
     }

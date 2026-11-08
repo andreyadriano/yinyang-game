@@ -1,4 +1,3 @@
-import { player, player2, playerPosition, player2Position} from "../../scenes/GameScene.js";
 import { Enemy } from "./Enemy.js";
 export { Slime };
 
@@ -78,14 +77,6 @@ class Slime extends Enemy {
         this.slimeX = this.sprite.body.position.x;
         this.slimeY = this.sprite.body.position.y;
         this.slimeguard = this.slimeX - this.slimepoint;
-        this.playerX = player.body.position.x;
-        this.playerY = player.body.position.y;
-        this.player2X = player2.body.position.x;
-        this.player2Y = player2.body.position.y;
-        this.slime_P1 = this.slimeX - this.playerX;
-        //this.slime_P1_Y = this.playerY - this.slimeY;
-        this.slime_P2 = this.slimeX - this.player2X;
-        //this.slime_P2_Y = this.player2Y - this.slimeY;
 
         if(this.isPlayingAnim("die") && this.animProgress("die") === 1){
           this.sprite.disableBody(true, true);
@@ -139,57 +130,11 @@ class Slime extends Enemy {
             this.sprite.anims.play(this.animKeys.idle, true);
             this.sprite.setSize(20,20).setOffset(0,4);
 
-        //      BEHAVIOR/ANIMATION CONDITIONS FOR PLAYER 1
+        //      BEHAVIOR/ANIMATION CONDITIONS FOR THE NEAREST PLAYER
 
-        } else if (this.slime_P1 < 15 && this.slime_P1 > 0){
-            this.sprite.setVelocityX(0);
-            this.sprite.setFlipX(false);
-            this.sprite.anims.play(this.animKeys.attack, true);
-            this.slimeposition = 'left';
-        } else if (this.slime_P1 > -20 && this.slime_P1 < 0){
-            this.sprite.setVelocityX(0);
-            this.sprite.setFlipX(true);
-            this.sprite.anims.play(this.animKeys.attack, true);
-            this.slimeposition = 'right';
-        } else if (this.slime_P1 < 75 && this.slime_P1 > 0){
-            this.sprite.setVelocityX(-110);
-            this.sprite.setSize(20,20, true).setOffset(7,4);
-            this.sprite.setFlipX(false);
-            this.sprite.anims.play(this.animKeys.move, true);
-            this.slimeposition = 'left';
-        } else if (this.slime_P1 > -75 && this.slime_P1 < 0){
-            this.sprite.setVelocityX(110);
-            this.sprite.setSize(20,20, true).setOffset(7,4);
-            this.sprite.setFlipX(true);
-            this.sprite.anims.play(this.animKeys.move, true);
-            this.slimeposition = 'right';
+        } else if (this.reactToPlayers()){
+            // a player is close: the slime attacked or chased (handled in reactToPlayers)
         }
-
-        //      BEHAVIOR/ANIMATION CONDITIONS FOR PLAYER 2
-
-      else if (this.slime_P2 < 15 && this.slime_P2 > 0){
-        this.sprite.setVelocityX(0);
-        this.sprite.setFlipX(false);
-        this.sprite.anims.play(this.animKeys.attack, true);
-        this.slimeposition = 'left';
-      } else if (this.slime_P2 > -20 && this.slime_P2 < 0){
-        this.sprite.setVelocityX(0);
-        this.sprite.setFlipX(true);
-        this.sprite.anims.play(this.animKeys.attack, true);
-        this.slimeposition = 'right';
-      } else if (this.slime_P2 < 75 && this.slime_P2 > 0){
-        this.sprite.setVelocityX(-110);
-        this.sprite.setSize(20,20, true).setOffset(7,4);
-        this.sprite.setFlipX(false);
-        this.sprite.anims.play(this.animKeys.move, true);
-        this.slimeposition = 'left';
-      } else if (this.slime_P2 > -75 && this.slime_P2 < 0){
-        this.sprite.setVelocityX(110);
-        this.sprite.setSize(20,20, true).setOffset(7,4);
-        this.sprite.setFlipX(true);
-        this.sprite.anims.play(this.animKeys.move, true);
-        this.slimeposition = 'right';
-      }
 
         else if (this.slimeguard > 45){
             this.sprite.setVelocityX(-100);
@@ -205,40 +150,64 @@ class Slime extends Enemy {
     // END OF UPDATE
     }
 
+    // Attacks or chases the nearest player in range. Returns true when it did something.
+    reactToPlayers() {
+      for (const player of this.playersNearestFirst()) {
+        const dx = this.slimeX - player.sprite.body.position.x;
+
+        if (dx < 15 && dx > 0){
+            this.sprite.setVelocityX(0);
+            this.sprite.setFlipX(false);
+            this.sprite.anims.play(this.animKeys.attack, true);
+            this.slimeposition = 'left';
+            return true;
+        } else if (dx > -20 && dx < 0){
+            this.sprite.setVelocityX(0);
+            this.sprite.setFlipX(true);
+            this.sprite.anims.play(this.animKeys.attack, true);
+            this.slimeposition = 'right';
+            return true;
+        } else if (dx < 75 && dx > 0){
+            this.sprite.setVelocityX(-110);
+            this.sprite.setSize(20,20, true).setOffset(7,4);
+            this.sprite.setFlipX(false);
+            this.sprite.anims.play(this.animKeys.move, true);
+            this.slimeposition = 'left';
+            return true;
+        } else if (dx > -75 && dx < 0){
+            this.sprite.setVelocityX(110);
+            this.sprite.setSize(20,20, true).setOffset(7,4);
+            this.sprite.setFlipX(true);
+            this.sprite.anims.play(this.animKeys.move, true);
+            this.slimeposition = 'right';
+            return true;
+        }
+      }
+      return false;
+    }
+
     // DEFINES WHAT HAPPENS WHEN THE PLAYER AND THE SLIME COLLIDE
 
-    handlePlayerHit(playerSprite) {
-      const isPlayer1 = playerSprite === player;
-      const facing = isPlayer1 ? playerPosition : player2Position;
-      const prefix = isPlayer1 ? "yin" : "yang";
-      const deathAnim = `${prefix}-die`;
-      const hurtAnim = `${prefix}-hurt`;
-      const currentAnim = playerSprite.anims.getCurrentKey();
-      const isAttacking = currentAnim === `${prefix}-attack1` || currentAnim === `${prefix}-attack2` || currentAnim === `${prefix}-attack3`;
-
-      if (currentAnim === deathAnim) {
+    handlePlayerHit(player) {
+      if (player.isDead()) {
         return;
       }
 
       // if the player attacks the slime, the slime gets knocked back a bit.
-      if (isAttacking) {
-        this.sprite.setVelocityX(facing === "right" ? 150 : -150);
+      if (player.isAttacking()) {
+        this.sprite.setVelocityX(player.facing === "right" ? 150 : -150);
         this.sprite.setVelocityY(-100);
-        playerSprite.setVelocityX(0);
+        player.sprite.setVelocityX(0);
         this.sprite.anims.play(this.animKeys.hurt, true);
         this.health -= 1;
       }
       // if the slime attacks the player, the player gets pushed back
       else if (this.isPlayingAnim("attack") && this.slimeposition === "left" && this.animProgress("attack") === 1) {
-        playerSprite.setVelocityX(-125);
-        playerSprite.setVelocityY(-100);
-        playerSprite.anims.play(hurtAnim, true);
+        player.takeHit(-125, -100);
         this.audio.get("slimeAttack").play({volume: 0.3});
         this.gameState.soulCount -= 5;
       } else if (this.isPlayingAnim("attack") && this.slimeposition === "right" && this.animProgress("attack") === 1) {
-        playerSprite.setVelocityX(125);
-        playerSprite.setVelocityY(-100);
-        playerSprite.anims.play(hurtAnim, true);
+        player.takeHit(125, -100);
         this.audio.get("slimeAttack").play({volume: 0.3});
         this.gameState.soulCount -= 5;
       }

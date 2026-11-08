@@ -14,4 +14,18 @@ export class Enemy {
   animProgress(key) {
     return this.sprite.anims.getProgress(this.animKeys[key]);
   }
+
+  // Players ordered by horizontal distance to this enemy, nearest first.
+  playersNearestFirst() {
+    const x = this.sprite.body.position.x;
+    return [...this.scene.players].sort(
+      (a, b) => Math.abs(x - a.sprite.body.position.x) - Math.abs(x - b.sprite.body.position.x)
+    );
+  }
+
+  // The player closest to this enemy (Arcade physics distance).
+  closestPlayer() {
+    const sprites = this.scene.players.map((player) => player.sprite);
+    return this.scene.physics.closest(this.sprite, sprites).getData("owner");
+  }
 }

@@ -1,5 +1,46 @@
 // Level spawn points (Level 1). Coordinates in map pixels.
 export const LEVEL_SPAWNS = {
+  // Players start next to each other; `character` is the texture key and animation prefix.
+  players: [
+    { character: "yin", x: 100, y: 350 },
+    { character: "yang", x: 75, y: 350 }
+  ],
+
+  // Spikes: optional scale / body size / body offset. The spike body is resized only when width is given.
+  spikes: [
+    { x: 590, y: 490 },
+    { x: 992, y: 410, scale: 1.3, width: 150, height: 20 },
+    { x: 2188, y: 1670, scale: 1.3, width: 115, height: 20, offsetX: -6, offsetY: -1 },
+    { x: 2314, y: 1670, scale: 1.3, width: 115, height: 20, offsetX: -6, offsetY: -1 },
+    { x: 2440, y: 1670, scale: 1.3, width: 115, height: 20, offsetX: -6, offsetY: -1 },
+    { x: 2566, y: 1670, scale: 1.3, width: 115, height: 20, offsetX: -6, offsetY: -1 },
+    { x: 3710, y: 890, scale: 1.3, width: 115, height: 20, offsetX: -6, offsetY: -1 },
+    { x: 3836, y: 890, scale: 1.3, width: 115, height: 20, offsetX: -6, offsetY: -1 },
+    { x: 3962, y: 890, scale: 1.3, width: 115, height: 18, offsetX: -6, offsetY: 2 },
+    { x: 1820, y: 2263, scale: 1.3, width: 115, height: 20, offsetX: -6, offsetY: -1 },
+    { x: 1946, y: 2263, scale: 1.3, width: 115, height: 20, offsetX: -6, offsetY: -1 },
+    { x: 2072, y: 2263, scale: 1.3, width: 115, height: 20, offsetX: -6, offsetY: -1 },
+    { x: 2198, y: 2263, scale: 1.3, width: 115, height: 20, offsetX: -6, offsetY: -1 },
+    { x: 2326, y: 2263, scale: 1.3, width: 115, height: 20, offsetX: -6, offsetY: -1 },
+    { x: 2452, y: 2263, scale: 1.3, width: 115, height: 20, offsetX: -6, offsetY: -1 },
+    { x: 3456, y: 1880 }
+  ],
+
+  // Barriers open with the key of the matching color (see BARRIER_TYPES in Barrier.js).
+  barriers: [
+    { x: 2735, y: 1895, type: 1 },
+    { x: 2735, y: 2100, type: 2 }
+  ],
+
+  // Keys: "yellow" opens barrier 1, "blue" opens barrier 2 (see KEY_TYPES in Key.js).
+  keys: [
+    { x: 3700, y: 1520, type: "yellow" },
+    { x: 3830, y: 1500, type: "blue" }
+  ],
+
+  // Opens once both bosses are defeated and ends the game.
+  jailDoor: { x: 2703, y: 1011 },
+
   portals: [
     { x: 2825, y: 1927, destX: 96, destY: 3616, portalType: 1 },
     { x: 2825, y: 2100, destX: 4000, destY: 3616, portalType: 2 },

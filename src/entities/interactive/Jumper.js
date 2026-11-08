@@ -1,4 +1,3 @@
-import { player, player2 } from "../../scenes/GameScene.js";
 export {Jumper};
 
 let animationsCreated = false;
@@ -45,39 +44,29 @@ export default class Jumper {
     }
 
     update(){
-        
-            if(player.body.touching.down && this.sprite.body.touching.up && this.sprite.anims.getCurrentKey() === "rising" && this.sprite.anims.getProgress("rising") === 1){
-                player.setVelocityY(this.bounceVelocity);
+        for (const player of this.scene.players) {
+            this.bounce(player.sprite);
+        }
+    }
+
+    // Steps the jumper's animation chain while a player stands on it, and launches the player at the end.
+    bounce(playerSprite){
+        const standing = playerSprite.body.touching.down && this.sprite.body.touching.up;
+        if (!standing) return;
+
+        const key = this.sprite.anims.getCurrentKey();
+        if (key === "rising") {
+            if (this.sprite.anims.getProgress("rising") === 1) {
+                playerSprite.setVelocityY(this.bounceVelocity);
                 this.sprite.anims.play("reload");
             }
-            else if(player.body.touching.down && this.sprite.body.touching.up && this.sprite.anims.getCurrentKey() === "rising" && this.sprite.anims.getProgress("rising") < 1){ 
+        } else if (key === "falling") {
+            if (this.sprite.anims.getProgress("falling") === 1) {
+                this.sprite.anims.play("rising");
             }
-
-            else if(player.body.touching.down && this.sprite.body.touching.up && this.sprite.anims.getCurrentKey() === "falling" && this.sprite.anims.getProgress("falling") === 1){
-            this.sprite.anims.play("rising");
-            }
-            else if(player.body.touching.down && this.sprite.body.touching.up && this.sprite.anims.getCurrentKey() === "falling" && this.sprite.anims.getProgress("falling") < 1){
-            }
-
-            else if (player.body.touching.down && this.sprite.body.touching.up){
-                this.sprite.anims.play("falling");
-            }
-            if(player2.body.touching.down && this.sprite.body.touching.up && this.sprite.anims.getCurrentKey() === "rising" && this.sprite.anims.getProgress("rising") === 1){
-              player2.setVelocityY(this.bounceVelocity);
-              this.sprite.anims.play("reload");
-            }
-            else if(player2.body.touching.down && this.sprite.body.touching.up && this.sprite.anims.getCurrentKey() === "rising" && this.sprite.anims.getProgress("rising") < 1){ 
-            }
-
-            else if(player2.body.touching.down && this.sprite.body.touching.up && this.sprite.anims.getCurrentKey() === "falling" && this.sprite.anims.getProgress("falling") === 1){
-            this.sprite.anims.play("rising");
-            }
-            else if(player2.body.touching.down && this.sprite.body.touching.up && this.sprite.anims.getCurrentKey() === "falling" && this.sprite.anims.getProgress("falling") < 1){
-            }
-
-            else if (player2.body.touching.down && this.sprite.body.touching.up){
-              this.sprite.anims.play("falling");
-            }
+        } else {
+            this.sprite.anims.play("falling");
+        }
     }
 // END OF THE CLASS
 }

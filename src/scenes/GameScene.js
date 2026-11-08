@@ -8,10 +8,11 @@ import {Skeleton} from "../entities/enemies/Skeleton.js";
 import {Jumper} from "../entities/interactive/Jumper.js";
 import {Portal} from "../entities/interactive/Portal.js";
 import {Demon} from "../entities/enemies/Demon.js";
+import { Spikes } from "../entities/hazards/Spikes.js";
+import { Key } from "../entities/interactive/Key.js";
+import { Barrier } from "../entities/interactive/Barrier.js";
+import { JailDoor } from "../entities/interactive/JailDoor.js";
 import { LEVEL_SPAWNS } from "../data/levelSpawns.js";
-
-export { spike, player, player2, playerPosition, player2Position };
-export { topLayer, topLayer2, topLayer3 }
 
 /*
   Teleport coordinates:
@@ -26,52 +27,6 @@ export { topLayer, topLayer2, topLayer3 }
 
 
 */
-
-// PLAYER 1 VARIABLES
-var player;
-var playerPosition = "right"; // whether the player is facing left or right
-
-// PLAYER 2 VARIABLES
-var player2;
-var player2Position = "right";
-
-// HEALTH VARIABLE
-var Soul;
-
-var cursors; // keyboard arrow keys
-var keyW;
-var keyA;
-var keyS;
-var keyD;
-var keyP;
-var keyENTER;
-
-
-// Map object variables
-
-var spike; // spikes
-var barrier1;
-var barrier2;
-var JailDoor;
-
-var yellowKey;
-var blueKey;
-
-var graphics; // don't even ask
-var button;
-
-
-
-var topLayer;
-var topLayer2;
-var topLayer3;
-var topLayer4;
-var topLayer5;
-var topLayer6;
-var topLayer7;
-var topLayer8;
-var topLayer9;
-
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -233,122 +188,77 @@ create() {
 
 
   // SCENERY AND BACKGROUND CREATION
-  
-  var map = this.add.tilemap("level1");
 
-  
-  var terrain = map.addTilesetImage("cave", "cave");
-  var terrain2 = map.addTilesetImage("surface", "surface");
-  var terrain3 = map.addTilesetImage("background", "background");
-  var terrain4 = map.addTilesetImage("background2", "background2");
-  var terrain5 = map.addTilesetImage("wood", "wood");
-  var terrain6 = map.addTilesetImage("ground", "ground");
-  var terrain7 = map.addTilesetImage("environment", "environment");
-  var terrain8 = map.addTilesetImage("caveBackground", "caveBackground");
-  var terrain9 = map.addTilesetImage("Easter Egg", "Easter Egg");
+  const map = this.add.tilemap("level1");
 
+  const terrain = map.addTilesetImage("cave", "cave");
+  const terrain2 = map.addTilesetImage("surface", "surface");
+  const terrain3 = map.addTilesetImage("background", "background");
+  const terrain4 = map.addTilesetImage("background2", "background2");
+  const terrain5 = map.addTilesetImage("wood", "wood");
+  const terrain6 = map.addTilesetImage("ground", "ground");
+  const terrain7 = map.addTilesetImage("environment", "environment");
+  const terrain8 = map.addTilesetImage("caveBackground", "caveBackground");
+  const terrain9 = map.addTilesetImage("Easter Egg", "Easter Egg");
 
-  // creating the map layers
+  // creating the map layers (creation order is the draw order)
 
-    topLayer3 = map.createStaticLayer("topLayer3", [terrain3], 0, 0);
-    topLayer4 = map.createStaticLayer("topLayer4", [terrain4], 0, 0);
+  const topLayer3 = map.createStaticLayer("topLayer3", [terrain3], 0, 0);
+  map.createStaticLayer("topLayer4", [terrain4], 0, 0);
 
-    // SPIKE CREATION
-    spike = this.physics.add.staticGroup();
-    spike.create(590, 490, "spike");
-    spike.create(992, 410, "spike").setScale(1.3).setSize(150,20);
-    spike.create(2188, 1670, "spike").setScale(1.3).setSize(115,20).setOffset(-6,-1);
-    spike.create(2314, 1670, "spike").setScale(1.3).setSize(115,20).setOffset(-6,-1);
-    spike.create(2440, 1670, "spike").setScale(1.3).setSize(115,20).setOffset(-6,-1);
-    spike.create(2566, 1670, "spike").setScale(1.3).setSize(115,20).setOffset(-6,-1);
-    spike.create(3710, 890, "spike").setScale(1.3).setSize(115,20).setOffset(-6,-1);
-    spike.create(3836, 890, "spike").setScale(1.3).setSize(115,20).setOffset(-6,-1);
-    spike.create(3962, 890, "spike").setScale(1.3).setSize(115,18).setOffset(-6,2);
-    spike.create(1820, 2263, "spike").setScale(1.3).setSize(115,20).setOffset(-6,-1);
-    spike.create(1946, 2263, "spike").setScale(1.3).setSize(115,20).setOffset(-6,-1);
-    spike.create(2072, 2263, "spike").setScale(1.3).setSize(115,20).setOffset(-6,-1);
-    spike.create(2198, 2263, "spike").setScale(1.3).setSize(115,20).setOffset(-6,-1);
-    spike.create(2326, 2263, "spike").setScale(1.3).setSize(115,20).setOffset(-6,-1);
-    spike.create(2452, 2263, "spike").setScale(1.3).setSize(115,20).setOffset(-6,-1);
-    spike.create(3456, 1880, "spike");
-    
+  this.spikes = new Spikes(this, LEVEL_SPAWNS.spikes, { gameState: this.state });
 
-    // END OF SPIKE CREATION
+  const topLayer = map.createStaticLayer("topLayer", [terrain], 0, 0);
+  const topLayer2 = map.createStaticLayer("topLayer2", [terrain2], 0, 0);
+  map.createStaticLayer("topLayerCastle1", [terrain5]);
+  map.createStaticLayer("topLayerCastle3", [terrain7]);
+  map.createStaticLayer("EasterEgg", [terrain9]);
 
-    topLayer = map.createStaticLayer("topLayer", [terrain], 0, 0);
-    topLayer2 = map.createStaticLayer("topLayer2", [terrain2], 0, 0);
-    topLayer5 = map.createStaticLayer("topLayerCastle1", [terrain5]);
-    topLayer7 = map.createStaticLayer("topLayerCastle3", [terrain7]);
-    topLayer9 = map.createStaticLayer("EasterEgg", [terrain9]);
+  const groundLayers = [topLayer, topLayer2];
 
-    // BARRIER 1 CREATION
-    barrier1 = this.physics.add.sprite(2735, 1895, "barrier1Idle").setScale(1.5, 2);
-    barrier1.setSize(20, 32).setOffset(6, 0);
-    barrier1.setBounce(0);
-    barrier1.setCollideWorldBounds(true);
-    barrier1.setImmovable(true);
-
-    // YELLOW KEY CREATION
-    yellowKey = this.physics.add.sprite(3700, 1520, "yellowKey");
-    yellowKey.setBounce(0);
-    yellowKey.setCollideWorldBounds(true);
-    yellowKey.setImmovable(true);
-    yellowKey.setSize(20,20);
-
-    // BARRIER 2 CREATION
-    barrier2 = this.physics.add.sprite(2735, 2100, "barrier2Idle").setScale(1.5, 2);
-    barrier2.setSize(20, 32).setOffset(6, 0);
-    barrier2.setBounce(0);
-    barrier2.setCollideWorldBounds(true);
-    barrier2.setImmovable(true);
-
-    // BLUE KEY CREATION
-    blueKey = this.physics.add.sprite(3830, 1500, "blueKey");
-    blueKey.setBounce(0);
-    blueKey.setCollideWorldBounds(true);
-    blueKey.setImmovable(true);
-    blueKey.setSize(20,20);
-
-    // JAILDOOR CREATION
-    JailDoor = this.physics.add.sprite(2703, 1011, "jaildoor");
-    JailDoor.setScale(0.5).setSize(40, 160).setOffset(40, 40);
-    JailDoor.setBounce(0);
-    JailDoor.setCollideWorldBounds(true);
-    JailDoor.setImmovable(true);
+  // BARRIERS, KEYS AND JAIL DOOR
+  this.barriers = LEVEL_SPAWNS.barriers.map((data) =>
+    new Barrier(this, data, { gameState: this.state, groundLayers })
+  );
+  this.keys = LEVEL_SPAWNS.keys.map((data) =>
+    new Key(this, data, { gameState: this.state, audio: this.audio, groundLayers })
+  );
+  this.jailDoor = new JailDoor(this, LEVEL_SPAWNS.jailDoor, {
+    gameState: this.state,
+    audio: this.audio,
+    groundLayers
+  });
 
   // KEYBOARD SETUP
 
-  cursors = this.input.keyboard.createCursorKeys();
-  keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
-  keyA= this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-  keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-  keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-  keyP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
-  keyENTER = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+  const cursors = this.input.keyboard.createCursorKeys();
+  const { KeyCodes } = Phaser.Input.Keyboard;
+  const keyW = this.input.keyboard.addKey(KeyCodes.W);
+  const keyA = this.input.keyboard.addKey(KeyCodes.A);
+  const keyS = this.input.keyboard.addKey(KeyCodes.S);
+  const keyD = this.input.keyboard.addKey(KeyCodes.D);
+  const keyENTER = this.input.keyboard.addKey(KeyCodes.ENTER);
 
-  // PLAYER 1 CREATION
-  this.player1 = new Player(this, {
-    x: 100,
-    y: 350,
-    spriteKey: "yin",
-    controls: { up: cursors.up, down: cursors.down, left: cursors.left, right: cursors.right, attack: keyENTER },
-    groundLayers: [topLayer, topLayer2],
-    audio: this.audio
-  });
-  player = this.player1.sprite;
+  const controlSchemes = [
+    { up: cursors.up, down: cursors.down, left: cursors.left, right: cursors.right, attack: keyENTER },
+    { up: keyW, down: keyS, left: keyA, right: keyD, attack: cursors.space }
+  ];
 
-  // PLAYER 2 CREATION
-  this.player2 = new Player(this, {
-    x: 75,
-    y: 350,
-    spriteKey: "yang",
-    controls: { up: keyW, down: keyS, left: keyA, right: keyD, attack: cursors.space },
-    groundLayers: [topLayer, topLayer2],
-    audio: this.audio
-  });
-  player2 = this.player2.sprite;
+  // PLAYERS (one per entry in LEVEL_SPAWNS.players; each enemy and object works on this.players)
+  this.players = LEVEL_SPAWNS.players.map(({ character, x, y }, index) =>
+    new Player(this, {
+      id: index + 1,
+      character,
+      x,
+      y,
+      controls: controlSchemes[index],
+      groundLayers,
+      audio: this.audio
+    })
+  );
+  const playerSprites = this.players.map((player) => player.sprite);
 
-  Soul = this.add
+  this.soulIcon = this.add
   .image(20, 20, "soul")
   .setOrigin(0.5)
   .setScrollFactor(0).setScale(1.5);
@@ -356,31 +266,33 @@ create() {
   // PHYSICS GROUPS PER ENEMY/OBJECT TYPE
   // One collider/overlap per group instead of one per instance; each entity
   // adds itself to the group and tags sprite.setData("owner", this) in its constructor.
-  const resolveOwner = (playerSprite, entitySprite) => entitySprite.getData("owner").handlePlayerHit(playerSprite);
+  // Players are tagged the same way, so the callback hands entities the Player object.
+  const resolveOwner = (playerSprite, entitySprite) =>
+    entitySprite.getData("owner").handlePlayerHit(playerSprite.getData("owner"));
 
   this.slimeGroup = this.physics.add.group();
-  this.physics.add.collider(this.slimeGroup, [topLayer, topLayer2]);
-  this.physics.add.overlap([player, player2], this.slimeGroup, resolveOwner, null, this);
+  this.physics.add.collider(this.slimeGroup, groundLayers);
+  this.physics.add.overlap(playerSprites, this.slimeGroup, resolveOwner, null, this);
 
   this.skeletonGroup = this.physics.add.group();
   this.physics.add.collider(this.skeletonGroup, [topLayer, topLayer2, topLayer3]);
-  this.physics.add.overlap([player, player2], this.skeletonGroup, resolveOwner, null, this);
+  this.physics.add.overlap(playerSprites, this.skeletonGroup, resolveOwner, null, this);
 
   this.demonGroup = this.physics.add.group();
   this.physics.add.collider(this.demonGroup, [topLayer, topLayer2, topLayer3]);
-  this.physics.add.overlap([player, player2], this.demonGroup, resolveOwner, null, this);
+  this.physics.add.overlap(playerSprites, this.demonGroup, resolveOwner, null, this);
 
   this.flamethrowerGroup = this.physics.add.group();
   this.physics.add.collider(this.flamethrowerGroup, topLayer);
-  this.physics.add.collider([player, player2], this.flamethrowerGroup, resolveOwner, null, this);
+  this.physics.add.collider(playerSprites, this.flamethrowerGroup, resolveOwner, null, this);
 
   this.portalGroup = this.physics.add.group();
-  this.physics.add.collider(this.portalGroup, [topLayer, topLayer2]);
-  this.physics.add.overlap([player, player2], this.portalGroup, (playerSprite, portalSprite) => portalSprite.getData("owner").teleport(playerSprite), null, this);
+  this.physics.add.collider(this.portalGroup, groundLayers);
+  this.physics.add.overlap(playerSprites, this.portalGroup, (playerSprite, portalSprite) => portalSprite.getData("owner").teleport(playerSprite), null, this);
 
   this.jumperGroup = this.physics.add.group();
   this.physics.add.collider(this.jumperGroup, topLayer);
-  this.physics.add.collider([player, player2], this.jumperGroup);
+  this.physics.add.collider(playerSprites, this.jumperGroup);
 
   // ENEMY AND LEVEL OBJECT CREATION (from src/data/levelSpawns.js)
 
@@ -408,61 +320,29 @@ create() {
     new Demon(this, x, y, { gameState: this.state, audio: this.audio, group: this.demonGroup })
   );
 
-  topLayer6 = map.createStaticLayer("topLayerCastle2", [terrain6]);
-  topLayer8 = map.createStaticLayer("LayerSecreto", [terrain8]);
-
-
-  //pointer = this.input.addPointer(1);
+  map.createStaticLayer("topLayerCastle2", [terrain6]);
+  map.createStaticLayer("LayerSecreto", [terrain8]);
 
   // ADDING COLLISION TO THE GAME
 
-  // LAYERS
   topLayer.setCollisionByProperty({ collides: true });
   topLayer2.setCollisionByProperty({ collides: true });
-  // BARRIERS
-  this.physics.add.collider(barrier1, topLayer);
-  this.physics.add.collider(barrier1, topLayer2);
-  this.physics.add.collider(barrier2, topLayer);
-  this.physics.add.collider(barrier2, topLayer2);
-  this.physics.add.collider(player, barrier1, openBarrier1FromPlayer1, null, this);
-  this.physics.add.collider(player, barrier2, openBarrier2FromPlayer1, null, this);
-  this.physics.add.collider(player2, barrier1, openBarrier1FromPlayer2, null, this);
-  this.physics.add.collider(player2, barrier2, openBarrier2FromPlayer2, null, this);
-  // JAILDOOR
-  this.physics.add.collider(JailDoor, topLayer);
-  this.physics.add.collider(JailDoor, topLayer2);
-  this.physics.add.collider(player, JailDoor, openJailDoorPlayer1, null, this);
-  this.physics.add.collider(player2, JailDoor, openJailDoorPlayer2, null, this);
 
-
-  // KEYS
-  this.physics.add.collider(yellowKey, topLayer);
-  this.physics.add.collider(yellowKey, topLayer2);
-  this.physics.add.collider(blueKey, topLayer);
-  this.physics.add.collider(blueKey, topLayer2);
-  this.physics.add.overlap(player, yellowKey, collectYellowKeyPlayer1, null, this);
-  this.physics.add.overlap(player2, yellowKey, collectYellowKeyPlayer2, null, this);
-  this.physics.add.overlap(player, blueKey, collectBlueKeyPlayer1, null, this);
-  this.physics.add.overlap(player2, blueKey, collectBlueKeyPlayer2, null, this);
-
-  // SPIKES
-  this.physics.add.overlap(player, spike, hitSpike, null, this);
-  this.physics.add.overlap(player2, spike, hitSpike2, null, this);
-
-  // HEALTH
-
+  // Objects that react to the players touching them
+  [this.spikes, ...this.barriers, ...this.keys, this.jailDoor].forEach((object) => object.bindPlayers(this.players));
 
   // CAMERA SYSTEM
-  
-this.cameras.main.setBounds(0, 0, 4096, 4096).setSize(800, 300); // camera bounds
-this.physics.world.setBounds(0, 0, 4096, 4096); // world bounds
+  // The top camera follows the second player, the bottom camera follows the first (local split-screen).
 
-this.cameras.main.startFollow(player2, true, 0.5, 0.5);
-this.cameras.add(0, 300, 800, 300).startFollow(player, true, 0.5, 0.5).setBounds(0, 150, 4096, 4096);
-  
+  this.cameras.main.setBounds(0, 0, 4096, 4096).setSize(800, 300); // camera bounds
+  this.physics.world.setBounds(0, 0, 4096, 4096); // world bounds
+
+  this.cameras.main.startFollow(this.players[1].sprite, true, 0.5, 0.5);
+  this.cameras.add(0, 300, 800, 300).startFollow(this.players[0].sprite, true, 0.5, 0.5).setBounds(0, 150, 4096, 4096);
+
   // FULLSCREEN IMPLEMENTATION CODE
 
-  var FKey = this.input.keyboard.addKey("F");
+  const FKey = this.input.keyboard.addKey("F");
 
   FKey.on(
     "down",
@@ -620,77 +500,25 @@ this.cameras.add(0, 300, 800, 300).startFollow(player, true, 0.5, 0.5).setBounds
     repeat: -1
   });
 
-  // BARRIER 1 ANIMATIONS
-  this.anims.create({
-    key: "barrier1Idle",
-    frames: this.anims.generateFrameNumbers("barrier1Idle", { start: 0, end: 11 }),
-    frameRate: 9,
-    repeat: -1
-  });
-  
-  this.anims.create({
-    key: "barrier1Open",
-    frames: this.anims.generateFrameNumbers("barrier1Open", { start: 0, end: 6 }),
-    frameRate: 7,
-    repeat: 0
-  });
-
-    // BARRIER 2 ANIMATIONS
-  this.anims.create({
-    key: "barrier2Idle",
-    frames: this.anims.generateFrameNumbers("barrier2Idle", { start: 0, end: 11 }),
-    frameRate: 9,
-    repeat: -1
-  });
-  this.anims.create({
-    key: "barrier2Open",
-    frames: this.anims.generateFrameNumbers("barrier2Open", { start: 0, end: 6 }),
-    frameRate: 7,
-    repeat: 0
-  });
-
-  // KEY ANIMATIONS
-
-  this.anims.create({
-    key: "yellowKeySpin",
-    frames: this.anims.generateFrameNumbers("yellowKey", { start: 0, end: 6}),
-    frameRate: 7,
-    repeat: -1
-  });
-  this.anims.create({
-    key: "blueKeySpin",
-    frames: this.anims.generateFrameNumbers("blueKey", { start: 0, end: 9}),
-    frameRate: 9,
-    repeat: -1
-  });
-
-  // JAILDOOR ANIMATION
-  this.anims.create({
-    key: "JailDoor_Opening",
-    frames: this.anims.generateFrameNumbers("jaildoor", {start:0, end: 8}),
-    frameRate: 7,
-    repeat: 0
-  });
-
 // END OF CREATE
 }
 
 // UPDATE IS WHAT MAKES THE GAME RUN, IT RUNS CONTINUOUSLY, MANY TIMES PER SECOND
 update(time, delta) {
 
-this.jumpers.forEach((jumper) => jumper.update());
-this.slimes.forEach((slime) => slime.update());
-this.skeletons.forEach((skeleton) => skeleton.update());
-this.demons.forEach((demon) => demon.update());
-this.flamethrowers.forEach((flamethrower) => flamethrower.update());
-this.portals.forEach((portal) => portal.update());
-
+    this.jumpers.forEach((jumper) => jumper.update());
+    this.slimes.forEach((slime) => slime.update());
+    this.skeletons.forEach((skeleton) => skeleton.update());
+    this.demons.forEach((demon) => demon.update());
+    this.flamethrowers.forEach((flamethrower) => flamethrower.update());
+    this.portals.forEach((portal) => portal.update());
+    this.barriers.forEach((barrier) => barrier.update());
+    this.jailDoor.update();
 
     // GAME OVER
     if (this.state.isGameOver === true) {
       this.audio.get("music").stop();
-      this.player1.forceDeath();
-      this.player2.forceDeath();
+      this.players.forEach((player) => player.forceDeath());
     }
     if(this.state.isEndgame === true){
       this.audio.get("music").stop();
@@ -700,155 +528,14 @@ this.portals.forEach((portal) => portal.update());
 
     // HEALTH
     if (this.state.soulCount > 0 && this.state.soulCount <= 190){
-      Soul.setFrame(this.state.soulCount)
+      this.soulIcon.setFrame(this.state.soulCount)
     }
     else if(this.state.soulCount <= 0){
       this.state.isGameOver = true;
     }
 
-    // JAILDOOR ANIMATION
-    if (JailDoor.anims.getCurrentKey() === "JailDoor_Opening" && JailDoor.anims.getProgress("JailDoor_Opening") < 1){
-      //JailDoor.disableBody();
-    }
-    else if(JailDoor.anims.getCurrentKey() === "JailDoor_Opening" && JailDoor.anims.getProgress("JailDoor_Opening") === 1){
-      this.state.isEndgame = true;
-      JailDoor.disableBody();
-    }
-
-    // YELLOW KEY ANIMATION
-    if(yellowKey.anims.getCurrentKey() != "yellowKeySpin" && this.state.hasYellowKey === false){
-      yellowKey.anims.play("yellowKeySpin", true);
-    }
-    // BLUE KEY ANIMATION
-    if(blueKey.anims.getCurrentKey() != "blueKeySpin" && this.state.hasBlueKey === false){
-      blueKey.anims.play("blueKeySpin", true);
-    }
-
-    // BARRIER 1 ANIMATION
-    if(barrier1.anims.getCurrentKey() === "barrier1Open" && barrier1.anims.getProgress("barrier1Open") === 1){
-      barrier1.disableBody(true, true);
-    }
-    else if(barrier1.anims.getCurrentKey() === "barrier1Open" && barrier1.anims.getProgress("barrier1Open") < 1){
-    }
-    else if(barrier1.anims.getCurrentKey() != "barrier1Idle" && barrier1.anims.getCurrentKey() != "barrier1Open" && this.state.isBarrier1Open === false){
-      barrier1.anims.play("barrier1Idle", true);
-    }
-
-    // BARRIER 2 ANIMATION
-    if(barrier2.anims.getCurrentKey() === "barrier2Open" && barrier2.anims.getProgress("barrier2Open") === 1){
-      barrier2.disableBody(true, true);
-    }
-    else if(barrier2.anims.getCurrentKey() === "barrier2Open" && barrier2.anims.getProgress("barrier2Open") < 1){
-    }
-    else if(barrier2.anims.getCurrentKey() != "barrier2Idle" && barrier2.anims.getCurrentKey() != "barrier2Open" && this.state.isBarrier2Open === false){
-      barrier2.anims.play("barrier2Idle", true);
-    }
-
-
-    //          PLAYER ANIMATIONS
-
-    if (keyP.isDown) {
-      console.log(player.body.position.x, player.body.position.y, this.state.bossesDefeated, JailDoor.anims.getCurrentKey(), this.state.isEndgame, this.state.isGameOver);
-    }
-
-    this.player1.update(time, delta);
-    this.player2.update(time, delta);
-    playerPosition = this.player1.position;
-    player2Position = this.player2.position;
+    this.players.forEach((player) => player.update(time, delta));
 
 // END OF UPDATE
-  }
-}
-
-
-
-// SPIKE DAMAGE FUNCTIONS
-
-function hitSpike(player, spike) {
-
-  player.setTint(0xff0000);
-  if(player.anims.getCurrentKey() != "yin-die"){
-  player.anims.play("yin-hurt");
-  player.setVelocityY(-420);
-  this.state.soulCount -= 4;
-  }
-};
-
-function hitSpike2(player2, spike) {
-
-  player2.setTint(0xff0000);
-  if(player2.anims.getCurrentKey() != "yang-die"){
-  player2.anims.play("yang-hurt");
-  player2.setVelocityY(-420);
-  this.state.soulCount -= 4;
-  }
-};
-
-function openBarrier1FromPlayer1(player, barrier1){
-  if(this.state.isBarrier1Open === false && this.state.hasYellowKey === true){
-    barrier1.anims.play("barrier1Open");
-    this.state.hasYellowKey = false;
-  }
-}
-
-function openBarrier2FromPlayer1(player, barrier2){
-  if(this.state.isBarrier2Open === false && this.state.hasBlueKey === true){
-    barrier2.anims.play("barrier2Open");
-    this.state.hasBlueKey = false;
-  }
-}
-function openBarrier1FromPlayer2(player2, barrier1){
-  if(this.state.isBarrier1Open === false && this.state.hasYellowKey === true){
-    barrier1.anims.play("barrier1Open");
-    this.state.hasYellowKey = false;
-  }
-}
-function openBarrier2FromPlayer2(player2, barrier2){
-  if(this.state.isBarrier2Open === false && this.state.hasBlueKey === true){
-    barrier2.anims.play("barrier2Open");
-    this.state.hasBlueKey = false;
-  }
-}
-
-function collectYellowKeyPlayer1(player, yellowKey){
-  this.state.hasYellowKey = true;
-  this.audio.get("keyPickup").play();
-  yellowKey.disableBody(true, true);
-}
-function collectYellowKeyPlayer2(player2, yellowKey){
-  this.state.hasYellowKey = true;
-  this.audio.get("keyPickup").play();
-  yellowKey.disableBody(true, true);
-}
-function collectBlueKeyPlayer1(player, blueKey){
-  this.state.hasBlueKey = true;
-  this.audio.get("keyPickup").play();
-  blueKey.disableBody(true, true);
-}
-function collectBlueKeyPlayer2(player2, blueKey){
-  this.state.hasBlueKey = true;
-  this.audio.get("keyPickup").play();
-  blueKey.disableBody(true, true);
-}
-
-// JAILDOOR OPENING FUNCTIONS
-function openJailDoorPlayer1(player, JailDoor){
-	if(this.state.bossesDefeated === 2){
-  if(JailDoor.anims.getCurrentKey() != "JailDoor_Opening"){
-    JailDoor.anims.play("JailDoor_Opening", true);
-  }
-  if(!this.audio.get("jailDoorOpening").isPlaying){
-    this.audio.get("jailDoorOpening").play();
-  }
-  }
-}
-function openJailDoorPlayer2(player2, JailDoor){
-	if(this.state.bossesDefeated === 2){
-  if(JailDoor.anims.getCurrentKey() != "JailDoor_Opening"){
-    JailDoor.anims.play("JailDoor_Opening", true);
-  }
-  if(!this.audio.get("jailDoorOpening").isPlaying){
-    this.audio.get("jailDoorOpening").play();
-  }
   }
 }
