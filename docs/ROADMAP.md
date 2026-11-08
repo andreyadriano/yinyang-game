@@ -117,7 +117,7 @@ Decisão tomada: **uma pessoa por aparelho**. No celular o jogo tem um único jo
 
 - [ ] Modelo **host-autoritativo**: um jogador roda a simulação (inimigos, física, vida); o outro envia apenas a intenção e recebe o estado.
 - [ ] `NetworkInput`: a mesma intenção das Etapas 2 e 4, vinda da rede.
-- [ ] Escolher o transporte (WebRTC direto ou servidor Node pequeno) e implementar sala, conexão e reconexão.
+- [ ] Implementar o transporte WebSocket (Worker + Durable Object da Cloudflare, atrás de uma interface `Transport`), com sala, conexão e reconexão.
 - [ ] Interpolação do jogador remoto, para o movimento não ficar travado.
 - [ ] Uma câmera por aparelho (reaproveita o modo de câmera única da Etapa 4).
 - [ ] Lobby simples: criar sala, entrar por código, escolher Yin ou Yang.
@@ -129,7 +129,8 @@ Decisão tomada: **uma pessoa por aparelho**. No celular o jogo tem um único jo
 - Cada aparelho roda um `GameScene` com **um jogador local** (teclado ou toque) e uma câmera única. O outro personagem é um jogador remoto, também um `Player`, mas com `NetworkInput` no lugar do teclado.
 - O **host** roda toda a simulação (física, inimigos, vida, chaves, chefes) com os dois jogadores: o dele e o remoto, movido pela intenção que o convidado envia. A cada ~50 ms o host manda um retrato do estado (posições, animações, estados, vida, objetos). O **convidado** não simula inimigos nem física: desenha o retrato recebido e interpola, e envia só a sua intenção.
 - Por isso a Etapa 5 vem antes: ids estáveis nas entidades, estado serializável, eventos explícitos e passo de simulação com tempo fixo. O convidado também precisa de um modo de cena "cliente" em que as entidades são só sprites.
-- **Transporte (recomendação):** um servidor Node pequeno com WebSocket que só repassa mensagens entre duas pessoas da mesma sala (código de 4 letras). Motivo: WebRTC direto costuma falhar em redes de celular (NAT de operadora) sem um servidor TURN, que é outro servidor para manter; e um repasse por WebSocket aguenta bem um jogo cooperativo com host autoritativo. Custo: hospedar o servidor (plano gratuito ou barato).
+- **Transporte (decidido): WebSocket em um Durable Object da Cloudflare.** Cada sala é um Durable Object que guarda as duas conexões e repassa as mensagens (código de sala de 4 letras). O jogo estático também pode ficar na Cloudflare. No plano gratuito (100.000 requisições e 13.000 GB-s por dia) cabem, por estimativa, de ~18 a ~29 horas de sala por dia somando todas as salas, ou só ~55 minutos se a proporção de 20 mensagens para 1 requisição não valer no plano gratuito (a documentação não esclarece). Medir no painel depois de uma partida real. Acima disso, o plano pago começa em US$ 5 por mês.
+- **O transporte fica atrás de uma interface** (`enviar` e `ao receber`), para poder trocar. Plano B, se o limite apertar: WebRTC (DataChannel) com o Worker só na sinalização e o TURN gerenciado da Cloudflare (1.000 GB por mês grátis) para as redes de celular em que a conexão direta falha. É mais complexo, por isso não é o primeiro passo.
 - Limitação conhecida: o convidado sente a latência da rede entre o toque e o movimento do seu personagem. Se incomodar, o convidado passa a simular o próprio jogador localmente e corrige com o host (previsão no cliente), depois.
 
 ### Etapa 7: polimento mobile
@@ -145,7 +146,7 @@ Quatro decisões precisam ser tomadas antes ou durante as etapas; as duas primei
 
 - [x] **Quem joga no celular?** *(Decidido: uma pessoa por aparelho; ver Etapa 4.)* Se o mobile for sempre single player ou online, a câmera dividida existe só no desktop. Dois jogadores no mesmo celular mudariam muito o layout, e não é recomendado. *Decidir antes da Etapa 4.*
 - [x] **Versão do Phaser.** *(Resolvido: atualizado para a 4.2.1.)* O código usa `createStaticLayer`, removido na 3.50. É preciso confirmar qual versão o `index.html` carrega e planejar a atualização (a recomendação é depois da Etapa 3 e antes da Etapa 4). *Verificar na Etapa 0.*
-- [ ] **Transporte do online.** WebRTC direto (sem servidor, mas com problemas de NAT) ou servidor Node pequeno (custo de hospedagem, mais confiável). *Decidir antes da Etapa 6.*
+- [x] **Transporte do online.** *(Decidido: WebSocket em Durable Object da Cloudflare, atrás de uma interface; WebRTC com TURN da Cloudflare como plano B. Ver Etapa 6.)*
 - [ ] **Build com Vite?** *(Adiado: o mobile básico não precisou. Reavaliar na Etapa 7, para PWA e carregamento.)* Hoje não há build. Um bundler ajuda a PWA e o carregamento no celular, mas acrescenta complexidade. *Decidir na Etapa 4.*
 
 **Riscos**
