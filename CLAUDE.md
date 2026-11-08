@@ -42,7 +42,7 @@ tests/                 testes Playwright
 - `Player` e `Enemy` são máquinas de estados (`free`, `attack`, `hurt`, `die`). O fim de uma animação é conferido no `update()` com `isAnimFinished()`, não com o evento `animationcomplete`: o evento muda o tempo do dano (ver `docs/ROADMAP.md`, Etapa 2).
 - Para criar um inimigo novo, estenda `Enemy` e implemente `updateFree()` e os ganchos `onHurtFrame`, `onHurtFinished`, `onAttackFrame`, `onAttackFinished`, `onDeathFinished`.
 - Mudanças pequenas, um commit por passo, com `npm test` e `npm run lint` passando.
-- **Commits seguem Conventional Commits**, em inglês: `<tipo>(escopo opcional): descrição`, com tipo `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `perf`, `style`, `build`, `ci` ou `revert`. Um hook do Husky (`commit-msg` + commitlint) rejeita mensagens fora do padrão; não use `--no-verify`.
+- **Commits seguem Conventional Commits**, em inglês: `<tipo>(escopo opcional): descrição`, com tipo `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `perf`, `style`, `build`, `ci` ou `revert`. Um hook do Husky (`commit-msg` + commitlint) rejeita mensagens fora do padrão; não use `--no-verify`. **Não adicione `Co-Authored-By`** (nem a IA como coautora): o mesmo hook rejeita mensagens com essa linha.
 
 ## Antes de dar uma tarefa por concluída
 
