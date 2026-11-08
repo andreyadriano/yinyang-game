@@ -40,6 +40,7 @@ export class RoomCore {
 
   receive(peer, text) {
     const message = decode(text);
+    if (message?.t === MSG.PING) return; // keepalive: nothing to do
     if (!message || !isGameMessage(message)) {
       peer.send(encode({ t: MSG.ERROR, code: "bad-message" }));
       return;

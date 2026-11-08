@@ -6,6 +6,10 @@
 //   { t: "peer-joined" }                             the other player arrived
 //   { t: "peer-left" }                               the other player left
 //   { t: "error", code }                             "room-full", "bad-room", "bad-message"
+//   { t: "pong" }                                    the answer to a ping
+//
+// Client -> relay:
+//   { t: "ping" }                                    sent now and then so idle connections are not dropped
 //
 // Game messages, forwarded to the other player:
 //   { t: "hello", protocol, ids }          first message of each side; `ids` identifies the level data
@@ -21,6 +25,8 @@ export const MSG = {
   PEER_JOINED: "peer-joined",
   PEER_LEFT: "peer-left",
   ERROR: "error",
+  PING: "ping",
+  PONG: "pong",
   HELLO: "hello",
   INTENT: "intent",
   SNAPSHOT: "snapshot",

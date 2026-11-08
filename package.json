@@ -9,9 +9,13 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "playwright test",
+    "test": "playwright test && npm run test:worker",
     "prepare": "husky",
-    "relay": "node server/relay.js"
+    "relay": "node server/relay.js",
+    "worker:dev": "wrangler dev --config worker/wrangler.jsonc --port 8788",
+    "worker:deploy": "wrangler deploy --config worker/wrangler.jsonc",
+    "test:worker": "playwright test -c playwright.worker.config.js",
+    "test:online-worker": "RELAY=ws://localhost:8788 playwright test tests/online.spec.js"
   },
   "license": "MIT",
   "devDependencies": {
@@ -23,6 +27,7 @@
     "husky": "^9.1.7",
     "prettier": "^3.3.0",
     "serve": "^14.2.0",
+    "wrangler": "^4.158.0",
     "ws": "^8.22.2"
   }
 }

@@ -1,0 +1,20 @@
+{
+  // The relay for online co-op. Deploy with: npm run worker:deploy
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "yinyang-relay",
+  "main": "src/index.js",
+  "compatibility_date": "2026-04-07",
+
+  "vars": {
+    // Pages allowed to open a room, comma separated, e.g. "https://yinyang.example.com".
+    // Empty accepts any origin; set it once you know where the game is hosted.
+    "ALLOWED_ORIGINS": ""
+  },
+
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "Room" }]
+  },
+
+  // The free plan only supports Durable Objects with SQLite storage (this one stores nothing).
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }]
+}

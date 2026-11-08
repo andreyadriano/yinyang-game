@@ -9,6 +9,7 @@ import { RoomCore, RoomRegistry } from "../src/net/RoomCore.js";
 import { getRelayUrl, LOCAL_RELAY_URL } from "../src/net/config.js";
 import { resolveGameMode } from "../src/core/gameMode.js";
 import { hashIds } from "../src/net/protocol.js";
+import { WebSocketTransport } from "../src/net/WebSocketTransport.js";
 
 // Testes da base de rede: rodam no Node, sem navegador e sem servidor.
 
@@ -402,5 +403,95 @@ test.describe("modos de jogo online", () => {
     expect(hashIds(ids)).toBe(hashIds([...ids]));
     expect(hashIds(ids)).not.toBe(hashIds(["slime-0", "slime-1"]));
     expect(hashIds(ids)).not.toBe(hashIds(["slime-1", "slime-0", "player-yin"]));
+  });
+});
+
+// Um WebSocket de mentira, para testar o WebSocketTransport sem rede.
+function fakeSocket() {
+  const listeners = {};
+  return {
+    readyState: WebSocket.OPEN,
+    sent: [],
+    closed: false,
+    addEventListener: (name, fn) => (listeners[name] ||= []).push(fn),
+    send(text) {
+      this.sent.push(JSON.parse(text));
+    },
+    close() {
+      this.closed = true;
+      this.readyState = WebSocket.CLOSED;
+      this.fire("close", {});
+    },
+    fire: (name, event) => (listeners[name] || []).forEach((fn) => fn(event)),
+    receive(message) {
+      this.fire("message", { data: JSON.stringify(message) });
+    },
+  };
+}
+
+test.describe("WebSocketTransport", () => {
+  test("manda um ping de manutenção de tempos em tempos e para quando fecha", async () => {
+    const socket = fakeSocket();
+    const transport = new WebSocketTransport(socket, { keepaliveMs: 20 });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const pings = socket.sent.filter((m) => m.t === "ping").length;
+    expect(pings).toBeGreaterThanOrEqual(3);
+
+    transport.close();
+    const after = socket.sent.length;
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    expect(socket.sent.length).toBe(after);
+  });
+
+  test("esconde o pong de quem usa o transporte", () => {
+    const socket = fakeSocket();
+    const transport = new WebSocketTransport(socket);
+    const received = [];
+    transport.onMessage((m) => received.push(m));
+    socket.receive({ t: "pong" });
+    socket.receive({ t: "intent", n: 1 });
+    expect(received).toEqual([{ t: "intent", n: 1 }]);
+    transport.close();
+  });
+
+  test("guarda o que chega antes de alguém ouvir e entrega ao primeiro ouvinte", () => {
+    const socket = fakeSocket();
+    const transport = new WebSocketTransport(socket);
+    socket.receive({ t: "joined", role: "host", room: "ABCD" });
+    socket.receive({ t: "peer-joined" });
+    const received = [];
+    transport.onMessage((m) => received.push(m.t));
+    expect(received).toEqual(["joined", "peer-joined"]);
+    transport.close();
+  });
+
+  test("o convidado se desconecta sozinho quando o anfitrião sai", () => {
+    const socket = fakeSocket();
+    const transport = new WebSocketTransport(socket);
+    const received = [];
+    transport.onMessage((m) => received.push(m.t));
+    socket.receive({ t: "joined", role: "guest", room: "ABCD" });
+    socket.receive({ t: "peer-left" });
+    expect(received).toEqual(["joined", "peer-left"]); // o jogo ainda recebe o aviso
+    expect(socket.closed).toBe(true);
+  });
+
+  test("o anfitrião continua conectado quando o convidado sai", () => {
+    const socket = fakeSocket();
+    const transport = new WebSocketTransport(socket);
+    transport.onMessage(() => {});
+    socket.receive({ t: "joined", role: "host", room: "ABCD" });
+    socket.receive({ t: "peer-left" });
+    expect(socket.closed).toBe(false);
+    transport.close();
+  });
+
+  test("não manda nada com a conexão fechada", () => {
+    const socket = fakeSocket();
+    const transport = new WebSocketTransport(socket);
+    transport.close();
+    socket.sent.length = 0;
+    transport.send({ t: "intent", n: 1 });
+    expect(socket.sent).toEqual([]);
   });
 });

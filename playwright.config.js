@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
+  testIgnore: "relay-worker.spec.js", // roda com `npm run test:worker` (precisa do wrangler dev)
   timeout: 60_000,
   use: {
     baseURL: "http://localhost:3000",

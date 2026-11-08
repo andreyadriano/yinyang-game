@@ -5,7 +5,12 @@ import { test, expect } from "@playwright/test";
 
 const scene = "window.__game.scene.getScene('game')";
 
+// Por padrão os testes usam o servidor local em Node. Com RELAY=ws://localhost:8788 (e `npm run worker:dev`
+// rodando) a mesma suíte passa pelo Worker da Cloudflare: npm run test:online-worker
+const relay = process.env.RELAY;
+
 async function open(browser, query) {
+  if (relay && !query.includes("relay=")) query += `&relay=${relay}`;
   const context = await browser.newContext();
   const page = await context.newPage();
   page.errors = [];
