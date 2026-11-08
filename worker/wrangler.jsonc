@@ -1,14 +1,26 @@
 {
-  // The relay for online co-op. Deploy with: npm run worker:deploy
+  // One Worker that serves the whole game: the website (the files in dist/, built by `npm run build:site`)
+  // and the relay for online co-op (/room/ABC234). Deploy with: npm run deploy
   "$schema": "../node_modules/wrangler/config-schema.json",
-  "name": "yinyang-relay",
+  "name": "yinyang",
   "main": "src/index.js",
   "compatibility_date": "2026-04-07",
 
+  // The website. A request that matches a file in dist/ is answered with that file without running the
+  // Worker (static files are free and unlimited); anything else (/room/..., /health) reaches the Worker.
+  "assets": {
+    "directory": "../dist"
+  },
+
+  // Your own address, instead of yinyang.<subdomain>.workers.dev. The domain must be active on
+  // Cloudflare (see worker/DEPLOY.md). Remove the comment markers and put your hostname; on the next
+  // deploy Cloudflare creates the DNS record and the certificate by itself.
+  // "routes": [{ "pattern": "jogo.seudominio.com", "custom_domain": true }],
+
   "vars": {
-    // Pages allowed to open a room, comma separated, e.g. "https://yinyang.example.com".
-    // Empty accepts any origin; set it once you know where the game is hosted.
-    "ALLOWED_ORIGINS": "",
+    // Pages allowed to open a room, comma separated: "self" is the page served by this same Worker
+    // (the default), "*" is any page, or full addresses like "https://outro.exemplo.com".
+    "ALLOWED_ORIGINS": "self",
 
     // The off switch: "false" refuses every new connection (redeploy to flip it). Use it if someone
     // is hammering the server and you want to protect the daily free limits.

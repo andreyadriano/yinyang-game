@@ -1,6 +1,10 @@
-// Where the relay server is. On localhost it is the one started by `npm run relay`. In production
-// it will be the Cloudflare Worker: fill PRODUCTION_RELAY_URL in after deploying it
-// (for example "wss://yinyang-relay.<account>.workers.dev"). A ?relay=ws://... in the URL overrides both.
+// Where the relay server is.
+//   - On localhost it is the one started by `npm run relay`.
+//   - Anywhere else it is the same address as the page: in production one Worker serves both the game and
+//     the rooms, so there is nothing to configure. Set PRODUCTION_RELAY_URL (for example
+//     "wss://relay.exemplo.com") only if the relay lives somewhere else.
+//   - ?relay=ws://... in the URL overrides both, and ?relay=same means "the address of this page"
+//     (for trying the Worker locally with `npm run worker:dev`, which serves the game too).
 export const LOCAL_RELAY_URL = "ws://localhost:8787";
 export const PRODUCTION_RELAY_URL = null;
 
@@ -12,9 +16,16 @@ export const TURNSTILE_SITE_KEY = null;
 export function getTurnstileSiteKey(search) {
   return new URLSearchParams(search).get("turnstileKey") || TURNSTILE_SITE_KEY;
 }
-export function getRelayUrl(search, hostname) {
+// `place` is the page's location: { hostname, origin } (window.location has both).
+export function getRelayUrl(search, place) {
   const override = new URLSearchParams(search).get("relay");
+  if (override === "same") return sameOriginRelay(place.origin);
   if (override) return override;
-  if (hostname === "localhost" || hostname === "127.0.0.1") return LOCAL_RELAY_URL;
-  return PRODUCTION_RELAY_URL;
+  if (place.hostname === "localhost" || place.hostname === "127.0.0.1") return LOCAL_RELAY_URL;
+  return PRODUCTION_RELAY_URL ?? sameOriginRelay(place.origin);
+}
+
+// https://jogo.exemplo.com -> wss://jogo.exemplo.com (and http: -> ws:)
+function sameOriginRelay(origin) {
+  return origin.replace(/^http/, "ws");
 }

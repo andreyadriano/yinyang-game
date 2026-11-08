@@ -12,10 +12,12 @@
     "test": "playwright test && npm run test:worker",
     "prepare": "husky",
     "relay": "node server/relay.js",
-    "worker:dev": "wrangler dev --config worker/wrangler.jsonc --port 8788",
-    "worker:deploy": "wrangler deploy --config worker/wrangler.jsonc",
-    "test:worker": "playwright test -c playwright.worker.config.js",
-    "test:online-worker": "RELAY=ws://localhost:8788 playwright test tests/online.spec.js"
+    "worker:dev": "npm run build:site && wrangler dev --config worker/wrangler.jsonc --port 8788",
+    "worker:deploy": "npm run build:site && wrangler deploy --config worker/wrangler.jsonc",
+    "test:worker": "npm run build:site && playwright test -c playwright.worker.config.js",
+    "test:online-worker": "npm run build:site && RELAY=ws://localhost:8788 playwright test tests/online.spec.js",
+    "build:site": "node scripts/build-site.mjs",
+    "deploy": "npm run worker:deploy"
   },
   "license": "MIT",
   "devDependencies": {

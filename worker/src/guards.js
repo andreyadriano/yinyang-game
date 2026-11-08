@@ -10,7 +10,7 @@ import { verifyTurnstile } from "./turnstile.js";
 //   2. it is not a WebSocket connection                       -> 426
 //   3. the off switch is on (ONLINE_ENABLED = "false")        -> 503
 //   4. too many attempts from this address                    -> 429
-//   5. the page is not in ALLOWED_ORIGINS                     -> 403
+//   5. the page is not allowed (ALLOWED_ORIGINS; "self" by default) -> 403
 //   6. the room code is not valid                             -> a WebSocket that says "bad-room"
 //   7. Turnstile is on (TURNSTILE_SECRET is set) and the connection has no valid token (?ts=...)
 //                                                             -> a WebSocket that says "challenge-required"
@@ -103,11 +103,20 @@ async function withinConnectionLimit(request, env) {
   return true;
 }
 
+// ALLOWED_ORIGINS is a comma separated list of pages that may open a room:
+//   "self"      the page served by this same Worker (its own address)
+//   "*" or ""   any page
+//   an address  such as "https://outro.exemplo.com"
+// A browser always says which page the connection comes from (the Origin header). A script can
+// pretend, which is why this is one layer among several and not the only one.
 export function originAllowed(request, env) {
   const allowed = (env.ALLOWED_ORIGINS ?? "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
-  if (allowed.length === 0) return true;
-  return allowed.includes(request.headers.get("Origin") ?? "");
+  if (allowed.length === 0 || allowed.includes("*")) return true;
+
+  const origin = request.headers.get("Origin") ?? "";
+  const self = new URL(request.url).origin;
+  return allowed.some((entry) => (entry === "self" ? origin === self : origin === entry));
 }

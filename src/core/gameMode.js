@@ -25,11 +25,8 @@ export function isTouchDevice() {
 // The room a host opens; it stays the same for the whole page, so restarting a game keeps the link valid.
 let hostRoom = null;
 
-export function resolveGameMode(
-  search = window.location.search,
-  touch = isTouchDevice(),
-  hostname = window.location.hostname
-) {
+// `place` is the page's location ({ hostname, origin }), a parameter so the tests can pretend to be anywhere.
+export function resolveGameMode(search = window.location.search, touch = isTouchDevice(), place = window.location) {
   const params = new URLSearchParams(search);
 
   const online = params.get("online");
@@ -44,7 +41,7 @@ export function resolveGameMode(
       localCharacter: role === "host" ? "yin" : "yang",
       camera: "single",
       touch,
-      online: { role, room, relayUrl: getRelayUrl(search, hostname), turnstileSiteKey: getTurnstileSiteKey(search) }
+      online: { role, room, relayUrl: getRelayUrl(search, place), turnstileSiteKey: getTurnstileSiteKey(search) }
     };
   }
 

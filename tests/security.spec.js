@@ -293,14 +293,35 @@ test.describe("Worker: recusas baratas (guards)", () => {
     expect(calls).toEqual(["alguem", "alguem", "alguem"]);
   });
 
-  test("origens: vazio aceita qualquer uma; preenchido só aceita as listadas", () => {
+  test("origens: vazio ou * aceitam qualquer uma; preenchido só aceita as listadas", () => {
     const withOrigin = (origin) => ws("/room/XXABCD", origin ? { Origin: origin } : {});
     expect(originAllowed(withOrigin("https://qualquer.com"), env())).toBe(true);
+    expect(originAllowed(withOrigin("https://qualquer.com"), env({ ALLOWED_ORIGINS: "*" }))).toBe(true);
+    expect(originAllowed(withOrigin(null), env({ ALLOWED_ORIGINS: "*" }))).toBe(true);
     const e = env({ ALLOWED_ORIGINS: "https://meujogo.pages.dev, https://outro.com" });
     expect(originAllowed(withOrigin("https://meujogo.pages.dev"), e)).toBe(true);
     expect(originAllowed(withOrigin("https://outro.com"), e)).toBe(true);
     expect(originAllowed(withOrigin("https://intruso.com"), e)).toBe(false);
     expect(originAllowed(withOrigin(null), e)).toBe(false); // sem Origin (um script) não passa
+  });
+
+  test('"self" aceita só a página servida pelo próprio Worker', () => {
+    const e = env({ ALLOWED_ORIGINS: "self" });
+    const from = (origin) => new Request("https://jogo.exemplo.com/room/XXABCD", { headers: { Upgrade: "websocket", Origin: origin } });
+    expect(originAllowed(from("https://jogo.exemplo.com"), e)).toBe(true);
+    expect(originAllowed(from("https://intruso.com"), e)).toBe(false);
+    expect(originAllowed(from("https://jogo.exemplo.com.intruso.com"), e)).toBe(false); // parecido, mas não é
+    expect(originAllowed(from("http://jogo.exemplo.com"), e)).toBe(false); // outro esquema
+    expect(originAllowed(from("https://jogo.exemplo.com:8443"), e)).toBe(false); // outra porta
+    expect(originAllowed(new Request("https://jogo.exemplo.com/room/XXABCD", { headers: { Upgrade: "websocket" } }), e)).toBe(false);
+  });
+
+  test('"self" pode vir junto de outras páginas na lista', () => {
+    const e = env({ ALLOWED_ORIGINS: "self, https://aliado.com" });
+    const from = (origin) => new Request("https://jogo.exemplo.com/room/XXABCD", { headers: { Upgrade: "websocket", Origin: origin } });
+    expect(originAllowed(from("https://jogo.exemplo.com"), e)).toBe(true);
+    expect(originAllowed(from("https://aliado.com"), e)).toBe(true);
+    expect(originAllowed(from("https://intruso.com"), e)).toBe(false);
   });
 
   test("uma origem não permitida leva a 403, depois do limite de tentativas", async () => {

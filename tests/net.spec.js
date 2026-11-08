@@ -10,6 +10,10 @@ import { KeyedRateLimiter, TokenBucket } from "../src/net/RateLimiter.js";
 import { getRelayUrl, LOCAL_RELAY_URL } from "../src/net/config.js";
 import { resolveGameMode } from "../src/core/gameMode.js";
 import { hashIds } from "../src/net/protocol.js";
+
+// Onde a "página" está, para os testes fingirem estar em qualquer lugar.
+const local = { hostname: "localhost", origin: "http://localhost:3000" };
+const production = { hostname: "jogo.exemplo.com", origin: "https://jogo.exemplo.com" };
 import { WebSocketTransport } from "../src/net/WebSocketTransport.js";
 
 // Testes da base de rede: rodam no Node, sem navegador e sem servidor.
@@ -383,8 +387,8 @@ test.describe("salas", () => {
 
 test.describe("modos de jogo online", () => {
   test("?online=host cria uma sala e joga de Yin; o código se mantém ao reiniciar", () => {
-    const first = resolveGameMode("?online=host", false, "localhost");
-    const again = resolveGameMode("?online=host", false, "localhost");
+    const first = resolveGameMode("?online=host", false, local);
+    const again = resolveGameMode("?online=host", false, local);
     expect(first).toMatchObject({
       name: "online",
       camera: "single",
@@ -397,32 +401,44 @@ test.describe("modos de jogo online", () => {
   });
 
   test("?room= escolhe o código (em maiúsculas) e ?online=join joga de Yang", () => {
-    const host = resolveGameMode("?online=host&room=xxwxyz", false, "localhost");
-    const guest = resolveGameMode("?online=join&room=xxwxyz", false, "localhost");
+    const host = resolveGameMode("?online=host&room=xxwxyz", false, local);
+    const guest = resolveGameMode("?online=join&room=xxwxyz", false, local);
     expect(host.online.room).toBe("XXWXYZ");
     expect(guest).toMatchObject({ localCharacter: "yang", online: { role: "guest", room: "XXWXYZ" } });
   });
 
   test("entrar sem código de sala deixa o código vazio (a conexão acusa o erro)", () => {
-    expect(resolveGameMode("?online=join", false, "localhost").online.room).toBe("");
+    expect(resolveGameMode("?online=join", false, local).online.room).toBe("");
   });
 
   test("o toque continua valendo online, para os botões na tela", () => {
-    expect(resolveGameMode("?online=join&room=XXABCD", true, "localhost").touch).toBe(true);
-    expect(resolveGameMode("?online=join&room=XXABCD", false, "localhost").touch).toBe(false);
+    expect(resolveGameMode("?online=join&room=XXABCD", true, local).touch).toBe(true);
+    expect(resolveGameMode("?online=join&room=XXABCD", false, local).touch).toBe(false);
   });
 
   test("sem ?online, os modos de antes não mudam", () => {
-    expect(resolveGameMode("", false, "localhost")).toMatchObject({ name: "local", characters: ["yin", "yang"], camera: "split" });
-    expect(resolveGameMode("", true, "localhost")).toMatchObject({ name: "solo", characters: ["yin"], camera: "single" });
-    expect(resolveGameMode("?online=outro", false, "localhost").name).toBe("local");
+    expect(resolveGameMode("", false, local)).toMatchObject({ name: "local", characters: ["yin", "yang"], camera: "split" });
+    expect(resolveGameMode("", true, local)).toMatchObject({ name: "solo", characters: ["yin"], camera: "single" });
+    expect(resolveGameMode("?online=outro", false, local).name).toBe("local");
   });
 
-  test("o servidor de repasse: local em localhost, configurável por ?relay=, e ausente se não houver", () => {
-    expect(getRelayUrl("", "localhost")).toBe(LOCAL_RELAY_URL);
-    expect(getRelayUrl("", "127.0.0.1")).toBe(LOCAL_RELAY_URL);
-    expect(getRelayUrl("?relay=wss://exemplo.dev", "meujogo.com")).toBe("wss://exemplo.dev");
-    expect(getRelayUrl("", "meujogo.com")).toBeNull(); // ainda não há servidor de produção
+  test("o servidor de repasse: local em localhost, e o mesmo endereço da página em qualquer outro lugar", () => {
+    expect(getRelayUrl("", local)).toBe(LOCAL_RELAY_URL);
+    expect(getRelayUrl("", { hostname: "127.0.0.1", origin: "http://127.0.0.1:3000" })).toBe(LOCAL_RELAY_URL);
+    expect(getRelayUrl("", production)).toBe("wss://jogo.exemplo.com"); // https vira wss
+    expect(getRelayUrl("", { hostname: "intranet", origin: "http://intranet:8080" })).toBe("ws://intranet:8080"); // http vira ws
+  });
+
+  test("?relay= troca o servidor, e ?relay=same usa o endereço da própria página", () => {
+    expect(getRelayUrl("?relay=wss://exemplo.dev", production)).toBe("wss://exemplo.dev");
+    expect(getRelayUrl("?relay=ws://localhost:8789", local)).toBe("ws://localhost:8789");
+    expect(getRelayUrl("?relay=same", { hostname: "localhost", origin: "http://localhost:8788" })).toBe("ws://localhost:8788");
+    expect(getRelayUrl("?relay=same", production)).toBe("wss://jogo.exemplo.com");
+  });
+
+  test("o modo online sem servidor configurado usa o endereço da página em produção", () => {
+    const mode = resolveGameMode("?online=join&room=XXABCD", false, production);
+    expect(mode.online.relayUrl).toBe("wss://jogo.exemplo.com");
   });
 
   test("a impressão digital dos ids muda quando os ids mudam", () => {
