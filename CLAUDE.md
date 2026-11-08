@@ -17,25 +17,32 @@ npm run format     # Prettier
 
 ```
 src/
-  main.js              config do Phaser; expõe window.__game para os testes
-  core/                GameState (estado compartilhado), AudioManager
-  input/               fontes de entrada (KeyboardInput); devolvem a intenção { left, right, up, down, attack }
-  scenes/              StartScene, GameScene, GameOverScene, CreditsScene, sceneKeys.js
+  main.js                  config do Phaser; expõe window.__game para os testes
+  core/                    GameState, AudioManager, loadAssets (carrega um manifesto)
+  data/
+    assets.js              manifesto: todo asset do jogo (imagens, spritesheets, mapa, áudio) e GAME_SOUNDS
+    levelSpawns.js         jogadores, espinhos, barreiras, chaves, porta e inimigos da fase
+    playerAnimations.js    tabela das animações dos jogadores
+  scenes/                  PreloadScene (carrega tudo), StartScene, GameScene, GameOverScene, CreditsScene
+  level/                   LevelMap (camadas do Tiled), EntityGroups (grupos de física),
+                           spawnLevel (cria inimigos e objetos), splitScreenCameras
   entities/
-    player/            Player (id, character, facing; tag sprite.setData("owner"))
-    enemies/           Enemy (base com máquina de estados), Slime, Skeleton, Demon
-    hazards/           Flamethrower, Spikes
-    interactive/       Portal, Jumper, Key, Barrier, JailDoor
-  data/levelSpawns.js  jogadores, espinhos, barreiras, chaves, porta e inimigos da fase
-assets/                sprites, tilesets, mapa (Tiled JSON) e áudio
-tests/                 testes Playwright
+    player/                Player (id, character, facing; tag sprite.setData("owner")), playerAnimations
+    enemies/               Enemy (base com máquina de estados), Slime, Skeleton, Demon
+    hazards/               Flamethrower, Spikes
+    interactive/           Portal, Jumper, Key, Barrier, JailDoor
+  input/                   fontes de entrada (KeyboardInput) que devolvem { left, right, up, down, attack }; fullscreen
+  ui/                      Hud
+assets/                    sprites, tilesets, mapa (Tiled JSON) e áudio
+tests/                     smoke.spec.js, gameplay.spec.js, assets.spec.js (Playwright)
 ```
 
 ## Convenções
 
 - Código e nomes de assets em **inglês**; textos de documentação em português.
-- Lógica nova vai em **classes** em `src/entities/` ou `src/core/`, nunca direto no `GameScene`.
-- Posições e configuração de fase vão em **dados** (`levelSpawns.js`), não espalhadas em `create()`.
+- Lógica nova vai em **classes** em `src/entities/`, `src/level/`, `src/ui/` ou `src/core/`, nunca direto no `GameScene`: ele só liga as peças (hoje tem ~100 linhas e deve continuar assim).
+- Posições e configuração de fase vão em **dados** (`levelSpawns.js`); assets vão no manifesto (`assets.js`); animações dos jogadores na tabela (`playerAnimations.js`). Nada disso é escrito direto em `create()`.
+- A **ordem de criação é a ordem de desenho** (ver `LevelMap`): ao mover a criação de algo, confira o que fica na frente de quê.
 - Nada de variáveis globais nem `export` de variáveis mutáveis entre módulos.
 - Nunca assumir dois jogadores: use `scene.players` (array de `Player`). Inimigos escolhem o jogador mais próximo (`playersNearestFirst()`, `closestPlayer()` em `Enemy`). Objetos que reagem a jogadores expõem `bindPlayers(players)`.
 - O `Player` nunca lê teclado: recebe uma fonte de entrada (`input.read()` devolve a intenção do frame). Toque e rede devem implementar o mesmo `read()`.
@@ -55,3 +62,30 @@ tests/                 testes Playwright
 - Posição padrão após teleportes: `1312, 1440`
 - Do quarto escondido para o easter egg: `1744, 2573`
 - Dos portais para o chefe 1: `96, 3616`; para o chefe 2: `4000, 3616`
+
+## Como adicionar um asset
+
+1. Coloque o arquivo em `assets/`.
+2. Acrescente uma linha em `src/data/assets.js` (`images`, `spritesheets`, `tilemaps` ou `audio`).
+3. `npm test`: `tests/assets.spec.js` falha se o caminho não existir ou se a chave se repetir.
+
+Se for um som que a fase usa, acrescente também em `GAME_SOUNDS` (nome usado no código → chave do asset) e use `this.audio.get("nome")`.
+
+## Como adicionar um inimigo
+
+1. Coloque os spritesheets em `assets/` e registre-os em `src/data/assets.js`.
+2. Crie `src/entities/enemies/NovoInimigo.js` estendendo `Enemy` (copie `Slime.js` como modelo): constante `ANIM_KEYS`, função `createAnimations` (com guarda para criar uma vez), construtor que cria o sprite, faz `group.add(this.sprite)` e `this.sprite.setData("owner", this)`.
+3. Implemente `updateFree()` (patrulha e perseguição, usando `playersNearestFirst()` ou `closestPlayer()`), `handlePlayerHit(player)` e os ganchos que precisar (`onHurtFrame`, `onHurtFinished`, `onAttackFrame`, `onAttackFinished`, `onDeathFinished`).
+4. Em `src/level/EntityGroups.js`, crie o grupo de física do inimigo e inclua-o na lista de inimigos que andam no chão e machucam jogadores.
+5. Em `src/level/spawnLevel.js`, crie as instâncias a partir de uma nova lista em `src/data/levelSpawns.js`, e devolva o array.
+6. Em `GameScene`, guarde o array (`this.novos = spawned.novos`) e inclua-o na lista `updatables`.
+7. Acrescente um teste em `tests/gameplay.spec.js` (ferido volta ao estado livre, morte, dano ao jogador).
+
+## Como adicionar uma fase
+
+Hoje existe só a fase 1 (`level1`). Para uma segunda fase:
+
+1. Exporte o mapa do Tiled para `assets/environment/` e registre-o em `tilemaps` no manifesto, com os tilesets em `images`.
+2. Ajuste `src/level/LevelMap.js` (listas de camadas e tilesets) para os nomes do novo mapa. Hoje essas listas descrevem a fase 1; o ideal é recebê-las por fase.
+3. Crie as posições da fase em `src/data/` no formato de `levelSpawns.js` (hoje `LEVEL_SPAWNS` é único) e faça a `GameScene` escolher os dados pela fase.
+4. Crie o caminho que leva da fase 1 à 2 (hoje a porta da cela leva aos créditos) e um teste para ele.

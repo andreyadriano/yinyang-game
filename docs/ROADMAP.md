@@ -75,15 +75,15 @@ Esta é a etapa mais importante: mobile e online dependem dela.
 
 **Pronto quando:** o `Player` não menciona teclado em nenhum lugar e o combo, o pulo duplo e o agachar se comportam exatamente como antes.
 
-### Etapa 3: dados no lugar de código
+### Etapa 3: dados no lugar de código (concluída)
 
-- [ ] Animações em uma tabela (personagem → quadros, taxa, repetição), no lugar de cerca de 20 chamadas `anims.create` copiadas para Yin e Yang.
-- [ ] Manifesto de assets e uma `PreloadScene` separada, tirando o `preload()` de 120 linhas do `GameScene`.
-- [ ] Posições de espinhos, chaves, barreiras e porta no `levelSpawns.js` ou na camada de objetos do Tiled.
-- [ ] Dividir o `GameScene` em partes menores (mapa, colisões, HUD, câmeras), cada uma com uma responsabilidade.
-- [ ] Documentar no `CLAUDE.md` o passo a passo de "como adicionar um inimigo" e "como adicionar uma fase".
+- [x] Animações em uma tabela (personagem → quadros, taxa, repetição), no lugar de cerca de 20 chamadas `anims.create` copiadas para Yin e Yang.
+- [x] Manifesto de assets e uma `PreloadScene` separada, tirando o `preload()` de 120 linhas do `GameScene`.
+- [x] Posições de espinhos, chaves, barreiras e porta no `levelSpawns.js` (feito na Etapa 1). Migrar tudo para a camada de objetos do Tiled ficou como melhoria futura.
+- [x] Dividir o `GameScene` em partes menores (mapa, colisões, HUD, câmeras), cada uma com uma responsabilidade.
+- [x] Documentar no `CLAUDE.md` o passo a passo de "como adicionar um inimigo", "um asset" e "uma fase". A fase 2 ainda não é possível sem mexer em `LevelMap` e `LEVEL_SPAWNS`, e o passo a passo diz isso.
 
-**Pronto quando:** o `GameScene` tem menos de 250 linhas e acrescentar um inimigo novo exige um arquivo e uma linha de dados.
+**Pronto quando:** o `GameScene` tem menos de 250 linhas e acrescentar um inimigo novo exige um arquivo e uma linha de dados. *(Feito: o `GameScene` tem 108 linhas. Um inimigo novo ainda exige tocar `EntityGroups`, `spawnLevel` e `GameScene` além do arquivo e dos dados, ver o passo a passo no `CLAUDE.md`.)*
 
 ## Etapas 4 a 7: mobile e online
 
