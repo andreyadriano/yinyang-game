@@ -55,7 +55,7 @@ export class Key {
 
   collect() {
     this.gameState.collectKey(this.color);
-    this.audio.get("keyPickup").play();
+    this.audio.play("keyPickup");
     this.sprite.disableBody(true, true);
   }
 }

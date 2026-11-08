@@ -90,9 +90,8 @@ export class Enemy {
     }
 
     this.sprite.setVelocity(0, 0);
-    const sound = this.audio.get(this.deathSoundKey);
-    if (!sound.isPlaying && !this.deathSoundPlayed) {
-      sound.play();
+    if (!this.audio.isPlaying(this.deathSoundKey) && !this.deathSoundPlayed) {
+      this.audio.play(this.deathSoundKey);
       this.deathSoundPlayed = true;
     }
   }

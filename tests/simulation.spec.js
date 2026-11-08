@@ -262,6 +262,32 @@ test.describe("eventos", () => {
   });
 });
 
+test.describe("sons", () => {
+  test("os efeitos sonoros são anunciados com nome e volume, para o host repassar ao convidado", async ({ page }) => {
+    await page.evaluate(() => {
+      window.__sounds = [];
+      window.__game.scene.getScene("game").audio.events.on("play", (e) => window.__sounds.push(e));
+    });
+    await page.keyboard.down("ArrowUp");
+    await page.waitForFunction(() => window.__sounds.some((s) => s.name === "jump"), null, { timeout: 5000 });
+    await page.keyboard.up("ArrowUp");
+    const jump = await page.evaluate(() => window.__sounds.find((s) => s.name === "jump"));
+    expect(jump).toEqual({ name: "jump", volume: 0.3 });
+  });
+
+  test("a música não é anunciada (cada aparelho toca a sua)", async ({ page }) => {
+    const names = await page.evaluate(() => {
+      const audio = window.__game.scene.getScene("game").audio;
+      const heard = [];
+      audio.events.on("play", (e) => heard.push(e.name));
+      audio.playWhenUnlocked("music", { loop: true, volume: 0 });
+      audio.get("music").stop();
+      return heard;
+    });
+    expect(names).toEqual([]);
+  });
+});
+
 test.describe("passo fixo", () => {
   test("a lógica roda ~60 passos por segundo, mesmo com poucos quadros por segundo", async ({ page }) => {
     // Nos primeiros 120 quadros (e sempre que a janela perde o foco) o Phaser limita o delta a 1/60 s;

@@ -50,9 +50,8 @@ export class JailDoor {
       this.sprite.anims.play(OPENING_ANIM, true);
       this.gameState.events.emit(GAME_EVENT.JAIL_DOOR_OPENED, {});
     }
-    const sound = this.audio.get("jailDoorOpening");
-    if (!sound.isPlaying) {
-      sound.play();
+    if (!this.audio.isPlaying("jailDoorOpening")) {
+      this.audio.play("jailDoorOpening");
     }
   }
 

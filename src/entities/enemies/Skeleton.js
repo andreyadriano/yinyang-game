@@ -128,9 +128,8 @@ class Skeleton extends Enemy {
     }
 
     onHurtFrame() {
-        const sound = this.audio.get("skeletonHurt");
-        if (!sound.isPlaying && !this.hurtSoundPlayed) {
-            sound.play();
+        if (!this.audio.isPlaying("skeletonHurt") && !this.hurtSoundPlayed) {
+            this.audio.play("skeletonHurt");
             this.hurtSoundPlayed = true;
         }
     }
@@ -157,7 +156,7 @@ class Skeleton extends Enemy {
         }
         // the skeleton hurts the player on its damage frame, and pushes the player back
         else if (this.state === ENEMY_STATE.ATTACK && this.animProgress("attack") === ATTACK_DAMAGE_PROGRESS) {
-            this.audio.get("skeletonAttack").play();
+            this.audio.play("skeletonAttack");
             player.takeHit(this.facing === "left" ? -125 : 125, -100);
             this.gameState.loseSoul(5, this.id);
         }

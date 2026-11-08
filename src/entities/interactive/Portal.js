@@ -72,7 +72,7 @@ export default class Portal {
     
     teleport(playerSprite){
       playerSprite.setPosition(this.destinationX, this.destinationY);
-      this.audio.get("portal").play();
+      this.audio.play("portal");
     }
     // END OF THE CLASS
   }

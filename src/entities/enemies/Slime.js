@@ -139,7 +139,7 @@ class Slime extends Enemy {
         // the slime hurts the player on the last frame of its attack, and pushes the player back
         else if (this.state === ENEMY_STATE.ATTACK && this.animProgress("attack") === 1) {
             player.takeHit(this.facing === "left" ? -125 : 125, -100);
-            this.audio.get("slimeAttack").play({volume: 0.3});
+            this.audio.play("slimeAttack", { volume: 0.3 });
             this.gameState.loseSoul(5, this.id);
         }
     }

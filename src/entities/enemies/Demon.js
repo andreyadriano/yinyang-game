@@ -132,7 +132,7 @@ class Demon extends Enemy {
     handlePlayerHit(player) {
         // the demon hurts the player on its damage frame, and pushes the player back
         if (this.state === ENEMY_STATE.ATTACK && this.animProgress("attack") === ATTACK_DAMAGE_PROGRESS) {
-            this.audio.get("bossAttack").play({ volume: 0.3 });
+            this.audio.play("bossAttack", { volume: 0.3 });
             player.takeHit(this.facing === "left" ? -125 : 125, -100);
             this.gameState.loseSoul(2, this.id);
         }

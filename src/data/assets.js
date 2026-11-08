@@ -88,7 +88,7 @@ export const ASSETS = {
   ]
 };
 
-// Sounds the game scene looks up by name with audio.get(name) -> asset key above.
+// Sounds the game scene looks up by name (audio.play(name)) -> asset key above.
 export const GAME_SOUNDS = {
   music: "song",
   swordWoosh: "swordwoosh",

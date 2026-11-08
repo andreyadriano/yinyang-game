@@ -196,13 +196,13 @@ export class Player {
 
   jump() {
     this.sprite.setVelocityY(JUMP_VELOCITY);
-    this.audio.get("jump").play({ volume: 0.3 });
+    this.audio.play("jump", { volume: 0.3 });
     this.isJumping = true;
   }
 
   doubleJump() {
     this.sprite.setVelocityY(JUMP_VELOCITY);
-    this.audio.get("jump").play({ volume: 0.3 });
+    this.audio.play("jump", { volume: 0.3 });
     this.isJumping = false;
     this.jumpBufferMs = 0;
   }
@@ -213,7 +213,7 @@ export class Player {
     this.sprite.setFlipX(this.facing === "left");
     this.sprite.setVelocityX(0);
     this.sprite.anims.play(this.anim(ATTACK_ANIMS[this.attackCombo]), true);
-    this.audio.get("swordWoosh").play({ volume: 0.3 });
+    this.audio.play("swordWoosh", { volume: 0.3 });
     this.attackCombo = (this.attackCombo + 1) % ATTACK_ANIMS.length;
   }
 
