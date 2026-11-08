@@ -39,6 +39,7 @@ tests/                 testes Playwright
 - Nunca assumir dois jogadores: use `scene.players` (array de `Player`). Inimigos escolhem o jogador mais próximo (`playersNearestFirst()`, `closestPlayer()` em `Enemy`). Objetos que reagem a jogadores expõem `bindPlayers(players)`.
 - O `Player` não deve ler teclado diretamente a longo prazo: ele deve receber uma intenção de entrada (Etapa 2).
 - Mudanças pequenas, um commit por passo, com `npm test` e `npm run lint` passando.
+- **Commits seguem Conventional Commits**, em inglês: `<tipo>(escopo opcional): descrição`, com tipo `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `perf`, `style`, `build`, `ci` ou `revert`. Um hook do Husky (`commit-msg` + commitlint) rejeita mensagens fora do padrão; não use `--no-verify`.
 
 ## Antes de dar uma tarefa por concluída
 
