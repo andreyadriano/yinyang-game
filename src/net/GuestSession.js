@@ -2,7 +2,7 @@ import { MSG, PROTOCOL_VERSION, hashIds, packIntent } from "./protocol.js";
 import { applyDelta } from "./snapshotDelta.js";
 import { SCENE_KEYS } from "../scenes/sceneKeys.js";
 
-const STATE_EVERY_MS = 50; // the intent and where the local player is are sent when the intent changes and 20 times a second
+const STATE_EVERY_MS = 200; // the intent and where the local player is are sent when the intent changes, and 5 times a second otherwise (the host only needs it to fix drift)
 const SMOOTHING_MS = 60; // how fast entities glide toward the position the host sent
 const SNAP_DISTANCE = 160; // farther than this (a teleport) the entity jumps instead of gliding
 
