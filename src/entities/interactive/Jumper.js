@@ -65,7 +65,7 @@ export default class Jumper {
         const key = this.sprite.anims.getName();
         if (key === "rising") {
             if (this.sprite.anims.getProgress("rising") === 1) {
-                playerSprite.setVelocityY(this.bounceVelocity);
+                playerSprite.getData("owner").launch(this.bounceVelocity);
                 this.sprite.anims.play("reload");
             }
         } else if (key === "falling") {
