@@ -77,6 +77,8 @@ export class GameScene extends Phaser.Scene {
     [this.spikes, ...this.barriers, ...this.keys, this.jailDoor].forEach((object) => object.bindPlayers(this.players));
 
     if (this.isGuest) {
+      // The cycle of the flamethrowers starts from what the host says, not from the guest's own clock.
+      this.flamethrowers.forEach((flamethrower) => flamethrower.startTimer.remove());
       // The guest only simulates its own player; the rest is drawn from what the host sends.
       const solids = [
         ...level.groundLayers,
@@ -196,6 +198,8 @@ export class GameScene extends Phaser.Scene {
 
   // One step of the guest: its own player moves with its own controls, at once.
   simulateGuest(time, stepMs) {
+    // Flamethrowers repeat their cycle of animations (purely visual here: the host decides the damage).
+    this.flamethrowers.forEach((flamethrower) => flamethrower.update());
     const { sprite } = this.localPlayer;
     if (!sprite.active) return;
     if (this.localPlayer.isDead()) sprite.setVelocity(0, 0);

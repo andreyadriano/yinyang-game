@@ -2,7 +2,9 @@ import { MSG, PROTOCOL_VERSION, hashIds, packIntent } from "./protocol.js";
 import { applyDelta } from "./snapshotDelta.js";
 import { SCENE_KEYS } from "../scenes/sceneKeys.js";
 
-const STATE_EVERY_MS = 200; // the intent and where the local player is are sent when the intent changes, and 5 times a second otherwise (the host only needs it to fix drift)
+const STATE_EVERY_MS = 200; // where the local player is goes out when the intent changes, and 5 times a second while it moves (the host only needs it to fix drift)
+const STILL_HEARTBEAT_MS = 2000; // and once in a while when nothing changes, so the host knows the guest is still there
+const MAX_EXTRAPOLATE_MS = 150; // between snapshots a moving entity keeps going at its speed, but never for longer than this
 const SMOOTHING_MS = 60; // how fast entities glide toward the position the host sent
 const SNAP_DISTANCE = 160; // farther than this (a teleport) the entity jumps instead of gliding
 
@@ -15,7 +17,9 @@ export class GuestSession {
     this.transport = transport;
     this.idsHash = hashIds(scene.entities.ids());
     this.base = null; // the last full snapshot, rebuilt from the deltas
-    this.targets = new Map(); // id -> the latest state (where to glide to)
+    this.targets = new Map(); // id -> { state, at, moving }: the latest state, when it arrived and whether it was moving
+    this.clockMs = 0;
+    this.lastReport = null;
     this.seen = new Set();
     this.lastIntent = -1;
     this.sinceIntentMs = 0;
@@ -72,9 +76,15 @@ export class GuestSession {
       // The first time (and when it reappears) the entity is put in place; after that it glides.
       // The player of this device is not drawn from the host: it moves by itself (see GameScene.simulateGuest).
       if (isLocalPlayer && this.seen.has(id) && !comesBack) continue;
-      entity.setState(state, { position: !this.seen.has(id) || comesBack, progress: false });
+      // Entities that run their own animations (flamethrowers) are realigned by each full snapshot.
+      const progress = message.full && entity.animatesItself === true;
+      entity.setState(state, { position: !this.seen.has(id) || comesBack, progress });
       this.seen.add(id);
-      if (!isLocalPlayer) this.targets.set(id, state);
+      if (!isLocalPlayer) {
+        const changes = message.entities[id];
+        const moving = message.full || changes.x !== undefined || changes.y !== undefined;
+        this.targets.set(id, { state, at: this.clockMs, moving });
+      }
     }
     this.synced = true;
   }
@@ -82,6 +92,7 @@ export class GuestSession {
   // Called every frame.
   update(deltaMs) {
     if (this.finished) return;
+    this.clockMs += deltaMs;
     this.sendIntent(deltaMs);
     this.glide(deltaMs);
   }
@@ -91,26 +102,37 @@ export class GuestSession {
   sendIntent(deltaMs) {
     this.sinceIntentMs += deltaMs;
     const intent = packIntent(this.scene.localInput.read());
-    if (intent !== this.lastIntent || this.sinceIntentMs >= STATE_EVERY_MS) {
-      const { sprite } = this.scene.localPlayer;
-      const p = this.synced
-        ? [Math.round(sprite.x * 10) / 10, Math.round(sprite.y * 10) / 10, Math.round(sprite.body.velocity.x), Math.round(sprite.body.velocity.y)]
-        : undefined;
-      this.transport.send({ t: MSG.INTENT, n: intent, p });
-      this.lastIntent = intent;
-      this.sinceIntentMs = 0;
-    }
+    const changed = intent !== this.lastIntent;
+    if (!changed && this.sinceIntentMs < STATE_EVERY_MS) return;
+
+    const { sprite } = this.scene.localPlayer;
+    const p = this.synced
+      ? [Math.round(sprite.x * 10) / 10, Math.round(sprite.y * 10) / 10, Math.round(sprite.body.velocity.x), Math.round(sprite.body.velocity.y)]
+      : undefined;
+    // Standing still with nothing pressed: only the heartbeat.
+    const still = p && this.lastReport && p.every((value, i) => value === this.lastReport[i]);
+    if (!changed && still && this.sinceIntentMs < STILL_HEARTBEAT_MS) return;
+
+    this.transport.send({ t: MSG.INTENT, n: intent, p });
+    this.lastIntent = intent;
+    this.lastReport = p ?? null;
+    this.sinceIntentMs = 0;
   }
 
+  // Between two snapshots the entities glide toward where the host put them. One that was moving
+  // keeps going at its speed meanwhile, so a low snapshot rate still looks smooth.
   glide(deltaMs) {
     const amount = 1 - Math.exp(-deltaMs / SMOOTHING_MS);
-    for (const [id, target] of this.targets) {
+    for (const [id, { state, at, moving }] of this.targets) {
       const sprite = this.scene.entities.get(id)?.sprite;
       if (!sprite?.active) continue;
-      const dx = target.x - sprite.x;
-      const dy = target.y - sprite.y;
+      const age = moving && state.bodyEnabled ? Math.min(this.clockMs - at, MAX_EXTRAPOLATE_MS) / 1000 : 0;
+      const targetX = state.x + state.vx * age;
+      const targetY = state.y + state.vy * age;
+      const dx = targetX - sprite.x;
+      const dy = targetY - sprite.y;
       if (Math.abs(dx) + Math.abs(dy) > SNAP_DISTANCE) {
-        sprite.setPosition(target.x, target.y);
+        sprite.setPosition(targetX, targetY);
       } else {
         sprite.setPosition(sprite.x + dx * amount, sprite.y + dy * amount);
       }

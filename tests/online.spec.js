@@ -342,9 +342,54 @@ test.describe("rede", () => {
     const bytesPerSecond = bytes / seconds;
     const snapshotsPerSecond = snapshots / seconds;
     console.log(`rede: ${bytesPerSecond.toFixed(0)} bytes/s, ${snapshotsPerSecond.toFixed(1)} snapshots/s`);
-    expect(snapshotsPerSecond).toBeGreaterThan(8);
-    expect(snapshotsPerSecond).toBeLessThan(25);
+    expect(snapshotsPerSecond).toBeGreaterThan(5);
+    expect(snapshotsPerSecond).toBeLessThan(12);
     expect(bytesPerSecond).toBeLessThan(40_000);
+    await closeAll(host, guest);
+  });
+});
+
+test.describe("economia de mensagens", () => {
+  test("o convidado roda o ciclo dos lança-chamas sozinho, sem receber as trocas de animação", async ({ browser }) => {
+    const { host, guest } = await pair(browser, "XXWABB");
+    await guest.evaluate(() => {
+      const socket = window.__game.scene.getScene("game").session.transport.socket;
+      window.__flameAnimMessages = 0;
+      window.__seenAnims = new Set();
+      socket.addEventListener("message", (event) => {
+        const message = JSON.parse(event.data);
+        if (message.t !== "snapshot" || message.full) return;
+        for (const [id, changes] of Object.entries(message.entities)) {
+          if (id.startsWith("flamethrower") && changes.anim !== undefined) window.__flameAnimMessages++;
+        }
+      });
+      const scene = window.__game.scene.getScene("game");
+      setInterval(() => scene.flamethrowers.forEach((f) => window.__seenAnims.add(f.sprite.anims.getName())), 50);
+    });
+    await guest.waitForTimeout(10_000);
+    // Nenhum snapshot incremental trouxe animação de lança-chamas, e mesmo assim o ciclo andou no convidado.
+    expect(await guest.evaluate(() => window.__flameAnimMessages)).toBe(0);
+    expect(await guest.evaluate(() => [...window.__seenAnims].filter((name) => name).length)).toBeGreaterThanOrEqual(2);
+    await closeAll(host, guest);
+  });
+
+  test("com tudo parado, o anfitrião e o convidado quase não mandam mensagens", async ({ browser }) => {
+    const { host, guest } = await pair(browser, "XXWABA");
+    // Sem inimigos, ninguém se mexe. Os lança-chamas ciclam sozinhos, mas o convidado roda o mesmo
+    // ciclo, então eles também não custam mensagens.
+    await host.evaluate(() => {
+      const game = window.__game.scene.getScene("game");
+      for (const enemy of [...game.slimes, ...game.skeletons, ...game.demons]) enemy.sprite.disableBody(true, true);
+    });
+    await guest.waitForTimeout(1500); // o jogo se acalma (a queda e a última mudança chegam)
+    await guest.evaluate(() => {
+      const socket = window.__game.scene.getScene("game").session.transport.socket;
+      window.__messages = 0;
+      socket.addEventListener("message", () => window.__messages++);
+    });
+    await guest.waitForTimeout(3000);
+    // Só pode chegar o quadro completo de 5 em 5 s (e, no máximo, um outro que o jogo ainda precise).
+    expect(await guest.evaluate(() => window.__messages)).toBeLessThanOrEqual(3);
     await closeAll(host, guest);
   });
 });
