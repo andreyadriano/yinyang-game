@@ -124,6 +124,8 @@ Quem joga neste aparelho é decidido por `resolveGameMode()` (`src/core/gameMode
 - `solo`: **um jogador por aparelho**, câmera única (padrão em aparelhos de toque).
 - `online`: co-op em dois aparelhos (ver a seção abaixo). `?online=host` ou `?online=join&room=ABCD`.
 - Dá para forçar na URL: `?mode=solo`, `?mode=local`, e em solo `?character=yang`.
+- **Menu inicial** (`src/ui/StartMenu.js`, aberto pela `StartScene` depois do primeiro toque/clique): Solo, Co-op local (escondido em aparelhos de toque, com uma linha explicando) e Co-op online (Criar sala / Entrar em uma sala; entrar pede o código de 6 caracteres num `<input>` HTML sobre o canvas, `src/ui/RoomCodeInput.js`, para o teclado do celular abrir). A escolha segue por dados da cena: `scene.start("game", { choice })` e `resolveGameMode(search, touch, place, choice)`; não há variável global. **Se a URL já define o modo** (`urlDefinesMode()`: `?mode=`, `?online=`) o menu é pulado e vale a URL, então o link de convite continua entrando direto. Sem escolha e sem URL, o padrão do aparelho vale (os testes iniciam `scene.start("game")` direto). Em aparelho de toque o primeiro toque também pede tela cheia. O menu expõe `scene.menu.buttons` (nome -> posição) e `scene.menu.activate(nome)` para os testes. Teclas no menu: setas, Enter, Esc (o Phaser só entrega a tecla no quadro seguinte: nos testes espere um pouco após apertar).
+- Tamanho da tela: as câmeras (`src/level/cameras.js`) usam `scene.scale.width/height`, nunca 800/600 fixos, para que a escolha do menu (tela dividida ou única) funcione em qualquer tamanho de canvas. Cenas novas devem fazer o mesmo.
 
 Regras para não quebrar o celular:
 
@@ -166,7 +168,7 @@ Regras:
 - Testes online: `tests/online.spec.js` abre duas páginas (dois contextos do Chrome) contra o relay local. Use códigos de sala válidos nos testes e um diferente por teste.
 - O Durable Object **hiberna** quando a sala fica em silêncio (o anfitrião esperando o amigo): a memória some e o `RoomCore` é reconstruído a partir dos sockets (cada um guarda papel e sala em `serializeAttachment`). Não guarde estado da sala só em variáveis do objeto.
 - Não confie em o servidor fechar a conexão de **outro** socket (no `wrangler dev` ela fica pela metade): o cliente se desconecta sozinho ao receber `peer-left` sendo convidado (`WebSocketTransport`).
-- Limitações conhecidas: o Yang do convidado é o único com previsão: o Yin, os inimigos e os objetos chegam por snapshot, com o atraso da rede; um trampolim ou golpe leva uma ida da rede para chegar ao convidado; sem reconexão; sem pausa online; o convidado é sempre o Yang; ainda não há botão de "jogar online" na tela inicial, só a URL.
+- Limitações conhecidas: o Yang do convidado é o único com previsão: o Yin, os inimigos e os objetos chegam por snapshot, com o atraso da rede; um trampolim ou golpe leva uma ida da rede para chegar ao convidado; sem reconexão; sem pausa online; o convidado é sempre o Yang; o menu da tela inicial escolhe o modo online (criar ou entrar por código), a escolha entre Yin e Yang ainda não existe.
 
 ### Segurança do servidor online (não afrouxe sem entender)
 

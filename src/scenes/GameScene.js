@@ -3,7 +3,7 @@ import { GAME_SOUNDS } from "../data/assets.js";
 import { LEVEL_SPAWNS } from "../data/levelSpawns.js";
 import { GameState } from "../core/GameState.js";
 import { AudioManager } from "../core/AudioManager.js";
-import { resolveGameMode } from "../core/gameMode.js";
+import { isTouchDevice, resolveGameMode } from "../core/gameMode.js";
 import { EntityRegistry } from "../sim/EntityRegistry.js";
 import { FixedStepper } from "../sim/FixedStepper.js";
 import { LevelMap } from "../level/LevelMap.js";
@@ -34,8 +34,13 @@ export class GameScene extends Phaser.Scene {
     super(SCENE_KEYS.GAME);
   }
 
+  // `choice` comes from the start menu (see resolveGameMode); it is empty when the scene starts directly.
+  init(data) {
+    this.menuChoice = data?.choice ?? null;
+  }
+
   create() {
-    this.mode = resolveGameMode();
+    this.mode = resolveGameMode(window.location.search, isTouchDevice(), window.location, this.menuChoice);
     this.isGuest = this.mode.online?.role === "guest"; // the guest does not run the game: it draws what the host sends
     this.leftScene = false;
     this.state = new GameState();

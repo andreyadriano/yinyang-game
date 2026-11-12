@@ -26,8 +26,30 @@ export function isTouchDevice() {
 let hostRoom = null;
 
 // `place` is the page's location ({ hostname, origin }), a parameter so the tests can pretend to be anywhere.
-export function resolveGameMode(search = window.location.search, touch = isTouchDevice(), place = window.location) {
+// True when the URL already says how to play (?online=host|join or ?mode=solo|local): the start menu is skipped.
+export function urlDefinesMode(search = window.location.search) {
   const params = new URLSearchParams(search);
+  return ["host", "join"].includes(params.get("online")) || params.get("mode") in GAME_MODES;
+}
+
+// `choice` is what the player picked in the start menu: { mode: "solo" | "local" } or
+// { mode: "online", role: "host" | "guest", room? }. The URL wins when it defines the mode, so invitation
+// links keep working; with no choice and no URL the device decides (touch -> solo, otherwise local).
+export function resolveGameMode(
+  search = window.location.search,
+  touch = isTouchDevice(),
+  place = window.location,
+  choice = null
+) {
+  const params = new URLSearchParams(search);
+  if (choice && !urlDefinesMode(search)) {
+    if (choice.mode === "online") {
+      params.set("online", choice.role === "guest" ? "join" : "host");
+      if (choice.room) params.set("room", choice.room);
+    } else if (choice.mode in GAME_MODES) {
+      params.set("mode", choice.mode);
+    }
+  }
 
   const online = params.get("online");
   if (online === "host" || online === "join") {

@@ -1,6 +1,7 @@
 import { SCENE_KEYS } from "./sceneKeys.js";
-import { isTouchDevice } from "../core/gameMode.js";
+import { isTouchDevice, urlDefinesMode } from "../core/gameMode.js";
 import { enterFullscreen } from "../input/fullscreen.js";
+import { StartMenu } from "../ui/StartMenu.js";
 export { StartScene };
 
 class StartScene extends Phaser.Scene {
@@ -9,7 +10,9 @@ class StartScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.image(this.scale.width / 2, 300, "Start");
+    const { width, height } = this.scale;
+    this.add.image(width / 2, height / 2, "Start");
+    this.menu = null;
 
     const startTheme = this.sound.add("starttheme");
     const playTheme = () => startTheme.play({ loop: true, volume: 0.3 });
@@ -21,14 +24,21 @@ class StartScene extends Phaser.Scene {
       playTheme();
     }
 
-    // A single tap or click starts the game, even if that same tap is what unlocks the audio.
-    this.input.once("pointerup", () => {
+    const startGame = (choice = null) => {
       this.sound.off("unlocked", playTheme);
       startTheme.stop();
-      // On a phone the tap also asks for full screen (this is the user gesture the browser needs),
-      // which hides the browser's bars and lets the game use the whole screen.
+      this.scene.start(SCENE_KEYS.GAME, { choice });
+    };
+
+    // The first tap or click (which also unlocks the audio and, on touch devices, asks for fullscreen) opens the
+    // mode menu. When the URL already says how to play (invitation link, ?mode=...) the game starts at once.
+    this.input.once("pointerup", () => {
       if (isTouchDevice()) enterFullscreen(this);
-      this.scene.start(SCENE_KEYS.GAME);
+      if (urlDefinesMode()) {
+        startGame();
+        return;
+      }
+      this.menu = new StartMenu(this, { touch: isTouchDevice(), onChoose: startGame });
     });
   }
 }

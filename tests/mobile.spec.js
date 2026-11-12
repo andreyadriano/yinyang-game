@@ -211,12 +211,39 @@ test.describe("no celular", () => {
 test.describe("telas de início e de fim no celular", () => {
   test.use(phone);
 
-  test("um único toque na tela inicial começa o jogo", async ({ page }) => {
+  test("na tela inicial, um toque abre o menu e tocar em Solo começa o jogo", async ({ page }) => {
     await page.goto("/");
     await page.waitForFunction(() => window.__game?.scene.isActive("start"), null, { timeout: 30_000 });
     await page.waitForTimeout(500);
     await page.touchscreen.tap(400, 200);
+    await page.waitForFunction(() => window.__game.scene.getScene("start").menu !== null, null, { timeout: 10_000 });
+    const names = await page.evaluate(() => Object.keys(window.__game.scene.getScene("start").menu.buttons));
+    expect(names).toContain("solo");
+    expect(names).not.toContain("local"); // dois jogadores no mesmo aparelho só no computador
+    const solo = await page.evaluate(() => window.__game.scene.getScene("start").menu.buttons.solo);
+    const at = await new Fingers(page, null).toPage(solo.x, solo.y);
+    await page.touchscreen.tap(at.x, at.y);
     await page.waitForFunction(() => window.__game.scene.isActive("game"), null, { timeout: 30_000 });
+    expect(await page.evaluate(`${scene}.mode.name`)).toBe("solo");
+  });
+
+  test("em tela cheia a caixa do código da sala continua visível (fica dentro do elemento em tela cheia)", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForFunction(() => window.__game?.scene.isActive("start"), null, { timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await page.touchscreen.tap(400, 200); // abre o menu e entra em tela cheia
+    await page.waitForFunction(() => window.__game.scene.getScene("start").menu !== null, null, { timeout: 10_000 });
+    await page.evaluate(() => window.__game.scene.getScene("start").menu.activate("online"));
+    await page.evaluate(() => window.__game.scene.getScene("start").menu.activate("join"));
+    await page.waitForSelector("input[data-testid=room-code]");
+    const info = await page.evaluate(() => {
+      const input = document.querySelector("input[data-testid=room-code]");
+      const r = input.getBoundingClientRect();
+      const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      const host = document.fullscreenElement ?? document.body;
+      return { onTop: top === input, insideHost: host.contains(input) };
+    });
+    expect(info).toEqual({ onTop: true, insideHost: true });
   });
 
   test("o toque na tela inicial pede tela cheia, para esconder a barra do navegador", async ({ page }) => {
@@ -232,8 +259,8 @@ test.describe("telas de início e de fim no celular", () => {
         return start(...args);
       };
     });
-    await page.touchscreen.tap(400, 200);
-    await page.waitForFunction(() => window.__game.scene.isActive("game"), null, { timeout: 30_000 });
+    await page.touchscreen.tap(400, 200); // o primeiro toque abre o menu e já pede a tela cheia
+    await page.waitForFunction(() => window.__game.scene.getScene("start").menu !== null, null, { timeout: 10_000 });
     expect(await page.evaluate(() => window.__fullscreenAsked)).toBe(true);
   });
 
