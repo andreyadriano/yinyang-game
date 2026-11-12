@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 export const MAX_FILES = 20_000;
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
-const INCLUDED = ["index.html", "main.css", "src", "assets"];
+const INCLUDED = ["index.html", "main.css", "manifest.webmanifest", "src", "assets"];
 const IGNORED = new Set([".DS_Store", "Thumbs.db"]);
 
 export function buildSite({ root = resolve(fileURLToPath(import.meta.url), "../.."), out = "dist" } = {}) {

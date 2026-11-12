@@ -4,6 +4,7 @@ import { GameState, MAX_SOUL_COUNT } from "../src/core/GameState.js";
 import { GAME_EVENT } from "../src/core/gameEvents.js";
 import { FixedStepper, STEP_MS } from "../src/sim/FixedStepper.js";
 import { EntityRegistry } from "../src/sim/EntityRegistry.js";
+import { computeGameSize } from "../src/core/screenSize.js";
 
 // Testes das peças puras da simulação: rodam no Node, sem navegador.
 
@@ -161,5 +162,24 @@ test.describe("EntityRegistry", () => {
 
     registry.setStates({ "thing-0": { a: 2 }, "ghost-9": { a: 3 } });
     expect(restored).toEqual({ a: 2 });
+  });
+});
+
+test.describe("tamanho do jogo", () => {
+  const solo = { camera: "single" };
+
+  test("a tela dividida local fica em 4:3", () => {
+    expect(computeGameSize({ camera: "split" }, { width: 1920, height: 1080 })).toEqual({ width: 800, height: 600 });
+  });
+
+  test("com um jogador por aparelho a largura segue a proporção da tela", () => {
+    expect(computeGameSize(solo, { width: 915, height: 412 })).toEqual({ width: 1332, height: 600 });
+    expect(computeGameSize(solo, { width: 1280, height: 720 })).toEqual({ width: 1066, height: 600 });
+  });
+
+  test("em pé ou em cima do limite, a conta continua dentro de 800 a 1400", () => {
+    expect(computeGameSize(solo, { width: 412, height: 915 }).width).toBe(1332); // lê sempre como horizontal
+    expect(computeGameSize(solo, { width: 3000, height: 1000 }).width).toBe(1400);
+    expect(computeGameSize(solo, { width: 600, height: 600 }).width).toBe(800);
   });
 });

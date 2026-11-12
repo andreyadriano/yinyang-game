@@ -2,12 +2,12 @@ import { MSG, PROTOCOL_VERSION, hashIds, unpackIntent } from "./protocol.js";
 import { diffSnapshot, quantizeSnapshot } from "./snapshotDelta.js";
 import { takeSnapshot } from "../sim/snapshot.js";
 
-const SNAPSHOT_EVERY_TICKS = 3; // 20 snapshots per second at 60 steps per second
-const KEYFRAME_EVERY_SNAPSHOTS = 100; // a full snapshot every 5 seconds, to resynchronize
+const SNAPSHOT_EVERY_TICKS = 6; // up to 10 snapshots per second at 60 steps per second (the guest fills the gaps, see GuestSession.glide)
+const KEYFRAME_EVERY_TICKS = 300; // a full snapshot every 5 seconds, to resynchronize
 const DRIFT_PX = 6; // the guest's player is moved only when it is this far from where the host has it
 
 // The host runs the whole game. This session adds the other player: it plays back the guest's
-// intent on the remote player, sends the guest the changes of the game 20 times a second, and
+// intent on the remote player, sends the guest the changes of the game up to 10 times a second (nothing at all while nothing changes), and
 // forwards the sound effects. It never waits for the guest.
 export class HostSession {
   constructor(scene, transport) {
@@ -16,7 +16,7 @@ export class HostSession {
     this.idsHash = hashIds(scene.entities.ids());
     this.peerReady = false;
     this.lastSent = null;
-    this.snapshotsSent = 0;
+    this.lastKeyframeTick = 0;
 
     scene.remotePlayer.onEffect = (effect) => {
       if (this.peerReady) transport.send({ t: MSG.EFFECT, ...effect });
@@ -64,7 +64,6 @@ export class HostSession {
     }
     this.peerReady = true;
     this.lastSent = null; // the next snapshot is a full one
-    this.snapshotsSent = 0;
     this.scene.setRemotePlayerPresent(true);
     this.scene.onlineStatus?.setPeer(true);
   }
@@ -91,15 +90,32 @@ export class HostSession {
 
   // Called after every simulation step.
   afterStep(tick) {
-    if (this.peerReady && tick % SNAPSHOT_EVERY_TICKS === 0) this.sendSnapshot();
+    if (this.peerReady && tick % SNAPSHOT_EVERY_TICKS === 0) this.sendSnapshot(tick);
   }
 
-  sendSnapshot() {
-    if (this.snapshotsSent % KEYFRAME_EVERY_SNAPSHOTS === 0) this.lastSent = null;
+  // A full snapshot when the guest arrives and every 5 seconds; in between, only what changed, and
+  // nothing when nothing did (a still game costs the server no messages).
+  sendSnapshot(tick) {
+    if (tick - this.lastKeyframeTick >= KEYFRAME_EVERY_TICKS) this.lastSent = null;
     const snapshot = quantizeSnapshot(takeSnapshot(this.scene));
-    this.transport.send({ t: MSG.SNAPSHOT, ...diffSnapshot(this.lastSent, snapshot) });
+    const delta = diffSnapshot(this.lastSent, snapshot);
+    if (!delta.full) this.leaveOutSelfAnimation(delta);
+    if (!delta.full && !delta.game && Object.keys(delta.entities).length === 0) return;
+    if (delta.full) this.lastKeyframeTick = tick;
+    this.transport.send({ t: MSG.SNAPSHOT, ...delta });
     this.lastSent = snapshot;
-    this.snapshotsSent += 1;
+  }
+
+  // Entities that run their own cycle of animations (the flamethrowers) are on the guest's screen
+  // too, so their animation changes are not worth a message: the full snapshot every 5 seconds
+  // realigns them.
+  leaveOutSelfAnimation(delta) {
+    for (const [id, changes] of Object.entries(delta.entities)) {
+      if (!this.scene.entities.get(id)?.animatesItself) continue;
+      delete changes.anim;
+      delete changes.progress;
+      if (Object.keys(changes).length === 0) delete delta.entities[id];
+    }
   }
 
   // The host is leaving the scene: tell the guest how the run ended and hang up.

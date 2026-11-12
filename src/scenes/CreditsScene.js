@@ -7,7 +7,7 @@ class CreditsScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.image(400, 300, "creditsimage");
+    this.add.image(this.scale.width / 2, 300, "creditsimage");
     this.fim = this.sound.add("fim");
     this.fim.play({
       loop: true,

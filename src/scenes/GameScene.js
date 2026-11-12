@@ -3,7 +3,7 @@ import { GAME_SOUNDS } from "../data/assets.js";
 import { LEVEL_SPAWNS } from "../data/levelSpawns.js";
 import { GameState } from "../core/GameState.js";
 import { AudioManager } from "../core/AudioManager.js";
-import { resolveGameMode } from "../core/gameMode.js";
+import { isTouchDevice, resolveGameMode } from "../core/gameMode.js";
 import { EntityRegistry } from "../sim/EntityRegistry.js";
 import { FixedStepper } from "../sim/FixedStepper.js";
 import { LevelMap } from "../level/LevelMap.js";
@@ -34,8 +34,13 @@ export class GameScene extends Phaser.Scene {
     super(SCENE_KEYS.GAME);
   }
 
+  // `choice` comes from the start menu (see resolveGameMode); it is empty when the scene starts directly.
+  init(data) {
+    this.menuChoice = data?.choice ?? null;
+  }
+
   create() {
-    this.mode = resolveGameMode();
+    this.mode = resolveGameMode(window.location.search, isTouchDevice(), window.location, this.menuChoice);
     this.isGuest = this.mode.online?.role === "guest"; // the guest does not run the game: it draws what the host sends
     this.leftScene = false;
     this.state = new GameState();
@@ -77,6 +82,8 @@ export class GameScene extends Phaser.Scene {
     [this.spikes, ...this.barriers, ...this.keys, this.jailDoor].forEach((object) => object.bindPlayers(this.players));
 
     if (this.isGuest) {
+      // The cycle of the flamethrowers starts from what the host says, not from the guest's own clock.
+      this.flamethrowers.forEach((flamethrower) => flamethrower.startTimer.remove());
       // The guest only simulates its own player; the rest is drawn from what the host sends.
       const solids = [
         ...level.groundLayers,
@@ -196,6 +203,8 @@ export class GameScene extends Phaser.Scene {
 
   // One step of the guest: its own player moves with its own controls, at once.
   simulateGuest(time, stepMs) {
+    // Flamethrowers repeat their cycle of animations (purely visual here: the host decides the damage).
+    this.flamethrowers.forEach((flamethrower) => flamethrower.update());
     const { sprite } = this.localPlayer;
     if (!sprite.active) return;
     if (this.localPlayer.isDead()) sprite.setVelocity(0, 0);

@@ -4,6 +4,16 @@ import { StartScene } from "./scenes/StartScene.js";
 import { GameOverScene } from "./scenes/GameOverScene.js";
 import { CreditsScene } from "./scenes/CreditsScene.js";
 import { TouchControlsScene } from "./scenes/TouchControlsScene.js";
+import { resolveGameMode } from "./core/gameMode.js";
+import { computeGameSize } from "./core/screenSize.js";
+
+// On a phone the proportion of the whole screen is used (the game goes to full screen on the first tap);
+// elsewhere, the proportion of the window.
+const mode = resolveGameMode();
+const { width, height } = computeGameSize(
+  mode,
+  mode.touch ? { width: screen.width, height: screen.height } : { width: window.innerWidth, height: window.innerHeight }
+);
 
 const config = {
   type: Phaser.AUTO,
@@ -19,8 +29,8 @@ const config = {
     mode: Phaser.Scale.FIT,
     parent: "game",
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: 800,
-    height: 600
+    width,
+    height
   },
   // Scenes, in sequence
   scene: [PreloadScene, StartScene, GameScene, GameOverScene, CreditsScene, TouchControlsScene]

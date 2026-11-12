@@ -58,9 +58,12 @@ export default class Flamethrower {
         this.sprite.setData("owner", this);
         this.sprite.setSize(16,14).setOffset(1, 66).setImmovable(true);
 
-        // creates a delay between flamethrowers
+        // The cycle of animations runs by itself (see update), so the online guest does not need it in
+        // every snapshot: it runs the same cycle and the host only corrects its phase now and then.
+        this.animatesItself = true;
 
-        scene.time.addEvent({
+        // creates a delay between flamethrowers
+        this.startTimer = scene.time.addEvent({
             delay: delay,
             callback: () => {
                 this.sprite.anims.play("flamethrower-rise-low");
