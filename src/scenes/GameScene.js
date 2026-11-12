@@ -21,6 +21,7 @@ import { NetworkInput } from "../input/NetworkInput.js";
 import { connectOnline } from "../net/connectOnline.js";
 import { HostSession } from "../net/HostSession.js";
 import { GuestSession } from "../net/GuestSession.js";
+import { limitPhysicsToLocalPlayer } from "../net/guestPhysics.js";
 import { OnlineStatus } from "../ui/OnlineStatus.js";
 import { bindFullscreenKey } from "../input/fullscreen.js";
 import { Hud } from "../ui/Hud.js";
@@ -75,6 +76,17 @@ export class GameScene extends Phaser.Scene {
     // Objects that react to the players touching them
     [this.spikes, ...this.barriers, ...this.keys, this.jailDoor].forEach((object) => object.bindPlayers(this.players));
 
+    if (this.isGuest) {
+      // The guest only simulates its own player; the rest is drawn from what the host sends.
+      const solids = [
+        ...level.groundLayers,
+        groups.jumper,
+        ...this.barriers.map((barrier) => barrier.sprite),
+        this.jailDoor.sprite
+      ];
+      limitPhysicsToLocalPlayer(this, this.localPlayer.sprite, solids);
+    }
+
     if (this.mode.camera === "split") {
       setupSplitScreenCameras(this, this.players);
     } else {
@@ -100,9 +112,8 @@ export class GameScene extends Phaser.Scene {
     this.onlineStatus = new OnlineStatus(this, { role, room });
 
     if (role === "host") {
+      this.remotePlayer.announceSounds = false; // the guest plays its own player's sounds itself
       this.setRemotePlayerPresent(false); // until the friend connects
-    } else {
-      this.physics.pause(); // the guest never simulates
     }
 
     this.events.once("shutdown", () => {
@@ -174,11 +185,21 @@ export class GameScene extends Phaser.Scene {
   // Runs every frame: the game logic advances in fixed steps, then the screen is updated.
   update(time, delta) {
     if (this.isGuest) {
+      // Only the local player is simulated here (once the host has sent the first picture of the game).
+      if (this.session?.synced) this.stepper.advance(delta, (stepMs) => this.simulateGuest(time, stepMs));
       this.session?.update(delta);
     } else {
       this.stepper.advance(delta, (stepMs) => this.simulate(time, stepMs));
     }
     this.hud.update(this.state.soulCount);
+  }
+
+  // One step of the guest: its own player moves with its own controls, at once.
+  simulateGuest(time, stepMs) {
+    const { sprite } = this.localPlayer;
+    if (!sprite.active) return;
+    if (this.localPlayer.isDead()) sprite.setVelocity(0, 0);
+    else this.localPlayer.update(time, stepMs);
   }
 
   // One step of the game logic (1/60 s).

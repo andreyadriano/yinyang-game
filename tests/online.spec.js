@@ -226,20 +226,95 @@ test.describe("o jogo dos dois", () => {
     await closeAll(host, guest);
   });
 
-  test("os inimigos do anfitrião atacam o Yang do convidado", async ({ browser }) => {
+  test("os inimigos do anfitrião atacam o Yang do convidado, e ele sente o golpe", async ({ browser }) => {
     const { host, guest } = await pair(browser, "XXWAAN");
     const slimeX = await host.evaluate(`${scene}.slimes[0].sprite.x`);
-    // O convidado se teleporta (isso é feito no anfitrião, que manda na posição).
-    await host.evaluate(
+    // O convidado manda na posição do próprio personagem: é ele quem se teleporta.
+    await guest.evaluate(
       (x) => {
-        const yang = window.__game.scene.getScene("game").remotePlayer.sprite;
-        yang.setPosition(x + 25, 350);
-        yang.setVelocity(0, 0);
+        const yang = window.__game.scene.getScene("game").localPlayer.sprite;
+        yang.body.reset(x + 25, 350);
       },
       slimeX
     );
     await host.waitForFunction(`${scene}.state.soulCount < 190`, null, { timeout: 15_000, polling: 100 });
     await guest.waitForFunction(`${scene}.state.soulCount < 190`, null, { timeout: 15_000, polling: 100 });
+    // O golpe decidido no anfitrião chega ao Yang do convidado (animação de dor).
+    await guest.waitForFunction(`${scene}.localPlayer.state === "hurt"`, null, { timeout: 5_000, polling: 20 });
+    await closeAll(host, guest);
+  });
+
+  test("o convidado se move na hora, sem esperar o anfitrião", async ({ browser }) => {
+    const { host, guest } = await pair(browser, "XXWAAX");
+    await guest.waitForFunction(() => window.__game.loop.frame > 220, null, { timeout: 30_000 }); // depois disso o tempo é real
+    const yangX = (page) => page.evaluate(`${scene}.players.find((p) => p.character === "yang").sprite.x`);
+    const before = await yangX(guest);
+
+    // Atraso artificial de 300 ms na ida e na volta: antes, o convidado só se mexia depois disso.
+    await guest.evaluate(() => {
+      const transport = window.__game.scene.getScene("game").session.transport;
+      const send = transport.send.bind(transport);
+      transport.send = (message) => setTimeout(() => send(message), 300);
+    });
+    await guest.keyboard.down("ArrowRight");
+    await guest.waitForFunction(`${scene}.players.find((p) => p.character === "yang").sprite.x > ${before + 20}`, null, {
+      timeout: 250,
+      polling: 16,
+    });
+    await guest.keyboard.up("ArrowRight");
+    await closeAll(host, guest);
+  });
+
+  test("o anfitrião vê o Yang no mesmo lugar em que o convidado o deixou", async ({ browser }) => {
+    const { host, guest } = await pair(browser, "XXWAAY");
+    await guest.waitForFunction(() => window.__game.loop.frame > 220, null, { timeout: 30_000 });
+    await guest.keyboard.down("ArrowRight");
+    await guest.waitForTimeout(1200);
+    await guest.keyboard.up("ArrowRight");
+    await guest.waitForTimeout(800);
+    await host.waitForTimeout(300);
+    const yang = (page) => page.evaluate(`(() => { const s = ${scene}.players.find((p) => p.character === "yang").sprite; return [s.x, s.y]; })()`);
+    const [h, g] = [await yang(host), await yang(guest)];
+    expect(Math.abs(h[0] - g[0])).toBeLessThan(12);
+    expect(Math.abs(h[1] - g[1])).toBeLessThan(12);
+    expect(g[0]).toBeGreaterThan(150); // andou de verdade (saiu do ponto de partida, x = 75)
+    await closeAll(host, guest);
+  });
+
+  test("um portal tocado pelo Yang leva o convidado ao destino", async ({ browser }) => {
+    const { host, guest } = await pair(browser, "XXWAAZ");
+    const portal = await host.evaluate(`({ x: ${scene}.portals[0].sprite.x, y: ${scene}.portals[0].sprite.y, dx: ${scene}.portals[0].destinationX, dy: ${scene}.portals[0].destinationY })`);
+    await guest.evaluate(({ x, y }) => window.__game.scene.getScene("game").localPlayer.sprite.body.reset(x, y), portal);
+    await guest.waitForFunction(
+      ({ dx, dy }) => {
+        const s = window.__game.scene.getScene("game").localPlayer.sprite;
+        return Math.abs(s.x - dx) < 80 && Math.abs(s.y - dy) < 120;
+      },
+      portal,
+      { timeout: 10_000, polling: 50 }
+    );
+    await closeAll(host, guest);
+  });
+
+  test("o som do pulo do convidado toca uma vez só no aparelho dele", async ({ browser }) => {
+    const { host, guest } = await pair(browser, "XXWAAA".replace("AAA", "BBA"));
+    await guest.waitForTimeout(800);
+    await guest.evaluate(() => {
+      const audio = window.__game.scene.getScene("game").audio;
+      window.__jumps = 0;
+      for (const method of ["play", "playQuiet"]) {
+        const original = audio[method].bind(audio);
+        audio[method] = (name, config) => {
+          if (name === "jump") window.__jumps++;
+          original(name, config);
+        };
+      }
+    });
+    await guest.keyboard.down("ArrowUp");
+    await guest.waitForTimeout(150);
+    await guest.keyboard.up("ArrowUp");
+    await guest.waitForTimeout(1200);
+    expect(await guest.evaluate(() => window.__jumps)).toBe(1);
     await closeAll(host, guest);
   });
 });

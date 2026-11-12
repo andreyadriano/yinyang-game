@@ -14,8 +14,13 @@
 //
 // Game messages, forwarded to the other player:
 //   { t: "hello", protocol, ids }          first message of each side; `ids` identifies the level data
-//   { t: "intent", n }                     guest -> host: what the guest is pressing (see packIntent)
+//   { t: "intent", n, p? }                 guest -> host: what the guest is pressing (see packIntent) and, with `p`,
+//                                          where its player is now: [x, y, vx, vy]. The guest moves its own player at
+//                                          once (prediction); the host keeps playing the same intent and only corrects
+//                                          the position when the two drift apart.
 //   { t: "snapshot", full, tick, game?, entities }   host -> guest: the game (see snapshotDelta.js)
+//   { t: "effect", k, ... }                host -> guest: something the host did to the guest's player
+//                                          (k: "hit" vx vy | "spike" vy | "warp" x y | "launch" vy)
 //   { t: "sound", name, volume? }          host -> guest: play a sound effect
 //   { t: "end", result }                   host -> guest: the run is over ("gameOver" or "endgame")
 export const PROTOCOL_VERSION = 1;
@@ -31,12 +36,13 @@ export const MSG = {
   PONG: "pong",
   HELLO: "hello",
   INTENT: "intent",
+  EFFECT: "effect",
   SNAPSHOT: "snapshot",
   SOUND: "sound",
   END: "end"
 };
 
-const GAME_MESSAGES = new Set([MSG.HELLO, MSG.INTENT, MSG.SNAPSHOT, MSG.SOUND, MSG.END]);
+const GAME_MESSAGES = new Set([MSG.HELLO, MSG.INTENT, MSG.EFFECT, MSG.SNAPSHOT, MSG.SOUND, MSG.END]);
 
 export function encode(message) {
   return JSON.stringify(message);

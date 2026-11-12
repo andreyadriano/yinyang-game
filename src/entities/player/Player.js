@@ -44,6 +44,12 @@ export class Player {
     this.attackCombo = 0;
     this.isJumping = false;
     this.jumpBufferMs = 0;
+    // Online, the host plays the other player's sounds for itself only: that player's own device
+    // already played them (see sfx).
+    this.announceSounds = true;
+    // Online, the host sets this on the player of the other device: it receives what the host's
+    // game does to that player (a hit, a portal, a jumper), to be played back on that device.
+    this.onEffect = null;
 
     this.sprite = scene.physics.add.sprite(x, y, character);
     this.setHitbox(HITBOX.standing);
@@ -77,13 +83,68 @@ export class Player {
     return this.state === STATE.DIE;
   }
 
+  // Plays a sound effect; announced to the other device unless this player belongs to it.
+  sfx(name, config) {
+    if (this.announceSounds) this.audio.play(name, config);
+    else this.audio.playQuiet(name, config);
+  }
+
   // Pushed back by an enemy or hazard: sets velocity and plays the hurt animation.
   takeHit(velocityX, velocityY) {
     if (this.isDead()) return;
+    this.applyHit(velocityX, velocityY);
+    this.events?.emit(GAME_EVENT.PLAYER_HIT, { id: this.id });
+    this.onEffect?.({ k: "hit", vx: velocityX, vy: velocityY });
+  }
+
+  applyHit(velocityX, velocityY) {
     this.sprite.setVelocityX(velocityX);
     this.sprite.setVelocityY(velocityY);
     this.hurt();
-    this.events?.emit(GAME_EVENT.PLAYER_HIT, { id: this.id });
+  }
+
+  // Touching spikes: red flash, hurt animation from the start and a bounce upward.
+  takeSpikeHit(bounceVelocityY) {
+    this.sprite.setTint(0xff0000);
+    if (this.isDead()) return;
+    this.applySpikeHit(bounceVelocityY);
+    this.onEffect?.({ k: "spike", vy: bounceVelocityY });
+  }
+
+  applySpikeHit(bounceVelocityY) {
+    this.sprite.setTint(0xff0000);
+    this.hurt({ restart: true });
+    this.sprite.setVelocityY(bounceVelocityY);
+  }
+
+  // Portals move the player to another place.
+  warp(x, y) {
+    this.sprite.setPosition(x, y);
+    this.onEffect?.({ k: "warp", x, y });
+  }
+
+  // Jumpers throw the player up (a negative velocity).
+  launch(velocityY) {
+    this.sprite.setVelocityY(velocityY);
+    this.onEffect?.({ k: "launch", vy: velocityY });
+  }
+
+  // On the device of this player (online guest): plays back what the host's game did to it.
+  applyEffect(effect) {
+    switch (effect.k) {
+      case "hit":
+        if (!this.isDead()) this.applyHit(effect.vx, effect.vy);
+        break;
+      case "spike":
+        if (!this.isDead()) this.applySpikeHit(effect.vy);
+        break;
+      case "warp":
+        this.sprite.body.reset(effect.x, effect.y);
+        break;
+      case "launch":
+        this.sprite.setVelocityY(effect.vy);
+        break;
+    }
   }
 
   // Enters the hurt state. With `restart`, the animation starts over even if it is already playing.
@@ -209,13 +270,13 @@ export class Player {
 
   jump() {
     this.sprite.setVelocityY(JUMP_VELOCITY);
-    this.audio.play("jump", { volume: 0.3 });
+    this.sfx("jump", { volume: 0.3 });
     this.isJumping = true;
   }
 
   doubleJump() {
     this.sprite.setVelocityY(JUMP_VELOCITY);
-    this.audio.play("jump", { volume: 0.3 });
+    this.sfx("jump", { volume: 0.3 });
     this.isJumping = false;
     this.jumpBufferMs = 0;
   }
@@ -226,7 +287,7 @@ export class Player {
     this.sprite.setFlipX(this.facing === "left");
     this.sprite.setVelocityX(0);
     this.sprite.anims.play(this.anim(ATTACK_ANIMS[this.attackCombo]), true);
-    this.audio.play("swordWoosh", { volume: 0.3 });
+    this.sfx("swordWoosh", { volume: 0.3 });
     this.attackCombo = (this.attackCombo + 1) % ATTACK_ANIMS.length;
   }
 

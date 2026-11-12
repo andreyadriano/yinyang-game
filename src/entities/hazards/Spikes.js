@@ -23,11 +23,8 @@ export class Spikes {
   }
 
   handlePlayerHit(player) {
-    player.sprite.setTint(0xff0000);
-    if (!player.isDead()) {
-      player.hurt({ restart: true });
-      player.sprite.setVelocityY(SPIKE_BOUNCE_VELOCITY);
-      this.gameState.loseSoul(SPIKE_DAMAGE, "spikes");
-    }
+    const wasDead = player.isDead();
+    player.takeSpikeHit(SPIKE_BOUNCE_VELOCITY);
+    if (!wasDead) this.gameState.loseSoul(SPIKE_DAMAGE, "spikes");
   }
 }
