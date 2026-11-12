@@ -103,6 +103,27 @@ test.describe("no celular", () => {
     expect(canvas.height / viewport.height).toBeGreaterThan(0.95);
   });
 
+  test("os botões não se sobrepõem e ficam onde os polegares alcançam", async ({ page }) => {
+    const { buttons, width } = await page.evaluate(() => ({
+      buttons: window.__game.scene.getScene("touchControls").buttons,
+      width: window.__game.scale.width,
+    }));
+    const names = Object.keys(buttons);
+    for (const a of names) {
+      for (const b of names) {
+        if (a >= b) continue;
+        const distance = Math.hypot(buttons[a].x - buttons[b].x, buttons[a].y - buttons[b].y);
+        expect(distance, `${a} x ${b}`).toBeGreaterThan(buttons[a].radius + buttons[b].radius);
+      }
+    }
+    // Esquerda e direita no canto esquerdo; ataque, pulo e agachar no canto direito.
+    for (const name of ["left", "right"]) expect(buttons[name].x, name).toBeLessThan(width * 0.3);
+    for (const name of ["attack", "jump", "down"]) expect(buttons[name].x, name).toBeGreaterThan(width - 300);
+    // O agachar fica ao lado do ataque, na mesma altura, e o pulo acima dele.
+    expect(Math.abs(buttons.down.y - buttons.attack.y)).toBeLessThan(40);
+    expect(buttons.jump.y).toBeLessThan(buttons.attack.y - 100);
+  });
+
   test("os botões ficam dentro da tela e o de ataque encostado na borda direita", async ({ page }) => {
     const { buttons, width } = await page.evaluate(() => ({
       buttons: window.__game.scene.getScene("touchControls").buttons,
