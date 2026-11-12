@@ -14,13 +14,13 @@ class Fingers {
     this.active = new Map();
   }
 
-  // Coordenadas do jogo (800x600) -> coordenadas da página.
+  // Coordenadas do jogo (a largura segue a tela; a altura é 600) -> coordenadas da página.
   async toPage(gx, gy) {
     const rect = await this.page.evaluate(() => {
       const r = document.querySelector("canvas").getBoundingClientRect();
-      return { left: r.left, top: r.top, width: r.width, height: r.height };
+      return { left: r.left, top: r.top, width: r.width, height: r.height, gameWidth: window.__game.scale.width };
     });
-    return { x: rect.left + (gx * rect.width) / 800, y: rect.top + (gy * rect.height) / 600 };
+    return { x: rect.left + (gx * rect.width) / rect.gameWidth, y: rect.top + (gy * rect.height) / 600 };
   }
 
   async send(type) {
@@ -86,7 +86,33 @@ test.describe("no celular", () => {
       width: ${scene}.cameras.main.width,
       height: ${scene}.cameras.main.height,
     })`);
-    expect(info).toEqual({ mode: "solo", touch: true, players: ["yin"], cameras: 1, width: 800, height: 600 });
+    expect(info).toMatchObject({ mode: "solo", touch: true, players: ["yin"], cameras: 1, height: 600 });
+    // O jogo acompanha a proporção do celular (915x412 ~ 2,2:1), em vez de ficar em 4:3 (800 de largura).
+    expect(info.width).toBeGreaterThan(1200);
+    expect(info.width).toBeLessThanOrEqual(1400);
+  });
+
+  test("o jogo ocupa quase toda a janela do celular (antes eram só ~55% da largura)", async ({ page }) => {
+    const { canvas, viewport } = await page.evaluate(() => {
+      const r = document.querySelector("canvas").getBoundingClientRect();
+      return { canvas: { width: r.width, height: r.height }, viewport: { width: innerWidth, height: innerHeight } };
+    });
+    // O tamanho segue a proporção da tela inteira, a que vale em tela cheia; com as barras do navegador à
+    // mostra a janela é um pouco mais larga, então sobra uma faixa fina dos lados.
+    expect(canvas.width / viewport.width).toBeGreaterThan(0.9);
+    expect(canvas.height / viewport.height).toBeGreaterThan(0.95);
+  });
+
+  test("os botões ficam dentro da tela e o de ataque encostado na borda direita", async ({ page }) => {
+    const { buttons, width } = await page.evaluate(() => ({
+      buttons: window.__game.scene.getScene("touchControls").buttons,
+      width: window.__game.scale.width,
+    }));
+    for (const [name, b] of Object.entries(buttons)) {
+      expect(b.x - b.radius, name).toBeGreaterThanOrEqual(0);
+      expect(b.x + b.radius, name).toBeLessThanOrEqual(width);
+    }
+    expect(width - buttons.attack.x).toBeLessThan(100);
   });
 
   test("os controles de toque aparecem e somem junto com a fase", async ({ page }) => {
@@ -170,6 +196,24 @@ test.describe("telas de início e de fim no celular", () => {
     await page.waitForTimeout(500);
     await page.touchscreen.tap(400, 200);
     await page.waitForFunction(() => window.__game.scene.isActive("game"), null, { timeout: 30_000 });
+  });
+
+  test("o toque na tela inicial pede tela cheia, para esconder a barra do navegador", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForFunction(() => window.__game?.scene.isActive("start"), null, { timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await page.evaluate(() => {
+      window.__fullscreenAsked = false;
+      const scale = window.__game.scale;
+      const start = scale.startFullscreen.bind(scale);
+      scale.startFullscreen = (...args) => {
+        window.__fullscreenAsked = true;
+        return start(...args);
+      };
+    });
+    await page.touchscreen.tap(400, 200);
+    await page.waitForFunction(() => window.__game.scene.isActive("game"), null, { timeout: 30_000 });
+    expect(await page.evaluate(() => window.__fullscreenAsked)).toBe(true);
   });
 
   test("depois do game over, um toque volta à tela inicial", async ({ page }) => {

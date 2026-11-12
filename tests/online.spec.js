@@ -250,15 +250,16 @@ test.describe("o jogo dos dois", () => {
     const yangX = (page) => page.evaluate(`${scene}.players.find((p) => p.character === "yang").sprite.x`);
     const before = await yangX(guest);
 
-    // Atraso artificial de 300 ms na ida e na volta: antes, o convidado só se mexia depois disso.
+    // Atraso artificial de 600 ms na ida: antes, o convidado só se mexia depois disso (e mais a volta).
+    // (O Chrome sem GPU roda a ~12 quadros por segundo, então a janela precisa ser folgada.)
     await guest.evaluate(() => {
       const transport = window.__game.scene.getScene("game").session.transport;
       const send = transport.send.bind(transport);
-      transport.send = (message) => setTimeout(() => send(message), 300);
+      transport.send = (message) => setTimeout(() => send(message), 600);
     });
     await guest.keyboard.down("ArrowRight");
-    await guest.waitForFunction(`${scene}.players.find((p) => p.character === "yang").sprite.x > ${before + 20}`, null, {
-      timeout: 250,
+    await guest.waitForFunction(`${scene}.players.find((p) => p.character === "yang").sprite.x > ${before + 15}`, null, {
+      timeout: 450,
       polling: 16,
     });
     await guest.keyboard.up("ArrowRight");

@@ -7,7 +7,7 @@ class GameOverScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.image(400, 300, "gameover");
+    this.add.image(this.scale.width / 2, 300, "gameover");
 
     this.youlose = this.sound.add("youlose");
 

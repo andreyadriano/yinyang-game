@@ -1,4 +1,5 @@
 import { SCENE_KEYS } from "./sceneKeys.js";
+import { enterFullscreen } from "../input/fullscreen.js";
 
 const IDLE_ALPHA = 0.18;
 const PRESSED_ALPHA = 0.45;
@@ -30,9 +31,10 @@ export class TouchControlsScene extends Phaser.Scene {
     this.addHoldButton("right", 182, 535, 46, "right");
     this.addHoldButton("down", 122, 445, 36, "down");
 
-    // Right thumb: jump and attack
-    this.addHoldButton("jump", 640, 440, 46, "up");
-    this.addHoldButton("attack", 730, 535, 56, "attack");
+    // Right thumb: jump and attack (anchored to the right edge: the screen is wider than 800 on long phones)
+    const right = this.scale.width - 800;
+    this.addHoldButton("jump", right + 640, 440, 46, "up");
+    this.addHoldButton("attack", right + 730, 535, 56, "attack");
 
     this.addSystemButtons();
 
@@ -80,23 +82,24 @@ export class TouchControlsScene extends Phaser.Scene {
 
   addSystemButtons() {
     // Pause: two bars. Fullscreen: a square outline (hidden where the browser has no fullscreen).
+    const edge = this.scale.width; // the right edge of the screen
     if (this.allowPause) {
-      const pause = this.add.rectangle(760, 40, 40, 40, 0xffffff, IDLE_ALPHA).setStrokeStyle(2, 0xffffff, 0.5);
-      this.add.rectangle(752, 40, 6, 18, ICON_COLOR, 0.85);
-      this.add.rectangle(768, 40, 6, 18, ICON_COLOR, 0.85);
+      const pause = this.add.rectangle(edge - 40, 40, 40, 40, 0xffffff, IDLE_ALPHA).setStrokeStyle(2, 0xffffff, 0.5);
+      this.add.rectangle(edge - 48, 40, 6, 18, ICON_COLOR, 0.85);
+      this.add.rectangle(edge - 32, 40, 6, 18, ICON_COLOR, 0.85);
       pause.setInteractive().on("pointerup", () => this.togglePause());
-      this.buttons.pause = { x: 760, y: 40, radius: 20 };
+      this.buttons.pause = { x: edge - 40, y: 40, radius: 20 };
     }
 
     if (this.scale.fullscreen.available) {
-      const fullscreen = this.add.rectangle(708, 40, 40, 40, 0xffffff, IDLE_ALPHA).setStrokeStyle(2, 0xffffff, 0.5);
-      this.add.rectangle(708, 40, 18, 18).setStrokeStyle(3, ICON_COLOR, 0.85);
+      const fullscreen = this.add.rectangle(edge - 92, 40, 40, 40, 0xffffff, IDLE_ALPHA).setStrokeStyle(2, 0xffffff, 0.5);
+      this.add.rectangle(edge - 92, 40, 18, 18).setStrokeStyle(3, ICON_COLOR, 0.85);
       fullscreen.setInteractive().on("pointerup", () => this.toggleFullscreen());
-      this.buttons.fullscreen = { x: 708, y: 40, radius: 20 };
+      this.buttons.fullscreen = { x: edge - 92, y: 40, radius: 20 };
     }
 
     this.pausedLabel = this.add
-      .text(400, 300, "PAUSADO\ntoque em II para continuar", {
+      .text(this.scale.width / 2, 300, "PAUSADO\ntoque em II para continuar", {
         fontFamily: "sans-serif",
         fontSize: "28px",
         color: "#ffffff",
@@ -122,12 +125,7 @@ export class TouchControlsScene extends Phaser.Scene {
   }
 
   toggleFullscreen() {
-    if (this.scale.isFullscreen) {
-      this.scale.stopFullscreen();
-    } else {
-      this.scale.startFullscreen();
-      // Where supported, lock to landscape once fullscreen (ignored elsewhere).
-      screen.orientation?.lock?.("landscape").catch(() => {});
-    }
+    if (this.scale.isFullscreen) this.scale.stopFullscreen();
+    else enterFullscreen(this);
   }
 }

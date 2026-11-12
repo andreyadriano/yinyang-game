@@ -34,7 +34,7 @@ test("o pacote tem a página, o estilo, o código e os arquivos do jogo", () => 
 
 test("nada de servidor, testes, documentação ou dependências vai para o site", () => {
   const top = readdirSync(built.dist).sort();
-  expect(top).toEqual(["assets", "index.html", "main.css", "src"]);
+  expect(top).toEqual(["assets", "index.html", "main.css", "manifest.webmanifest", "src"]);
   expect(inDist("src/../worker")).toBe(false);
   expect(allFiles(built.dist).filter((file) => /node_modules|\.spec\.js$|\.env|\.dev\.vars|wrangler/.test(file))).toEqual([]);
 });

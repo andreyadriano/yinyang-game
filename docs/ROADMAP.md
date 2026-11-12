@@ -96,7 +96,7 @@ Decisão tomada: **uma pessoa por aparelho**. No celular o jogo tem um único jo
 - [x] Atualizar o Phaser: feito, 3.21.0 → **4.2.1** (a mais recente). Mudanças no código: `createStaticLayer` → `createLayer` e `getCurrentKey` → `getName`. Os 31 testes passam e capturas de tela de 6 pontos do mapa ficaram visualmente idênticas às da 3.21.
 - [x] `TouchInput` + `TouchControlsScene`: D-pad (esquerda, direita, agachar), pulo e ataque, com vários dedos ao mesmo tempo, produzindo a mesma intenção do teclado.
 - [x] Modo de câmera única: `GameScene` escolhe entre tela dividida (`local`) e câmera única (`solo`).
-- [~] Escala e orientação: em pé aparece o aviso "Gire o aparelho" e o jogo some; barra do navegador escondida pelo CSS e pela tela cheia. **Falta** aceitar proporções variadas: o jogo continua 4:3 (800x600) e deixa barras pretas nas laterais de celulares compridos (em um Pixel 7 só ~55% da largura é usada). Fica para a Etapa 7.
+- [~] Escala e orientação: em pé aparece o aviso "Gire o aparelho" e o jogo some; barra do navegador escondida pelo CSS e pela tela cheia. Em solo e online a largura do jogo agora segue a proporção da tela (800 a 1400, `src/core/screenSize.js`) e o primeiro toque pede tela cheia (2026-11-12). Falta só reorganizar os botões de toque para telas largas.
 - [x] Botões na tela para pausa e tela cheia (o de tela cheia some onde o navegador não suporta, como o iPhone), no lugar das teclas F e P.
 - [x] Desbloquear o áudio no primeiro toque: um único toque na tela inicial agora começa o jogo (antes eram dois) e a música espera o desbloqueio.
 - [x] `meta viewport`, bloqueio de zoom e rolagem, e sem "puxar para atualizar".

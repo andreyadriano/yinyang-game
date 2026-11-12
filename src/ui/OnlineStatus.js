@@ -28,7 +28,7 @@ export class OnlineStatus {
     this.error = false;
 
     this.text = scene.add
-      .text(400, 8, "", {
+      .text(scene.scale.width / 2, 8, "", {
         fontFamily: "sans-serif",
         fontSize: "16px",
         color: "#ffffff",

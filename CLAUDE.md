@@ -132,7 +132,7 @@ Regras para não quebrar o celular:
 - Botões na tela ficam na `TouchControlsScene` (cena própria, para não se mexerem com as câmeras do jogo). Cada botão novo entra em `this.buttons`, que os testes usam para achar a posição.
 - Áudio: no celular ele só destrava no primeiro toque; use `audio.playWhenUnlocked()` para música.
 - Testes de celular: `tests/mobile.spec.js` usa a emulação "Pixel 7 landscape" e toques reais via CDP (`Fingers`), inclusive com dois dedos.
-- Limitação conhecida: o jogo é 4:3 e deixa barras pretas nas laterais de celulares compridos (Etapa 7).
+- **Tamanho da tela:** a tela dividida local é 800x600 (4:3); em `solo` e `online` a altura é 600 e a largura (800 a 1400) segue a proporção do aparelho (`src/core/screenSize.js`, calculada uma vez ao abrir). No celular a proporção é a da tela inteira, porque o primeiro toque (na tela inicial) pede **tela cheia** e trava em horizontal (`enterFullscreen`), o que esconde a barra do navegador (no iPhone o Safari não tem tela cheia: só instalando na tela inicial, `manifest.webmanifest`). Nunca escreva 800 ou 400 fixos em cena nova: use `this.scale.width`; botões de toque da direita se ancoram na borda direita.
 
 ## Simulação: a base do co-op online
 
